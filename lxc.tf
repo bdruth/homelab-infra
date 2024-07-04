@@ -25,7 +25,7 @@ resource "null_resource" "run_ansible_playbook" {
         working_dir = path.module
     }
     provisioner "local-exec" {
-        command     = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${split("/",proxmox_lxc.lxc-test.network[0].ip)[0]},' -u root --private-key ./id_rsa ./ansible/install_htop.yml"
+        command     = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${split("/",proxmox_lxc.lxc-test.network[0].ip)[0]},' -u root --private-key ./id_rsa ./ansible/pihole/main.yml"
         working_dir = path.module
     }
 }

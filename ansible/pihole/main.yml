@@ -1,0 +1,52 @@
+---
+- name: Install pihole
+  hosts: all
+  become: yes
+  vars:
+    setupVars_path: /etc/pihole/setupVars.conf
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install curl
+      apt:
+        name: curl
+        state: present
+
+    - name: Make sure destination dir exists
+      file:
+        path: "{{ setupVars_path | dirname }}"
+        state: directory
+
+    - name: Create /etc/pihole/setupVars.conf
+      copy:
+        src: ./setupVars.conf
+        dest: "{{ setupVars_path }}"
+        owner: root
+        group: root
+        mode: '0644'
+    
+    - name: Run pihole install
+      shell: set -o pipefail && curl -L https://install.pi-hole.net | bash /dev/stdin --unattended
+      args:
+        executable: /usr/bin/bash
+      register: ps
+
+    - debug: var=ps.stdout_lines
+    - debug: var=ps.stderr_lines
+
+    - name: Upload teleporter backup
+      copy:
+        src: ./pi-hole-pihole-teleporter.tar.gz
+        dest: /root/pi-hole-pihole-teleporter.tar.gz
+    
+    - name: Download pihole_restore
+      shell: |
+        curl -L -O https://github.com/chamilad/pihole-restore/releases/download/v0.1.0/pihole_restore-v0.1.0-linux-x86_64
+        mv pihole_restore-v0.1.0-linux-x86_64 pihole_restore
+        chmod +x pihole_restore
+
+    - name: Restore pihole
+      command: /root/pihole_restore -f /root/pi-hole-pihole-teleporter.tar.gz -c
+      register: ps
