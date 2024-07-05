@@ -40,17 +40,16 @@
     - debug: var=ps.stdout_lines
     - debug: var=ps.stderr_lines
 
-    # - name: Upload teleporter backup
-    #   copy:
-    #     src: ./pi-hole-pihole-teleporter.tar.gz
-    #     dest: /root/pi-hole-pihole-teleporter.tar.gz
-
+    ## Chicken & egg: on initial setup, pihole needs teleporter backup restored to provide these values ...
+    ## but to get teleporter backup, needs to lookup local s3 host :/
+    ## 
+    # dig @localhost synology.cusack-ruth.name AAAA synology.cusack-ruth.name A | \
+    # grep -A 1 'ANSWER SECTION' | grep IN | awk '{print $NF}' | \
+    # xargs -I {} echo {} synology.cusack-ruth.name
+    ## 
     - name: Get synology DNS records from pihole
       shell: |
-        echo >> /etc/hosts && \
-        dig @localhost synology.cusack-ruth.name AAAA synology.cusack-ruth.name A | \
-        grep -A 1 'ANSWER SECTION' | grep IN | awk '{print $NF}' | \
-        xargs -I {} echo {} synology.cusack-ruth.name
+        echo "192.168.7.165 synology.cusack-ruth.name"
       register: synology_hosts_entries
     
     - name: Copy synology hosts entries to /etc/hosts

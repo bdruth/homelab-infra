@@ -7,6 +7,12 @@ terraform {
   }
 }
 
+resource "random_password" "root_password" {
+  length           = 16
+  special          = true
+  override_special = "!#$%&*()-_=+[]{}<>:?"
+}
+
 resource "proxmox_lxc" "pihole" {
   features {
     nesting = true
@@ -32,7 +38,7 @@ resource "proxmox_lxc" "pihole" {
   }
 
   ostemplate      = "f39ac8b4-7319-42ec-b12e-dd3d4d98a85f:vztmpl/debian-12-standard_12.2-1_amd64.tar.zst"
-  password        = "***REMOVED***"
+  password        = random_password.root_password.result
   ssh_public_keys = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDDksBMkSWfRLuTAS30E/ZtzY74laZMxa7F6RGyDEJfObQaAyuf1FAmIdTEVgwDJ8gDqtUTy7tDv6reSqGyXNKmEgoNOBdJ4RXPAobZSXX6X2PsgNXd/mrZqHcc/RN4wkJpHmgLoj2ZJuE30Ld0/csP98GeusGREznCEhzuQ3a8N/YVkUtz1lgYKW7yWf5XKD1s/IQBwGmI4eA4I7EkljXtEFIqlEXF4zXNPRpSh+iND++zKdSFZ+ve7ZxWlTlwUCyn5wMRLYNWc+jk84ViX/mQr++dPihC/PVg58UwYK74w1pMfqrrZaHGPuKC64x3x3P1ytblEd752r82iAHTNL8R"
   start           = true
   pool            = "terraform-prov-pool"
@@ -59,6 +65,7 @@ resource "null_resource" "run_ansible_playbook" {
     setupVars_hash    = filesha256("${path.module}/../../ansible/pihole/setupVars.conf")
     ansible_conf_hash = filesha256("${path.module}/../../ansible/pihole/main.yml")
     teleporter_backup_hash = data.aws_s3_object.pihole_teleporter_backup.etag
+    container_change = proxmox_lxc.pihole.id
   }
 
   provisioner "local-exec" {
