@@ -27,3 +27,15 @@ provider "proxmox" {
   pm_tls_insecure = false
   pm_api_url      = "https://proxmox-main.cusack-ruth.name:8006/api2/json"
 }
+
+provider "aws" {
+  region                      = "main"
+  skip_credentials_validation = true
+  skip_metadata_api_check     = true
+  skip_requesting_account_id  = true
+  s3_use_path_style           = true
+  skip_region_validation      = true
+  endpoints {
+    s3 = "http://synology.cusack-ruth.name:9000"
+  }
+}

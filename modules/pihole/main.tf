@@ -44,15 +44,21 @@ data "http" "pihole_latest_release" {
   url = "https://api.github.com/repos/pi-hole/pi-hole/releases/latest"
 }
 
+data "aws_s3_object" "pihole_teleporter_backup" {
+  bucket = "homelab-configurations"
+  key    = "pihole/pi-hole-pihole-teleporter.tar.gz"
+}
+
 locals {
   pihole_latest_release = jsondecode(data.http.pihole_latest_release.response_body).name
 }
 
 resource "null_resource" "run_ansible_playbook" {
   triggers = {
-    pihole_version = local.pihole_latest_release
-    setupVars_hash = filesha256("${path.module}/../../ansible/pihole/setupVars.conf")
+    pihole_version    = local.pihole_latest_release
+    setupVars_hash    = filesha256("${path.module}/../../ansible/pihole/setupVars.conf")
     ansible_conf_hash = filesha256("${path.module}/../../ansible/pihole/main.yml")
+    teleporter_backup_hash = data.aws_s3_object.pihole_teleporter_backup.etag
   }
 
   provisioner "local-exec" {
