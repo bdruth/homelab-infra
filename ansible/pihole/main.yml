@@ -9,11 +9,15 @@
       apt:
         update_cache: yes
 
-    - name: Install curl
+    - name: Install APT packages
       apt:
-        name: curl
-        state: present
-
+        pkg:
+          - curl
+          - python3-pip
+          - python3-boto3
+          - python3-packaging
+        state: latest
+    
     - name: Make sure destination dir exists
       file:
         path: "{{ setupVars_path | dirname }}"
@@ -36,10 +40,34 @@
     - debug: var=ps.stdout_lines
     - debug: var=ps.stderr_lines
 
-    - name: Upload teleporter backup
-      copy:
-        src: ./pi-hole-pihole-teleporter.tar.gz
+    # - name: Upload teleporter backup
+    #   copy:
+    #     src: ./pi-hole-pihole-teleporter.tar.gz
+    #     dest: /root/pi-hole-pihole-teleporter.tar.gz
+
+    - name: Get synology DNS records from pihole
+      shell: |
+        echo >> /etc/hosts && \
+        dig @localhost synology.cusack-ruth.name AAAA synology.cusack-ruth.name A | \
+        grep -A 1 'ANSWER SECTION' | grep IN | awk '{print $NF}' | \
+        xargs -I {} echo {} synology.cusack-ruth.name
+      register: synology_hosts_entries
+    
+    - name: Copy synology hosts entries to /etc/hosts
+      blockinfile:
+        path: /etc/hosts
+        marker: "{mark} synology"
+        block: "{{ synology_hosts_entries.stdout }}"
+
+    - name: Copy teleporter backup to remote
+      amazon.aws.s3_object:
+        access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+        secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
+        endpoint_url: http://synology.cusack-ruth.name:9000
+        bucket: homelab-configurations
+        object: pihole/pi-hole-pihole-teleporter.tar.gz
         dest: /root/pi-hole-pihole-teleporter.tar.gz
+        mode: get
     
     - name: Download pihole_restore
       shell: |

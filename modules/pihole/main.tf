@@ -40,10 +40,21 @@ resource "proxmox_lxc" "pihole" {
   unprivileged    = true
 }
 
+data "http" "pihole_latest_release" {
+  url = "https://api.github.com/repos/pi-hole/pi-hole/releases/latest"
+}
+
+locals {
+  pihole_latest_release = jsondecode(data.http.pihole_latest_release.response_body).name
+}
+
 resource "null_resource" "run_ansible_playbook" {
   triggers = {
-    always_run = "${timestamp()}"
+    pihole_version = local.pihole_latest_release
+    setupVars_hash = filesha256("${path.module}/../../ansible/pihole/setupVars.conf")
+    ansible_conf_hash = filesha256("${path.module}/../../ansible/pihole/main.yml")
   }
+
   provisioner "local-exec" {
     command     = "until nc -zv ${split("/", proxmox_lxc.pihole.network[0].ip)[0]} 22; do echo 'Waiting for SSH to be available...'; sleep 5; done"
     working_dir = path.module
