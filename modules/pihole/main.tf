@@ -62,7 +62,7 @@ locals {
 resource "null_resource" "run_ansible_playbook" {
   triggers = {
     pihole_version    = local.pihole_latest_release
-    setupVars_hash    = filesha256("${path.module}/../../ansible/pihole/setupVars.conf")
+    setupVars_hash    = filesha256("${path.module}/../../ansible/pihole/setupVars.conf.j2")
     ansible_conf_hash = filesha256("${path.module}/../../ansible/pihole/main.yml")
     teleporter_backup_hash = data.aws_s3_object.pihole_teleporter_backup.etag
     container_change = proxmox_lxc.pihole.id
