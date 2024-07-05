@@ -4,6 +4,6 @@ module "pihole" {
   ip_addr       = "192.168.7.2"
 }
 
-output "lxc_test_ip" {
+output "pihole_ip" {
   value = module.pihole.pihole_ip
 }
