@@ -1,0 +1,42 @@
+---
+- name: Setup dnsdist
+  hosts: all
+  become: yes
+  vars:
+    dnsdist_conf_path: /etc/dnsdist/dnsdist.conf
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install APT packages
+      apt:
+        pkg:
+          - dnsdist
+          - net-tools
+        state: latest
+
+    - name: Make sure destination dir exists
+      file:
+        path: "{{ dnsdist_conf_path | dirname }}"
+        state: directory
+
+    - name: Create dnsdist.conf
+      template:
+        src: dnsdist.conf.j2
+        dest: "{{ dnsdist_conf_path }}"
+        owner: root
+        group: root
+        mode: '0644'
+      register: dnsdist_conf
+
+    - name: restart dnsdist
+      service:
+        name: dnsdist
+        state: restarted
+      when: dnsdist_conf.changed
+
+    - name: Print all available facts
+      ansible.builtin.debug:
+        var: ansible_facts
