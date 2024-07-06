@@ -1,6 +1,6 @@
 module "pihole_lxc" {
   source = "../lxc"
-  lxc_hostname = "pihole-blue"
+  lxc_hostname = "pihole-${var.pihole_suffix}"
   lxc_ip_addr = "192.168.7.2"
   lxc_gw_addr = "192.168.7.1"
 }
