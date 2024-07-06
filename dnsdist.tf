@@ -11,6 +11,7 @@ resource "null_resource" "install_dnsdist" {
     dnsdist_conf_hash    = filesha256("${path.module}/ansible/dnsdist/dnsdist.conf.j2")
     ansible_conf_hash = filesha256("${path.module}/ansible/dnsdist/main.yml")
     container_change = module.dns_ha_lxc.lxc_id
+    dns_ip_addrs = jsonencode(local.dns_ip_addrs)
   }
 
   provisioner "local-exec" {
@@ -18,7 +19,7 @@ resource "null_resource" "install_dnsdist" {
     working_dir = path.module
   }
   provisioner "local-exec" {
-    command     = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${module.dns_ha_lxc.lxc_ip_addr},' -u root --private-key ~/.ssh/id_rsa ansible/dnsdist/main.yml -e '{\"dns_ip_addrs\":[\"${module.pihole.pihole_ip}\",\"192.168.7.122\"]}'"
+    command     = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${module.dns_ha_lxc.lxc_ip_addr},' -u root --private-key ~/.ssh/id_rsa ansible/dnsdist/main.yml -e '{\"dns_ip_addrs\":${jsonencode(local.dns_ip_addrs)}}'"
     working_dir = path.module
   }
 }
