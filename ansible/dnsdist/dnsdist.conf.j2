@@ -1,0 +1,6 @@
+{% for addr in dns_ip_addrs %}
+newServer({address="{{ addr }}"})
+{% endfor %}
+setServerPolicy(firstAvailable)
+setLocal("0.0.0.0")
+addLocal("::")
