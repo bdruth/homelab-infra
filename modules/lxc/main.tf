@@ -13,16 +13,7 @@ resource "random_password" "root_password" {
   override_special = "!#$%&*()-_=+[]{}<>:?"
 }
 
-resource "null_resource" "container_hostname" {
-  triggers = {
-    hostname = var.lxc_hostname
-  }
-}
-
 resource "proxmox_lxc" "container" {
-  lifecycle {
-    replace_triggered_by = [ null_resource.container_hostname ]
-  }
   features {
     nesting = true
   }
