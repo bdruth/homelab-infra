@@ -4,6 +4,7 @@
   become: yes
   vars:
     dnsdist_conf_path: /etc/dnsdist/dnsdist.conf
+    dnsdist_console_key: "{{ lookup('env', 'DNSDIST_CONSOLE_KEY') }}"
 
   tasks:
     - name: Update apt cache

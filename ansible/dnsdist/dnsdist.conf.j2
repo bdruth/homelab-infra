@@ -1,6 +1,11 @@
 {% for addr in dns_ip_addrs %}
-newServer({address="{{ addr }}"})
+newServer({address="{{ addr }}", useClientSubnet=true, healthCheckMode="lazy"})
 {% endfor %}
-setServerPolicy(firstAvailable)
+setECSSourcePrefixV4(32)
+setECSSourcePrefixV6(128)
+setServerPolicy(whashed)
 setLocal("0.0.0.0")
 addLocal("::")
+controlSocket("{{ ansible_facts.default_ipv4.address }}:5199")
+setConsoleACL("{{ ansible_facts.default_ipv4.address | ansible.utils.ipaddr('network/prefix') }}")
+setKey("{{ dnsdist_console_key }}")
