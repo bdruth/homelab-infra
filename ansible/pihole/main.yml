@@ -38,10 +38,10 @@
       shell: set -o pipefail && curl -L https://install.pi-hole.net | bash /dev/stdin --unattended
       args:
         executable: /usr/bin/bash
-      register: ps
+      register: install
 
-    - debug: var=ps.stdout_lines
-    - debug: var=ps.stderr_lines
+    - debug: var=install.stdout_lines
+    - debug: var=install.stderr_lines
 
     ## Chicken & egg: on initial setup, pihole needs teleporter backup restored to provide these values ...
     ## but to get teleporter backup, needs to lookup local s3 host :/ Hard-coding for now.
@@ -78,5 +78,7 @@
         chmod +x pihole_restore
 
     - name: Restore pihole
-      command: /root/pihole_restore -f /root/pi-hole-pihole-teleporter.tar.gz -c
-      register: ps
+      command: /root/pihole_restore -f /root/pi-hole-pihole-teleporter.tar.gz
+      register: restore
+    - debug: var=restore.stdout_lines
+    - debug: var=restore.stderr_lines
