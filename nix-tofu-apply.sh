@@ -14,18 +14,10 @@ echo "${pihole_blue_tfvars}" > dns/pihole/blue.tfvars
 echo "${pihole_green_tfvars}" > dns/pihole/green.tfvars
 echo "${pihole_default_tfvars}" > dns/pihole/terraform.tfvars
 
-# cat out every .tfbackend and tfvars file, with name
-find . -name '*.tfbackend' -print -or -name '*.tfvars' -print | while read -r f; do
-  echo "--- " "$f"
-  cat "$f"
-done
-
-env
-
 cd dns/pihole || exit
 ./tofu-ns.sh blue plan
 ./tofu-ns.sh green plan
 
-cd ../dns/dns-ha || exit
+cd ../dns-ha || exit
 tofu init
 tofu plan
