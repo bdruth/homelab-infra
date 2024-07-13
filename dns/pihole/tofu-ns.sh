@@ -19,4 +19,9 @@ fi
 
 set -x
 tofu init -backend-config="${TF_VAR_namespace}-config.s3.tfbackend"
-tofu "$@" -var-file=<(cat terraform.tfvars "${TF_VAR_namespace}.tfvars")
+if [[ "$*" =~ "output" ]]
+then
+  tofu "$@"
+else
+  tofu "$@" -var-file=<(cat terraform.tfvars "${TF_VAR_namespace}.tfvars")
+fi
