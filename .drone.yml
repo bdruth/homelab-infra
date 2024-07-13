@@ -1,0 +1,25 @@
+---
+kind: pipeline
+type: docker
+name: build
+
+steps:
+  - name: run terraform apply
+    image: nixos/nix
+    commands:
+      - ./nix-tofu-apply.sh
+    environment:
+      PM_API_TOKEN_SECRET:
+        from_secret: PM_API_TOKEN_SECRET
+      PM_API_TOKEN_ID:
+        from_secret: PM_API_TOKEN_ID
+      AWS_ACCESS_KEY_ID:
+        from_secret: AWS_ACCESS_KEY_ID
+      AWS_SECRET_ACCESS_KEY:
+        from_secret: AWS_SECRET_ACCESS_KEY
+      PIHOLE_WEB_PASSWORD_HASH:
+        from_secret: PIHOLE_WEB_PASSWORD_HASH
+      DNSDIST_CONSOLE_KEY:
+        from_secret: DNSDIST_CONSOLE_KEY
+      
+      
