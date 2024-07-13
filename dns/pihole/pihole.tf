@@ -5,7 +5,7 @@ moved {
 
 
 module "pihole" {
-  source        = "../../../modules/pihole"
+  source        = "../../modules/pihole"
   pihole_suffix = var.namespace
   ip_addr       = var.pihole_ip
 }
