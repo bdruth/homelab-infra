@@ -33,12 +33,12 @@ test_dns () {
 set -e
 cd dns/pihole
 ./tofu-ns.sh blue plan
-test_dns "$(./tofu-ns.sh blue output -raw pihole_ip)"
+test_dns "$(./tofu-ns.sh blue output -raw pihole_ip | tail -n 1)"
 ./tofu-ns.sh green plan
-test_dns "$(./tofu-ns.sh green output -raw pihole_ip)"
+test_dns "$(./tofu-ns.sh green output -raw pihole_ip | tail -n 1)"
 
 cd ../dns-ha
 set -x
 tofu init -backend-config=config.s3.tfbackend
 tofu plan
-test_dns "$(tofu output -raw dns_ha_ip)"
+test_dns "$(tofu output -raw dns_ha_ip | tail -n 1)"
