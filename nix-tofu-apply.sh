@@ -22,12 +22,13 @@ test_dns () {
   for i in {1..5}; do
     echo -n "Try ($i) of 5 to find DNS for google.com: "
     if dig google.com @"$DNS_IP" +short; then
-      break
+      return
     else
       sleep 10
     fi
   done
-  set -x
+  echo "DNS Test Failed"
+  exit 1
 }
 
 set -e
