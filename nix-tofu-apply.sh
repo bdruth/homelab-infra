@@ -20,6 +20,8 @@ find . -name '*.tfbackend' -print -or -name '*.tfvars' -print | while read -r f;
   cat "$f"
 done
 
+env
+
 cd dns/pihole || exit
 ./tofu-ns.sh blue plan
 ./tofu-ns.sh green plan
