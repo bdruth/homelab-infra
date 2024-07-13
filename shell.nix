@@ -8,6 +8,7 @@ pkgs.mkShellNoCC {
     opentofu
     ansible
     netcat
+    dig
   ];
 
   # drone env vars
