@@ -30,8 +30,8 @@ endpoints = {
 key = "<unique-name-of-your-state-file>.tfstate" # Name of the tfstate file
 ```
 
-See [dns-ha/README.md](dns-ha/README.md) for an example `.tfvars` file.
-See [pihole/README.md](pihole/README.md) for an example `.tfvars` file.
+- See [dns/dns-ha/README.md](dns-ha/README.md) for an example `.tfvars` file.
+- See [dns/pihole/README.md](pihole/README.md) for an example `.tfvars` file.
 
 #### Ansible configuration
 
