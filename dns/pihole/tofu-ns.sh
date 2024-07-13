@@ -13,7 +13,7 @@ export TF_VAR_namespace=$1
 shift
 # Verify we have a -config.s3.tfbackend file for this namespace
 if [ ! -f "${TF_VAR_namespace}-config.s3.tfbackend" ]; then
-  echo "No config file (${TF_VAR_namespace}-config.s3.tfbackend) found for namespace: $1" >&2
+  echo "No config file (${TF_VAR_namespace}-config.s3.tfbackend) found for namespace: ${TF_VAR_namespace}" >&2
   exit 1
 fi
 

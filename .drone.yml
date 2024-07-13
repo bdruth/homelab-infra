@@ -4,7 +4,7 @@ type: docker
 name: build
 
 steps:
-  - name: run terraform apply
+  - name: deploy
     image: nixos/nix
     commands:
       - ./nix-tofu-apply.sh
