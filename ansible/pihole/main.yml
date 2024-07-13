@@ -1,10 +1,13 @@
 ---
 - name: Install pihole
   hosts: all
+  vars_files:
+    - vars/main.yml
   become: yes
   vars:
     setupVars_path: /etc/pihole/setupVars.conf
     web_password: "{{ lookup('env', 'PIHOLE_WEB_PASSWORD_HASH') }}"
+    pihole_restore_version: v0.1.0
 
   tasks:
     - name: Update apt cache
@@ -52,33 +55,40 @@
     ## 
     - name: Get synology DNS records from pihole
       shell: |
-        echo "192.168.7.165 synology.cusack-ruth.name"
-      register: synology_hosts_entries
+        echo "{{ s3_api_host_ip }} {{ s3_api_host_name }}"
+      register: s3_api_host_entries
     
     - name: Copy synology hosts entries to /etc/hosts
       blockinfile:
         path: /etc/hosts
-        marker: "{mark} synology"
-        block: "{{ synology_hosts_entries.stdout }}"
+        marker: "{mark} s3_api_host"
+        block: "{{ s3_api_host_entries.stdout }}"
 
     - name: Copy teleporter backup to remote
       amazon.aws.s3_object:
         access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
         secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
-        endpoint_url: http://synology.cusack-ruth.name:9000
-        bucket: homelab-configurations
-        object: pihole/pi-hole-pihole-teleporter.tar.gz
+        endpoint_url: "{{ s3_api_endpoint_url }}"
+        bucket: "{{ s3_teleporter_bucket_name }}"
+        object: "{{ s3_teleporter_object_name }}"
         dest: /root/pi-hole-pihole-teleporter.tar.gz
         mode: get
+      register: teleporter_backup
     
     - name: Download pihole_restore
       shell: |
-        curl -L -O https://github.com/chamilad/pihole-restore/releases/download/v0.1.0/pihole_restore-v0.1.0-linux-x86_64
-        mv pihole_restore-v0.1.0-linux-x86_64 pihole_restore
+        curl -L -o pihole_restore "https://github.com/chamilad/pihole-restore/releases/download/{{ pihole_restore_version }}/pihole_restore-{{ pihole_restore_version }}-linux-x86_64"
         chmod +x pihole_restore
 
     - name: Restore pihole
-      command: /root/pihole_restore -f /root/pi-hole-pihole-teleporter.tar.gz
+      command: /root/pihole_restore -f /root/pi-hole-pihole-teleporter.tar.gz -c
       register: restore
+      when: teleporter_backup.changed
     - debug: var=restore.stdout_lines
     - debug: var=restore.stderr_lines
+
+    - name: Restart pihole-FTL
+      service:
+        name: pihole
+        state: restarted
+      when: restore.changed

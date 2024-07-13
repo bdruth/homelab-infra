@@ -32,3 +32,18 @@ key = "<unique-name-of-your-state-file>.tfstate" # Name of the tfstate file
 
 See [dns-ha/README.md](dns-ha/README.md) for an example `.tfvars` file.
 See [pihole/README.md](pihole/README.md) for an example `.tfvars` file.
+
+#### Ansible configuration
+
+Configuration of the pihole is done via restoring a teleporter backup (from a pre-existing pihole). This backup file is pulled from an S3 bucket as well and requires some configuration in `ansible/pihole/vars/main.yml`
+
+Example:
+```
+---
+s3_api_host_ip: <ip-addr-of-s3-api-host>
+s3_api_host_name: <fqdn-of-s3-api-host>
+s3_api_endpoint_url: "http://{{ s3_api_host_name }}:9000"
+s3_teleporter_bucket_name: <bucket-name-containing-teleporter-backup-file>
+s3_teleporter_object_name: <teleporter-backup-file-name>
+
+```
