@@ -1,5 +1,8 @@
 
 .terraform
-
 .terraform*
+*.tfvars
+*.tfbackend
 .env
+
+*ed25519*
