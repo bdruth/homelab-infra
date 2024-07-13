@@ -19,5 +19,5 @@ cd dns/pihole || exit
 ./tofu-ns.sh green plan
 
 cd ../dns-ha || exit
-tofu init
+tofu init -backend-config=config.s3.backend
 tofu plan
