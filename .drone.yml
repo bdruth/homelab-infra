@@ -43,7 +43,7 @@ steps:
     image: pkgxdev/pkgx
     commands:
       - apt update && apt-get install -y dnsutils
-      - pkgx +tofu +ansible ./deploy.sh
+      - pkgx +tofu^1.7.1 +ansible ./deploy.sh
     environment:
       PM_API_TOKEN_SECRET:
         from_secret: PM_API_TOKEN_SECRET
