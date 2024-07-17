@@ -39,3 +39,11 @@ steps:
         from_secret: pihole_green_tfvars
       pihole_default_tfvars:
         from_secret: pihole_default_tfvars
+  - name: github-action
+    image: plugins/github-actions
+    settings:
+      uses: actions/hello-world-javascript-action@v1.1
+      with:
+          who-to-greet: Mona the Octocat
+      env:
+          hello: world
