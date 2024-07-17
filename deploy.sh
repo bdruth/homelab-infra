@@ -13,6 +13,8 @@ echo "${pihole_blue_tfvars}" > dns/pihole/blue.tfvars
 echo "${pihole_green_tfvars}" > dns/pihole/green.tfvars
 echo "${pihole_default_tfvars}" > dns/pihole/terraform.tfvars
 
+tofu --version
+
 test_dns () {
   set +x
   local DNS_IP="$1";
