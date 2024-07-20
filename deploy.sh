@@ -33,7 +33,7 @@ test_dns () {
 
 set -e
 cd dns/pihole
-./tofu-ns.sh blue plan
+./tofu-ns.sh blue apply --auto-approve
 test_dns "$(./tofu-ns.sh blue output -raw pihole_ip | tail -n 1)"
 ./tofu-ns.sh green plan
 test_dns "$(./tofu-ns.sh green output -raw pihole_ip | tail -n 1)"
