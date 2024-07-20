@@ -34,7 +34,7 @@ resource "proxmox_lxc" "container" {
     replicate = false
     ro        = false
     shared    = false
-    storage   = "local"
+    storage   = "fe3b3982-b346-4780-9c84-75bc50c4d81f"
     size      = "4G"
   }
 
