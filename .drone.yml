@@ -7,7 +7,7 @@ steps:
   - name: pkgx
     image: pkgxdev/pkgx
     commands:
-      - apt update && apt-get install -y dnsutils
+      - apt update && apt-get install -y dnsutils netcat
       - ./pkgx-deploy.sh
     environment:
       PM_API_TOKEN_SECRET:
