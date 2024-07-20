@@ -27,7 +27,7 @@ test_dns () {
       sleep 10
     fi
   done
-  echo "DNS Test Failed"
+  echo "DNS Test Failed for $DNS_IP"
   exit 1
 }
 
