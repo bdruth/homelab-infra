@@ -1,0 +1,80 @@
+#!/bin/bash
+
+set -e
+
+compare_file_list() {
+  local current=$1; shift
+  local new=$1;
+  diff <(find "$current" -type f -printf '%f\n'|sort) <(find "$new" -type f -printf '%f\n'|sort) | wc -l
+}
+
+count_json_files_changed() {
+  local current=$1; shift
+  local new=$1;
+  local files_changed_count=0
+  local files_changed=()
+  cd "$current"
+  while read -r f
+  do 
+  {
+    echo "--- $f"
+    jd -set "$f" "../$new/$f"
+    ec=$?
+    files_changed_count=$((files_changed_count+ec))
+    if [ $ec -eq 1 ]; then files_changed+=("$f"); fi
+  } > /dev/null 2>&1
+  done <<< "$(find . -type f -name '*.json' -print | grep -vE '(client|adlist)\.json')"
+  # Print list of files that were changed
+  echo "Files changed: ${files_changed[*]}" >&2
+  echo "$files_changed_count"
+  cd ..
+}
+
+count_conf_files_changed() {
+  local current=$1; shift
+  local new=$1;
+  local files_changed_count=0
+  local files_changed=()
+  cd "$current"
+  while read -r f
+  do 
+  {
+    echo "--- $f"
+    diff "$f" "../$new/$f"
+    ec=$?
+    files_changed_count=$((files_changed_count+ec))
+    if [ $ec -eq 1 ]; then files_changed+=("$f"); fi
+  } > /dev/null 2>&1
+  done <<< "$(find . -type f -not -name '*.json' -print)"
+  # Print list of files that were changed
+  echo "Files changed: ${files_changed[*]}" >&2
+  echo "$files_changed_count"
+  cd ..
+}
+
+TMP_DIR=$(mktemp -d)
+cd "$TMP_DIR"
+# shellcheck disable=SC2154
+# aws s3 cp with path style bucket reference
+aws s3 cp "s3://{{ s3_teleporter_bucket_name }}/{{ s3_teleporter_object_name }}" ./pi-hole-pihole-teleporter.tar.gz
+
+mkdir -p current && cd current
+tar -xf ../pi-hole-pihole-teleporter.tar.gz && rm -f  ../pi-hole-pihole-teleporter.tar.gz && cd ..
+
+# generate new teleporter backup
+pihole -a -t
+mkdir -p new && cd new
+tar -xf ../pi-hole*tar.gz && cd ..
+
+changes=0
+rv=$(compare_file_list current new)
+changes=$((changes+rv))
+rv=$(count_json_files_changed current new)
+changes=$((changes+rv))
+rv=$(count_conf_files_changed current new)
+changes=$((changes+rv))
+if [ $changes -gt 0 ]
+then 
+  echo "Found changes: $changes, upload new backup..."
+  aws s3 cp pi-hole*.tar.gz "s3://{{ s3_teleporter_bucket_name }}/{{ s3_teleporter_object_name }}"
+fi
