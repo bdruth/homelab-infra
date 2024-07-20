@@ -8,6 +8,7 @@
     setupVars_path: /etc/pihole/setupVars.conf
     web_password: "{{ lookup('env', 'PIHOLE_WEB_PASSWORD_HASH') }}"
     pihole_restore_version: v0.1.0
+    aws_config_path: /root/.aws/config
 
   tasks:
     - name: Update apt cache
@@ -81,7 +82,7 @@
         chmod +x pihole_restore
 
     - name: Restore pihole
-      command: /root/pihole_restore -f /root/pi-hole-pihole-teleporter.tar.gz -c
+      command: /root/pihole_restore -f /root/pi-hole-pihole-teleporter.tar.gz --filters blacklist,blacklistregex,whitelist,whitelistregex,adlist,auditlog,client,staticdhcp,localdns,localcname -c
       register: restore
       when: teleporter_backup.changed
     - debug: var=restore.stdout_lines
@@ -89,6 +90,47 @@
 
     - name: Restart pihole-FTL
       service:
-        name: pihole
+        name: pihole-FTL
         state: restarted
       when: restore.changed
+
+    - name: Make sure destination dir exists
+      file:
+        path: "{{ aws_config_path | dirname }}"
+        state: directory
+
+    - name: Download jd json diff tool
+      get_url:
+        url: "https://github.com/josephburnett/jd/releases/download/v1.8.1/jd-amd64-linux"
+        dest: "/usr/bin/jd"
+        mode: 0755
+
+    - name: Download awscliv2
+      get_url:
+        url: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
+        dest: "/root/awscliv2.zip"
+        mode: 0644
+      register: awscliv2
+
+    - name: Install awscli
+      shell: |
+        unzip awscliv2.zip
+        ./aws/install --bin-dir /usr/bin --install-dir /usr/aws-cli --update
+        rm -rf aws awscliv2.zip
+      when: awscliv2.changed
+
+    - name: Install ~/.aws/config
+      template:
+        src: aws_config.j2
+        dest: "{{ aws_config_path }}"
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Install ~/backup.sh
+      template:
+        src: backup.sh.j2
+        dest: "/root/backup.sh"
+        owner: root
+        group: root
+        mode: '0755'
