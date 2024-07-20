@@ -2,4 +2,4 @@
 #! nix-shell -i bash --pure
 # shellcheck shell=bash
 
-./deploy.sh
+./deploy.sh "$@"
