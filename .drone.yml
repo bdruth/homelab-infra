@@ -4,46 +4,11 @@ type: docker
 name: build
 
 steps:
-  # - name: deploy
-  #   image: nixos/nix
-  #   commands:
-  #     - ./nix-tofu-apply.sh
-  #   environment:
-  #     PM_API_TOKEN_SECRET:
-  #       from_secret: PM_API_TOKEN_SECRET
-  #     PM_API_TOKEN_ID:
-  #       from_secret: PM_API_TOKEN_ID
-  #     AWS_ACCESS_KEY_ID:
-  #       from_secret: AWS_ACCESS_KEY_ID
-  #     AWS_SECRET_ACCESS_KEY:
-  #       from_secret: AWS_SECRET_ACCESS_KEY
-  #     PIHOLE_WEB_PASSWORD_HASH:
-  #       from_secret: PIHOLE_WEB_PASSWORD_HASH
-  #     DNSDIST_CONSOLE_KEY:
-  #       from_secret: DNSDIST_CONSOLE_KEY
-  #     ansible_pihole_vars_main_yml:
-  #       from_secret: ansible_pihole_vars_main_yml
-  #     common_tfbackend:
-  #       from_secret: common_tfbackend
-  #     dnsdist_tfstate_key:
-  #       from_secret: dnsdist_tfstate_key
-  #     blue_pihole_tfstate_key:
-  #       from_secret: blue_pihole_tfstate_key
-  #     green_pihole_tfstate_key:
-  #       from_secret: green_pihole_tfstate_key
-  #     dnsdist_tfvars:
-  #       from_secret: dnsdist_tfvars
-  #     pihole_blue_tfvars:
-  #       from_secret: pihole_blue_tfvars
-  #     pihole_green_tfvars:
-  #       from_secret: pihole_green_tfvars
-  #     pihole_default_tfvars:
-  #       from_secret: pihole_default_tfvars
   - name: pkgx
     image: pkgxdev/pkgx
     commands:
       - apt update && apt-get install -y dnsutils
-      - pkgx +tofu^1.7.1 +ansible +curl.se/ca-certs ./deploy.sh
+      - ./pkgx-deploy.sh
     environment:
       PM_API_TOKEN_SECRET:
         from_secret: PM_API_TOKEN_SECRET
