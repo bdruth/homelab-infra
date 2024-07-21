@@ -8,6 +8,10 @@ steps:
     image: pkgxdev/pkgx
     commands:
       - apt update && apt-get install -y dnsutils netcat
+      - mkdir -p ~/.ssh
+      - echo "$drone_ssh_priv_key" > ~/.ssh/id_rsa
+      - chmod -R 700 ~/.ssh
+      - chmod 600 ~/.ssh/id_rsa
       - ./pkgx-deploy.sh
     environment:
       PM_API_TOKEN_SECRET:
@@ -40,3 +44,5 @@ steps:
         from_secret: pihole_green_tfvars
       pihole_default_tfvars:
         from_secret: pihole_default_tfvars
+      drone_ssh_priv_key:
+        from_secret: drone_ssh_priv_key
