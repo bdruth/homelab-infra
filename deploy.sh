@@ -1,8 +1,8 @@
 #!/bin/bash
+# shellcheck disable=SC2154
 
 ansible-galaxy collection install amazon.aws
 
-# shellcheck disable=SC2154
 echo "${ansible_pihole_vars_main_yml}" > ansible/pihole/vars/main.yml
 echo "${common_tfbackend}" > dns/dns-ha/config.s3.tfbackend
 echo "${common_tfbackend}" > dns/pihole/blue-config.s3.tfbackend
@@ -37,7 +37,7 @@ set -e
 cd dns/pihole
 ./tofu-ns.sh blue apply --auto-approve
 test_dns "$(./tofu-ns.sh blue output -raw pihole_ip | tail -n 1)"
-./tofu-ns.sh green plan
+./tofu-ns.sh green apply --auto-approve
 test_dns "$(./tofu-ns.sh green output -raw pihole_ip | tail -n 1)"
 
 cd ../dns-ha
