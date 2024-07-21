@@ -3,6 +3,11 @@ moved {
   to   = module.dns_ha_lxc
 }
 
+moved {
+  from = null_resource.install_dnsdist_tmp
+  to   = null_resource.install_dnsdist
+}
+
 # module "dns_ha_lxc_tmp" {
 #   source = "../../modules/lxc"
 #   lxc_hostname = "dns-ha-new"
