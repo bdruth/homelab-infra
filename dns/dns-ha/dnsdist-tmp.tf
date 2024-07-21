@@ -6,7 +6,7 @@ module "dns_ha_lxc_tmp" {
   lxc_memory = "512"
 }
 
-resource "null_resource" "install_dnsdist" {
+resource "null_resource" "install_dnsdist_tmp" {
   triggers = {
     dnsdist_conf_hash    = filesha256("${path.module}/../../ansible/dnsdist/dnsdist.conf.j2")
     ansible_conf_hash = filesha256("${path.module}/../../ansible/dnsdist/main.yml")
@@ -24,6 +24,6 @@ resource "null_resource" "install_dnsdist" {
   }
 }
 
-output "dns_ha_ip" {
+output "dns_ha_ip_tmp" {
   value = module.dns_ha_lxc_tmp.lxc_ip_addr
 }
