@@ -1,7 +1,7 @@
 module "dns_ha_lxc" {
   source = "../../modules/lxc"
   lxc_hostname = "dns-ha"
-  lxc_ip_addr = var.dns_ip_addr
+  lxc_ip_addr = "192.168.7.6"
   lxc_gw_addr = var.gw_addr
   lxc_memory = "512"
   lxc_storage_pool = "local"
