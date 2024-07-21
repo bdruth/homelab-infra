@@ -49,3 +49,4 @@ set -x
 tofu init -backend-config=config.s3.tfbackend
 tofu apply --auto-approve
 test_dns "$(tofu output -raw dns_ha_ip | tail -n 1)"
+test_dns "$(tofu output -raw dns_ha_ip_tmp | tail -n 1)"
