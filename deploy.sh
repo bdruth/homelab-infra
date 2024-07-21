@@ -1,5 +1,7 @@
 #!/bin/bash
 
+ansible-galaxy collection install amazon.aws
+
 # shellcheck disable=SC2154
 echo "${ansible_pihole_vars_main_yml}" > ansible/pihole/vars/main.yml
 echo "${common_tfbackend}" > dns/dns-ha/config.s3.tfbackend
