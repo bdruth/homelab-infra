@@ -1,7 +1,7 @@
 module "dns_ha_lxc_tmp" {
   source = "../../modules/lxc"
   lxc_hostname = "dns-ha-new"
-  lxc_ip_addr = "192.168.7.5"
+  lxc_ip_addr = var.dns_ip_addr
   lxc_gw_addr = var.gw_addr
   lxc_memory = "512"
 }
