@@ -7,12 +7,12 @@
 #   lxc_storage_pool = "local"
 # }
 
-# locals {
-#   dns_ip_addrs = [
-#     data.terraform_remote_state.pihole_blue.outputs.pihole_ip,
-#     data.terraform_remote_state.pihole_green.outputs.pihole_ip
-#   ]
-# }
+locals {
+  dns_ip_addrs = [
+    data.terraform_remote_state.pihole_blue.outputs.pihole_ip,
+    data.terraform_remote_state.pihole_green.outputs.pihole_ip
+  ]
+}
 
 # resource "null_resource" "install_dnsdist" {
 #   triggers = {
