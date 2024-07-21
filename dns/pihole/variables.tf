@@ -32,3 +32,8 @@ variable "namespace" {
   description = "Namespace differentiator [blue|green]"
   type = string
 }
+
+variable "ssh_public_keys" {
+  description = "SSH public key(s) to install in LXC"
+  type        = string
+}

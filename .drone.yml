@@ -9,9 +9,9 @@ steps:
     commands:
       - apt-get update && apt-get install -y dnsutils netcat
       - mkdir -p ~/.ssh
-      - echo "$drone_ssh_priv_key" > ~/.ssh/id_rsa
+      - echo "$drone_ssh_priv_key" > ~/.ssh/id
       - chmod -R 700 ~/.ssh
-      - chmod 600 ~/.ssh/id_rsa
+      - chmod 600 ~/.ssh/id
       - ./pkgx-deploy.sh
     environment:
       PM_API_TOKEN_SECRET:

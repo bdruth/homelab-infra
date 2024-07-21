@@ -9,12 +9,16 @@ docker run -it -v $(pwd):/workdir -w /workdir nixos/nix
 
 `opentofu`, `ansible`, and `netcat` will be installed automatically by nixOS, via the `shell.nix` configuration.
 
+_*NOTE*_: ci/cd uses [pkgx](https://pkgx.sh) instead of `nix` currently.
+
 ## IaC states
 
 1. `dns/dns-ha`
 2. `dns/pihole`
 
 Run `tofu [init|plan|apply]` as you would `terraform` commands. The `pihole` folder has a `tofu-ns.sh` script that supports applying the `blue` or `green` state, just run `./tofu-ns.sh [blue|green] <tofu commands>` instead of a straight `tofu` command.
+
+See [deploy.sh](deploy.sh) for more information on how to deploy.
 
 ### Configurations
 

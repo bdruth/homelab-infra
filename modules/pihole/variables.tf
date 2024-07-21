@@ -13,3 +13,8 @@ variable "gw_addr" {
   type        = string
   default     = "192.168.7.1"
 }
+
+variable "ssh_public_keys" {
+  description = "SSH public key(s) to install in LXC"
+  type        = string
+}
