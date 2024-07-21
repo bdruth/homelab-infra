@@ -47,7 +47,7 @@ test_dns "$(./tofu-ns.sh green output -raw pihole_ip | tail -n 1)"
 cd ../dns-ha
 set -x
 tofu init -backend-config=config.s3.tfbackend
-# tofu plan
-tofu apply --auto-approve
-# test_dns "$(tofu output -raw dns_ha_ip | tail -n 1)"
-test_dns "$(tofu output -raw dns_ha_ip_tmp | tail -n 1)"
+tofu plan
+# tofu apply --auto-approve
+test_dns "$(tofu output -raw dns_ha_ip | tail -n 1)"
+# test_dns "$(tofu output -raw dns_ha_ip_tmp | tail -n 1)"
