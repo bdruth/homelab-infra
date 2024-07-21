@@ -2,6 +2,7 @@
 # shellcheck disable=SC2154
 
 ansible-galaxy collection install amazon.aws ansible.utils
+pip install netaddr
 
 echo "${ansible_pihole_vars_main_yml}" > ansible/pihole/vars/main.yml
 echo "${common_tfbackend}" > dns/dns-ha/config.s3.tfbackend

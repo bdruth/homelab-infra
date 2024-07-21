@@ -7,7 +7,7 @@ steps:
   - name: pkgx
     image: pkgxdev/pkgx
     commands:
-      - apt-get update && apt-get install -y dnsutils netcat python-netaddr
+      - apt-get update && apt-get install -y dnsutils netcat
       - mkdir -p ~/.ssh
       - echo "$drone_ssh_priv_key" > ~/.ssh/id_rsa
       - chmod -R 700 ~/.ssh
