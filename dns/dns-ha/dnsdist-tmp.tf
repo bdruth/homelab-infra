@@ -6,14 +6,6 @@ module "dns_ha_lxc_tmp" {
   lxc_memory = "512"
 }
 
-
-locals {
-  dns_ip_addrs = [
-    data.terraform_remote_state.pihole_blue.outputs.pihole_ip,
-    data.terraform_remote_state.pihole_green.outputs.pihole_ip
-  ]
-}
-
 resource "null_resource" "install_dnsdist" {
   triggers = {
     dnsdist_conf_hash    = filesha256("${path.module}/../../ansible/dnsdist/dnsdist.conf.j2")
