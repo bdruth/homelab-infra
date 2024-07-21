@@ -3,6 +3,7 @@ module "pihole_lxc" {
   lxc_hostname = "pihole-${var.pihole_suffix}"
   lxc_ip_addr = var.ip_addr
   lxc_gw_addr = "192.168.7.1"
+  ssh_public_keys = var.ssh_public_keys
 }
 
 data "http" "pihole_latest_release" {
@@ -31,7 +32,7 @@ resource "null_resource" "run_ansible_playbook" {
     working_dir = path.module
   }
   provisioner "local-exec" {
-    command     = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${module.pihole_lxc.lxc_ip_addr},' -u root --private-key ~/.ssh/id_rsa ../../ansible/pihole/main.yml"
+    command     = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${module.pihole_lxc.lxc_ip_addr},' -u root --private-key ~/.ssh/id ../../ansible/pihole/main.yml"
     working_dir = path.module
   }
 }
