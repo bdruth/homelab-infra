@@ -17,7 +17,7 @@ data "aws_s3_object" "pihole_teleporter_backup" {
 
 locals {
   pihole_latest_release = jsondecode(data.http.pihole_latest_release.response_body).name
-  install_backup = var.install_backup_crontab ? "-e {\"install_backup_crontab\": true}" : ""
+  install_backup = var.install_backup_crontab ? "-e '{\"install_backup_crontab\": true}'" : ""
 }
 
 resource "null_resource" "run_ansible_playbook" {
