@@ -18,3 +18,8 @@ variable "ssh_public_keys" {
   description = "SSH public key(s) to install in LXC"
   type        = string
 }
+
+variable "ssh_priv_key_path" {
+  description = "path to SSH private key"
+  type = string
+}
