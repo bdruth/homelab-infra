@@ -62,7 +62,7 @@ mkdir -p current && cd current
 tar -xf ../pi-hole-pihole-teleporter.tar.gz && rm -f  ../pi-hole-pihole-teleporter.tar.gz && cd ..
 
 # generate new teleporter backup
-pihole -a -t
+/usr/local/bin/pihole -a -t
 mkdir -p new && cd new
 tar -xf ../pi-hole*tar.gz && cd ..
 
