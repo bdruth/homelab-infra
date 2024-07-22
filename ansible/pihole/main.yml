@@ -141,3 +141,4 @@
         name: "Backup pihole configuration"
         minute: '*/15'
         job: "/root/backup.sh"
+      when: install_backup_crontab
