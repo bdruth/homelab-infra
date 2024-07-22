@@ -26,6 +26,7 @@ resource "null_resource" "run_ansible_playbook" {
     teleporter_backup_hash = data.aws_s3_object.pihole_teleporter_backup.etag
     container_change = module.pihole_lxc.lxc_id
     ansible_changes = sha1(join("", [for f in sort(fileset("${path.module}/../../ansible/pihole", "**")): filesha1("${path.module}/../../ansible/pihole/${f}")]))
+    install_backup = local.install_backup
   }
 
   provisioner "local-exec" {
