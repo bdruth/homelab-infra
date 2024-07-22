@@ -23,3 +23,9 @@ variable "ssh_priv_key_path" {
   description = "path to SSH private key"
   type = string
 }
+
+variable "install_backup_crontab" {
+  description = "Install backup crontab"
+  default     = false
+  type        = bool
+}
