@@ -37,3 +37,9 @@ variable "ssh_public_keys" {
   description = "SSH public key(s) to install in LXC"
   type        = string
 }
+
+variable "install_backup_crontab" {
+  description = "Install backup crontab"
+  default     = false
+  type        = bool
+}
