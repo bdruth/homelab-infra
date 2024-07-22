@@ -9,6 +9,7 @@
     web_password: "{{ lookup('env', 'PIHOLE_WEB_PASSWORD_HASH') }}"
     pihole_restore_version: v0.1.0
     aws_config_path: /root/.aws/config
+    install_backup_crontab: False
 
   tasks:
     - name: Update apt cache
@@ -134,3 +135,9 @@
         owner: root
         group: root
         mode: '0755'
+
+    - name: Install backup crontab
+      cron:
+        name: "Backup pihole configuration"
+        minute: '*/15'
+        job: "/root/backup.sh"
