@@ -142,4 +142,3 @@
         minute: '*/15'
         job: "/root/backup.sh"
         state: "{{ 'present' if install_backup_crontab else 'absent' }}"
-      when: install_backup_crontab
