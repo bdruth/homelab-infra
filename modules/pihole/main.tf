@@ -24,7 +24,7 @@ resource "null_resource" "run_ansible_playbook" {
     pihole_version    = local.pihole_latest_release
     teleporter_backup_hash = data.aws_s3_object.pihole_teleporter_backup.etag
     container_change = module.pihole_lxc.lxc_id
-    ansible_changes = sha1(join("", [for f in fileset("${path.module}/../../ansible/pihole", "**"): filesha1("${path.module}/../../ansible/pihole/${f}")]))
+    ansible_changes = sha1(join("", [for f in sort(fileset("${path.module}/../../ansible/pihole", "**")): filesha1("${path.module}/../../ansible/pihole/${f}")]))
   }
 
   provisioner "local-exec" {
@@ -32,7 +32,7 @@ resource "null_resource" "run_ansible_playbook" {
     working_dir = path.module
   }
   provisioner "local-exec" {
-    command     = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${module.pihole_lxc.lxc_ip_addr},' -u root --private-key ~/.ssh/id ../../ansible/pihole/main.yml"
+    command     = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${module.pihole_lxc.lxc_ip_addr},' -u root --private-key '${var.ssh_priv_key_path}' ../../ansible/pihole/main.yml"
     working_dir = path.module
   }
 }
