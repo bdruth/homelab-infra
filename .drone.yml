@@ -46,3 +46,27 @@ steps:
         from_secret: pihole_default_tfvars
       drone_ssh_priv_key:
         from_secret: drone_ssh_priv_key
+
+---
+kind: pipeline
+name: notify-on-fail
+
+steps:
+- name: pushover
+  # this is a fork of plugins/pushover, which currently throws an error
+  # https://github.com/drone-plugins/drone-pushover/issues/17
+  # https://github.com/drone/drone-template-lib/pull/13
+  image: tmacro/drone-pushover
+  settings:
+    token: 
+      from_secret: PUSHOVER_TOKEN
+    user: 
+      from_secret: PUSHOVER_USER_ID
+    message: "{{ repo.name }} - Pipeline Failure"
+
+trigger:
+  status:
+    - failure
+
+depends_on:
+- pkgx
