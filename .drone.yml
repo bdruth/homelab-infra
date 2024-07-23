@@ -49,6 +49,7 @@ steps:
 
 ---
 kind: pipeline
+type: docker
 name: notify-on-fail
 
 steps:
