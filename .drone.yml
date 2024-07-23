@@ -70,4 +70,4 @@ trigger:
     - failure
 
 depends_on:
-- pkgx
+- build
