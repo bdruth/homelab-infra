@@ -5,7 +5,8 @@ name: build
 
 steps:
   - name: pkgx
-    image: pkgxdev/pkgx
+    # image: pkgxdev/pkgx
+    image: 4548739934a8
     commands:
       - apt-get update && apt-get install -y dnsutils netcat
       - mkdir -p ~/.ssh
@@ -57,7 +58,8 @@ steps:
   # this is a fork of plugins/pushover, which currently throws an error
   # https://github.com/drone-plugins/drone-pushover/issues/17
   # https://github.com/drone/drone-template-lib/pull/13
-  image: tmacro/drone-pushover
+  # image: tmacro/drone-pushover
+  image: cdce1c61c005
   settings:
     token: 
       from_secret: PUSHOVER_TOKEN
