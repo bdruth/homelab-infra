@@ -6,7 +6,7 @@ name: build
 steps:
   - name: pkgx
     # image: pkgxdev/pkgx
-    image: 4548739934a8
+    image: pkgxdev/pkgx@sha256:610bbc17475cb174c5e6a8a9e3cdf39decb93c552fa073542b6f593255e1cb0c
     commands:
       - apt-get update && apt-get install -y dnsutils netcat
       - mkdir -p ~/.ssh
@@ -59,7 +59,7 @@ steps:
   # https://github.com/drone-plugins/drone-pushover/issues/17
   # https://github.com/drone/drone-template-lib/pull/13
   # image: tmacro/drone-pushover
-  image: cdce1c61c005
+  image: tmacro/drone-pushover@sha256:0a60ff10cd77fee59444571c827c278faa8c18afc1950e40558c5692d6518125
   settings:
     token: 
       from_secret: PUSHOVER_TOKEN
