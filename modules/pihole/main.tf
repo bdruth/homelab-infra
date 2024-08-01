@@ -4,6 +4,7 @@ module "pihole_lxc" {
   lxc_ip_addr = var.ip_addr
   lxc_gw_addr = "192.168.7.1"
   ssh_public_keys = var.ssh_public_keys
+  lxc_onboot = true
 }
 
 data "http" "pihole_latest_release" {

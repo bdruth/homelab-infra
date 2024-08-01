@@ -30,3 +30,9 @@ variable "lxc_storage_pool" {
   type         = string
   default      = "fe3b3982-b346-4780-9c84-75bc50c4d81f"
 }
+
+variable "lxc_onboot" {
+  description = "LXC containers starts on boot of proxmox, true or false"
+  type          = bool
+  default       = false
+}
