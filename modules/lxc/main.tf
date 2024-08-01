@@ -42,6 +42,7 @@ resource "proxmox_lxc" "container" {
   password        = random_password.root_password.result
   ssh_public_keys = var.ssh_public_keys
   start           = true
+  onboot          = var.lxc_onboot
   pool            = "terraform-prov-pool"
   target_node     = "proxmox-main"
   unprivileged    = true
