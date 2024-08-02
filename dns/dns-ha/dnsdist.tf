@@ -4,6 +4,7 @@ module "dns_ha_lxc" {
   lxc_ip_addr = var.dns_ip_addr
   lxc_gw_addr = var.gw_addr
   lxc_memory = "512"
+  lxc_onboot = true
 }
 
 locals {
