@@ -5,6 +5,7 @@ module "pihole_lxc" {
   lxc_gw_addr = "192.168.7.1"
   ssh_public_keys = var.ssh_public_keys
   lxc_onboot = true
+  lxc_rootfs_size = "8G"
 }
 
 data "http" "pihole_latest_release" {

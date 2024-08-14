@@ -36,3 +36,9 @@ variable "lxc_onboot" {
   type          = bool
   default       = false
 }
+
+variable "lxc_rootfs_size" {
+  description = "Size of the rootfs in GB for LXC containers. Default is 4GB."
+  type       = string
+  default    = "4G"
+}

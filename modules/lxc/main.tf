@@ -35,7 +35,7 @@ resource "proxmox_lxc" "container" {
     ro        = false
     shared    = false
     storage   = var.lxc_storage_pool
-    size      = "4G"
+    size      = var.lxc_rootfs_size
   }
 
   ostemplate      = "f39ac8b4-7319-42ec-b12e-dd3d4d98a85f:vztmpl/debian-12-standard_12.2-1_amd64.tar.zst"
