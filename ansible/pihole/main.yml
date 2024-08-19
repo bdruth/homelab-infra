@@ -95,6 +95,12 @@
         state: restarted
       when: restore.changed
 
+    - name: Run unattended `pihole -r`
+      command: /etc/.pihole/automated\ install/basic-install.sh --reconfigure --unattended
+      register: reconfigure
+    - debug: var=reconfigure.stdout_lines
+    - debug: var=reconfigure.stderr_lines
+
     - name: Make sure destination dir exists
       file:
         path: "{{ aws_config_path | dirname }}"
