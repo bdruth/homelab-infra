@@ -98,6 +98,8 @@
     - name: Run unattended `pihole -r`
       command: /etc/.pihole/automated\ install/basic-install.sh --reconfigure --unattended
       register: reconfigure
+      tags:
+        - maintenance
     - debug: var=reconfigure.stdout_lines
     - debug: var=reconfigure.stderr_lines
 
