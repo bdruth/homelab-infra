@@ -40,3 +40,20 @@ resource "null_resource" "run_ansible_playbook" {
     working_dir = path.module
   }
 }
+
+resource "null_resource" "run_ansible_maintenance_tag" {
+  triggers = {
+    always_run = "${timestamp()}"
+  }
+  depends_on = [ null_resource.run_ansible_playbook ]
+
+  provisioner "local-exec" {
+    command     = "until nc -zv ${module.pihole_lxc.lxc_ip_addr} 22; do echo 'Waiting for SSH to be available...'; sleep 5; done"
+    working_dir = path.module
+  }
+  provisioner "local-exec" {
+    command     = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${module.pihole_lxc.lxc_ip_addr},' -u root --private-key '${var.ssh_priv_key_path}' ${local.install_backup} ../../ansible/pihole/main.yml --tags maintenance"
+    working_dir = path.module
+  }
+}
+
