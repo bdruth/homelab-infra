@@ -101,7 +101,11 @@
       tags:
         - maintenance
     - debug: var=reconfigure.stdout_lines
+      tags:
+        - maintenance
     - debug: var=reconfigure.stderr_lines
+      tags:
+        - maintenance
 
     - name: Make sure destination dir exists
       file:
