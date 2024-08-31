@@ -25,10 +25,15 @@ tofu --version
 test_dns () {
   set +x
   local DNS_IP="$1";
-  # Use dig to look up DNS for google.com, on error, loop 5 times and wait 10 seconds between each
+  # Use dig to look up DNS for api.github.com, on error, loop 5 times and wait 10 seconds between each
   for i in {1..5}; do
-    echo -n "Try ($i) of 5 to find DNS for google.com: "
-    if dig google.com @"$DNS_IP" +short; then
+    echo -n "Try ($i) of 5 to find DNS for api.github.com: "
+    # Check provided IP
+    if dig api.github.com @"$DNS_IP" +short; then
+      # Check default lookup
+      if dig api.github.com +short; then
+        return
+      fi
       return
     else
       sleep 10
