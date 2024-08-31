@@ -27,6 +27,19 @@
 --
 -- Please report any bugs on GitHub.
 
+function dump(o)
+  if type(o) == 'table' then
+     local s = '{ '
+     for k,v in pairs(o) do
+        if type(k) ~= 'number' then k = '"'..k..'"' end
+        s = s .. '['..k..'] = ' .. dump(v) .. ','
+     end
+     return s .. '} '
+  else
+     return tostring(o)
+  end
+end
+
 function orderedwrandom(servers, dq)
 
 	-- If there is only one or 0 servers in the table, return it to stop further processing
@@ -78,6 +91,8 @@ function orderedwrandom(servers, dq)
 	-- list.
 	if serverlist[lowest] == nil then
     print("Using any server, lowest: " .. lowest)
+    print("servers: " .. dump(servers))
+    print("serverlist: ".. dump(serverlist))
 		return wrandom.policy(servers, dq)
 	end
 
