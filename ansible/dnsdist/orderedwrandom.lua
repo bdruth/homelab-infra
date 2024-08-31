@@ -77,10 +77,13 @@ function orderedwrandom(servers, dq)
 	-- ever happen, but you can't be too safe. If it has no value, then return the server
 	-- list.
 	if serverlist[lowest] == nil then
+    print("Using any server, lowest: " .. lowest)
 		return wrandom.policy(servers, dq)
 	end
 
 	-- Return the lowest ordered server list to the leastOutstanding function
+  print("Using servers from lowest order: " .. lowest)
+  print(serverlist[lowest])
 	return wrandom.policy(serverlist[lowest], dq)
 
 end
