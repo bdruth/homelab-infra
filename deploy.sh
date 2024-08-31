@@ -18,6 +18,7 @@ echo "${dnsdist_tfvars}" > dns/dns-ha/terraform.tfvars
 echo "${pihole_blue_tfvars}" > dns/pihole/blue.tfvars
 echo "${pihole_green_tfvars}" > dns/pihole/green.tfvars
 echo "${pihole_default_tfvars}" > dns/pihole/terraform.tfvars
+echo "${dnsdist_ansible_vars}" > ansible/dnsdist/vars/main.yml
 
 tofu --version
 

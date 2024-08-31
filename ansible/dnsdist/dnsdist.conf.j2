@@ -1,9 +1,13 @@
+dofile('/etc/dnsdist/orderedwrandom.lua')
+setServerPolicyLua("orderedwrandom", orderedwrandom)
 {% for addr in dns_ip_addrs %}
-newServer({address="{{ addr }}", useClientSubnet=true, healthCheckMode="lazy"})
+newServer({address="{{ addr }}", name="dns{{ loop.index }}", order=1, mustResolve=true, tcpRecvTimeout=10, tcpSendTimeout=10, retries=5, useClientSubnet=true, healthCheckMode="lazy"})
+{% endfor %}
+{% for server in static_dns_ip_addrs  %}
+newServer({address="{{ server.address }}", name="{{ server.name }}", order={{ server.order }}, mustResolve=true, useClientSubnet=true, healthCheckMode="lazy"})
 {% endfor %}
 setECSSourcePrefixV4(32)
 setECSSourcePrefixV6(128)
-setServerPolicy(whashed)
 setLocal("0.0.0.0")
 addLocal("::")
 controlSocket("{{ ansible_facts.default_ipv4.address }}:5199")

@@ -47,6 +47,8 @@ steps:
         from_secret: pihole_default_tfvars
       drone_ssh_priv_key:
         from_secret: drone_ssh_priv_key
+      dnsdist_ansible_vars:
+        from_secret: dnsdist_ansible_vars
 
 ---
 kind: pipeline
