@@ -16,8 +16,7 @@ locals {
 
 resource "null_resource" "install_dnsdist" {
   triggers = {
-    dnsdist_conf_hash    = filesha256("${path.module}/../../ansible/dnsdist/dnsdist.conf.j2")
-    ansible_conf_hash = filesha256("${path.module}/../../ansible/dnsdist/main.yml")
+    ansible_changes = sha1(join("", [for f in sort(fileset("${path.module}/../../ansible/dnsdist", "**")): filesha1("${path.module}/../../ansible/dnsdist/${f}")]))
     container_change = module.dns_ha_lxc.lxc_id
     dns_ip_addrs = jsonencode(local.dns_ip_addrs)
   }
