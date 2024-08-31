@@ -2,6 +2,8 @@
 - name: Setup dnsdist
   hosts: all
   become: yes
+  vars_files:
+    - vars/main.yml
   vars:
     dnsdist_conf_path: /etc/dnsdist/dnsdist.conf
     custom_lua_path: /etc/dnsdist
