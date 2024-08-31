@@ -4,6 +4,7 @@
   become: yes
   vars:
     dnsdist_conf_path: /etc/dnsdist/dnsdist.conf
+    custom_lua_path: /etc/dnsdist
     dnsdist_console_key: "{{ lookup('env', 'DNSDIST_CONSOLE_KEY') }}"
 
   tasks:
@@ -18,7 +19,7 @@
           - net-tools
         state: latest
 
-    - name: Make sure destination dir exists
+    - name: Make sure dnsdist.conf destination dir exists
       file:
         path: "{{ dnsdist_conf_path | dirname }}"
         state: directory
@@ -32,11 +33,25 @@
         mode: '0644'
       register: dnsdist_conf
 
+    - name: Make sure custom lua path dir exists
+      file:
+        path: "{{ custom_lua_path }}"
+        state: directory
+
+    - name: Create orderedwrandom Lua policy
+      copy:
+        src: orderedwrandom.lua
+        dest: "{{ custom_lua_path }}/orderedwrandom.lua"
+        owner: root
+        group: root
+        mode: '0644'
+      register: orderedwrandom_lua
+
     - name: restart dnsdist
       service:
         name: dnsdist
         state: restarted
-      when: dnsdist_conf.changed
+      when: dnsdist_conf.changed or orderedwrandom_lua.changed
 
     - name: Print all available facts
       ansible.builtin.debug:
