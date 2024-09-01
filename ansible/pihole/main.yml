@@ -107,6 +107,13 @@
       tags:
         - maintenance
 
+    - name: Ensure pihole-FTL is started
+      service:
+        name: pihole-FTL
+        state: started
+      tags:
+        - maintenance
+
     - name: Make sure destination dir exists
       file:
         path: "{{ aws_config_path | dirname }}"
