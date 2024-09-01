@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 rm -rf .terraform/terraform.tfstate
 
 # Check for minimum of two arguments
