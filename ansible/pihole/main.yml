@@ -139,6 +139,12 @@
         rm -rf aws awscliv2.zip
       when: awscliv2.changed
 
+    - name: Cleanup old awscli versions
+      shell: |
+        current_version=$(basename `ls -l /usr/aws-cli/v2/current | awk '{print $NF}'` | sed -r 's/\./\\./g')
+        ls /usr/aws-cli/v2/ | grep -vE "(current|$current_version)" | xargs -I {} rm -rf /usr/aws-cli/v2/{}
+      when: awscliv2.changed
+
     - name: Install ~/.aws/config
       template:
         src: aws_config.j2
