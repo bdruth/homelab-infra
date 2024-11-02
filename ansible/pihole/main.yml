@@ -89,15 +89,15 @@
     - debug: var=restore.stdout_lines
     - debug: var=restore.stderr_lines
 
-    - name: Pause?
-      pause:
-        seconds: 5
+    # - name: Pause?
+    #   pause:
+    #     seconds: 5
 
-    - name: Restart pihole-FTL
-      service:
-        name: pihole-FTL
-        state: restarted
-      when: restore.changed
+    # - name: Restart pihole-FTL
+    #   service:
+    #     name: pihole-FTL
+    #     state: restarted
+    #   when: restore.changed
 
     - name: Run unattended `pihole -r`
       command: /etc/.pihole/automated\ install/basic-install.sh --reconfigure --unattended
