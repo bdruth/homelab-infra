@@ -89,6 +89,10 @@
     - debug: var=restore.stdout_lines
     - debug: var=restore.stderr_lines
 
+    - name: Pause?
+      pause:
+        seconds: 5
+
     - name: Restart pihole-FTL
       service:
         name: pihole-FTL
