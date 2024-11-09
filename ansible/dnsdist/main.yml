@@ -19,6 +19,7 @@
         pkg:
           - dnsdist
           - net-tools
+          - rsyslog
         state: latest
 
     - name: Make sure dnsdist.conf destination dir exists
