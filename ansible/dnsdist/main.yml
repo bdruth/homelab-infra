@@ -10,9 +10,13 @@
     dnsdist_console_key: "{{ lookup('env', 'DNSDIST_CONSOLE_KEY') }}"
 
   tasks:
-    - name: Set timezone to America/Chicago
-      ansible.builtin.timezone:
-        name: America/Chicago
+    - name: Update Timezone to Etc/UTC
+      copy: content="America/Chicago\n" dest=/etc/timezone owner=root group=root mode=0644
+      register: timezone
+
+    - name: Reconfigure Timezone Data (if changed)
+      shell: dpkg-reconfigure -f noninteractive tzdata
+      when: timezone.changed
 
     - name: Update apt cache
       apt:
