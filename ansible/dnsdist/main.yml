@@ -58,3 +58,18 @@
     - name: Print all available facts
       ansible.builtin.debug:
         var: ansible_facts
+
+    - name: Create rsyslog configuration file for dnsdist
+      copy:
+        dest: /etc/rsyslog.d/dnsdist.conf
+        content: |
+          :programname, isequal, "dnsdist"  @{{ remote_syslog_server }}
+        owner: root
+        group: root
+        mode: 0644
+      notify: Restart rsyslog
+
+    - name: Restart rsyslog
+      systemd:
+        name: rsyslog
+        state: restarted
