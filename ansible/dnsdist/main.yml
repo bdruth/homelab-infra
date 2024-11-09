@@ -11,7 +11,7 @@
 
   tasks:
     - name: Set timezone to America/Chicago
-      timezone:
+      ansible.builtin.timezone:
         name: America/Chicago
 
     - name: Update apt cache
@@ -68,7 +68,7 @@
       copy:
         dest: /etc/rsyslog.d/dnsdist.conf
         content: |
-          :programname, isequal, "dnsdist"  @{{ remote_syslog_server }}
+          :syslogtag, startswith, "dnsdist" action(type="omfwd" target="{{ remote_syslog_server }}" port="{{ remote_syslog_server_port }}" protocol="udp")
         owner: root
         group: root
         mode: 0644
