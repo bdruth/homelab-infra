@@ -69,6 +69,7 @@
         mode: 0644
       notify: Restart rsyslog
 
+  handlers:
     - name: Restart rsyslog
       systemd:
         name: rsyslog
