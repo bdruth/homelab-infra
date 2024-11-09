@@ -10,6 +10,10 @@
     dnsdist_console_key: "{{ lookup('env', 'DNSDIST_CONSOLE_KEY') }}"
 
   tasks:
+    - name: Set timezone to America/Chicago
+      timezone:
+        name: America/Chicago
+
     - name: Update apt cache
       apt:
         update_cache: yes
