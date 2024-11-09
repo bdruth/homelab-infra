@@ -10,8 +10,14 @@
     dnsdist_console_key: "{{ lookup('env', 'DNSDIST_CONSOLE_KEY') }}"
 
   tasks:
-    - name: Update Timezone to Etc/UTC
-      copy: content="America/Chicago\n" dest=/etc/timezone owner=root group=root mode=0644
+    - name: Update Timezone to America/Chicago
+      copy: 
+        content: |
+          "America/Chicago\n" 
+        dest: /etc/timezone 
+        owner: root 
+        group: root 
+        mode: 0644
       register: timezone
 
     - name: Reconfigure Timezone Data (if changed)
