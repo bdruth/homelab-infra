@@ -10,19 +10,8 @@
     dnsdist_console_key: "{{ lookup('env', 'DNSDIST_CONSOLE_KEY') }}"
 
   tasks:
-    - name: Update Timezone to America/Chicago
-      copy: 
-        content: |
-          "America/Chicago\n" 
-        dest: /etc/timezone 
-        owner: root 
-        group: root 
-        mode: 0644
-      register: timezone
-
-    - name: Reconfigure Timezone Data (if changed)
-      shell: dpkg-reconfigure -f noninteractive tzdata
-      when: timezone.changed
+    - name: Reconfigure Timezone Data
+      shell: timedatectl set-timezone America/Chicago && dpkg-reconfigure -f noninteractive tzdata
 
     - name: Update apt cache
       apt:
@@ -70,9 +59,9 @@
         state: restarted
       when: dnsdist_conf.changed or orderedwrandom_lua.changed
 
-    - name: Print all available facts
-      ansible.builtin.debug:
-        var: ansible_facts
+    # - name: Print all available facts
+    #   ansible.builtin.debug:
+    #     var: ansible_facts
 
     - name: Create rsyslog configuration file for dnsdist
       copy:
