@@ -4,7 +4,7 @@ setServerPolicyLua("orderedwrandom", orderedwrandom)
 newServer({address="{{ addr }}", name="dns{{ loop.index }}", order=1, mustResolve=true, tcpRecvTimeout=10, tcpSendTimeout=10, retries=5, useClientSubnet=true, healthCheckMode="lazy"})
 {% endfor %}
 {% for server in static_dns_ip_addrs  %}
-newServer({address="{{ server.address }}", name="{{ server.name }}", order={{ server.order }}, mustResolve=true, useClientSubnet=true, healthCheckMode="lazy"})
+newServer({address="{{ server.address }}", name="{{ server.name }}", order={{ server.order }}, useClientSubnet=true, healthCheckMode="lazy", lazyHealthCheckMode='TimeoutOnly', })
 {% endfor %}
 setECSSourcePrefixV4(32)
 setECSSourcePrefixV6(128)
