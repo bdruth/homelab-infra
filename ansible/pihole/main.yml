@@ -54,6 +54,7 @@
         content: |
           PRIVACYLEVEL=0
           BLOCK_TTL=120
+          MAXDBDAYS=15
         owner: pihole
         group: root
         mode: 0664
