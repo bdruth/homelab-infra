@@ -2,7 +2,7 @@ terraform {
   required_providers {
     proxmox = {
       source  = "telmate/proxmox"
-      version = "3.0.1-rc1"
+      version = "3.0.1-rc4"
     }
   }
   backend "s3" {
@@ -11,6 +11,7 @@ terraform {
     skip_requesting_account_id  = true
     skip_metadata_api_check     = true
     skip_region_validation      = true
+    skip_s3_checksum            = true
     use_path_style              = true # Enable path-style S3 URLs (https://<HOST>/<BUCKET> https://developer.hashicorp.com/terraform/language/settings/backends/s3#use_path_style
   }
 }
