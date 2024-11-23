@@ -47,6 +47,23 @@
 
     - debug: var=install.stdout_lines
     - debug: var=install.stderr_lines
+      
+    - name: Create pihole-FTL configuration file for dnsdist
+      copy:
+        dest: /etc/pihole/pihole-FTL.conf
+        content: |
+          PRIVACYLEVEL=0
+          BLOCK_TTL=120
+        owner: pihole
+        group: root
+        mode: 0664
+      register: pihole_conf
+
+    - name: Restart pihole-FTL
+      service:
+        name: pihole-FTL
+        state: restarted
+      when: pihole_conf.changed
 
     ## Chicken & egg: on initial setup, pihole needs teleporter backup restored to provide these values ...
     ## but to get teleporter backup, needs to lookup local s3 host :/ Hard-coding for now.
