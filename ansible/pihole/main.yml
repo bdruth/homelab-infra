@@ -48,7 +48,7 @@
     - debug: var=install.stdout_lines
     - debug: var=install.stderr_lines
       
-    - name: Create pihole-FTL configuration file for dnsdist
+    - name: Create pihole-FTL configuration file for pihole
       copy:
         dest: /etc/pihole/pihole-FTL.conf
         content: |
@@ -59,11 +59,21 @@
         mode: 0664
       register: pihole_conf
 
+    - name: Create local-ttl configuration file for pihole
+      copy:
+        dest: /etc/dnsmasq.d/99-local-ttl.conf
+        content: |
+          local-ttl=120
+        owner: root
+        group: root
+        mode: 0644
+      register: local_ttf_conf
+
     - name: Restart pihole-FTL
       service:
         name: pihole-FTL
         state: restarted
-      when: pihole_conf.changed
+      when: pihole_conf.changed or local_ttf_conf.changed
 
     ## Chicken & egg: on initial setup, pihole needs teleporter backup restored to provide these values ...
     ## but to get teleporter backup, needs to lookup local s3 host :/ Hard-coding for now.
