@@ -6,3 +6,5 @@
 .env
 
 *ed25519*
+
+.DS_Store
