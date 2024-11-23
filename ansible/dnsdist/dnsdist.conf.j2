@@ -1,3 +1,4 @@
+
 dofile('/etc/dnsdist/orderedwrandom.lua')
 setServerPolicyLua("orderedwrandom", orderedwrandom)
 {% for addr in dns_ip_addrs %}
@@ -6,6 +7,10 @@ newServer({address="{{ addr }}", name="dns{{ loop.index }}", order=1, mustResolv
 {% for server in static_dns_ip_addrs  %}
 newServer({address="{{ server.address }}", name="{{ server.name }}", order={{ server.order }}, useClientSubnet=true, healthCheckMode="lazy", lazyHealthCheckMode='TimeoutOnly', })
 {% endfor %}
+
+pc = newPacketCache(10000, {maxTTL=3600, minTTL=0, temporaryFailureTTL=15, staleTTL=900, dontAge=false})
+getPool(""):setCache(pc)
+
 setECSSourcePrefixV4(32)
 setECSSourcePrefixV6(128)
 setLocal("0.0.0.0")
