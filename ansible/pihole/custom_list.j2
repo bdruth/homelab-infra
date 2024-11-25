@@ -1,0 +1,5 @@
+{% for host in dns_records %}
+{% for address in host.address %}
+{{ address }} {{ host.hostname }}
+{% endfor %}
+{% endfor %}
