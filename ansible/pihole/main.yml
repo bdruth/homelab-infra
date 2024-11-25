@@ -70,6 +70,14 @@
         mode: 0644
       register: local_ttf_conf
 
+    - name: Install /etc/pihole/custom.list
+      template:
+        src: custom_list.j2
+        dest: "/etc/pihole/custom.list"
+        owner: root
+        group: root
+        mode: '0644'
+
     - name: Restart pihole-FTL
       service:
         name: pihole-FTL
