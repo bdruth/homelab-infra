@@ -83,12 +83,12 @@
     # grep -A 1 'ANSWER SECTION' | grep IN | awk '{print $NF}' | \
     # xargs -I {} echo {} synology.cusack-ruth.name
     ## 
-    - name: Get synology DNS records from pihole
+    - name: Generate Minio/S3 DNS records
       shell: |
         echo "{{ s3_api_host_ip }} {{ s3_api_host_name }}"
       register: s3_api_host_entries
     
-    - name: Copy synology hosts entries to /etc/hosts
+    - name: Copy S3 API hosts entries to /etc/hosts
       blockinfile:
         path: /etc/hosts
         marker: "{mark} s3_api_host"
