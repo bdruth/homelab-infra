@@ -125,6 +125,14 @@
         group: root
         mode: '0644'
 
+    - name: Install /etc/dnsmasq.d/05-pihole-custom-cname.conf
+      template:
+        src: pihole_custom_cname_conf.j2
+        dest: "/etc/dnsmasq.d/05-pihole-custom-cname.conf"
+        owner: root
+        group: root
+        mode: '0644'
+
     # - name: Pause?
     #   pause:
     #     seconds: 5
