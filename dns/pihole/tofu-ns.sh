@@ -20,7 +20,7 @@ if [ ! -f "${TF_VAR_namespace}-config.s3.tfbackend" ]; then
 fi
 
 set -x
-tofu init -backend-config="${TF_VAR_namespace}-config.s3.tfbackend"
+tofu init -backend-config="${TF_VAR_namespace}-config.s3.tfbackend" -upgrade  -reconfigure
 if [[ "$*" =~ "output" ]]
 then
   tofu "$@"
