@@ -1,0 +1,5 @@
+{% for host in cname_records %}
+{% for cname in host.cnames %}
+cname={{ cname }},{{ host.hostname }}
+{% endfor %}
+{% endfor %}
