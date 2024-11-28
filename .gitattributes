@@ -1,0 +1,3 @@
+**/vars/main.yml filter=git-crypt diff=git-crypt
+*.tfbackend filter=git-crypt diff=git-crypt
+*.tfvars filter=git-crypt diff=git-crypt
