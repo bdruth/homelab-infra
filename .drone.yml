@@ -4,15 +4,21 @@ type: docker
 name: build
 
 steps:
+  - name: unlock-secrets
+    image: betalabs/drone-git-crypt
+    pull: always
+    environment:
+      GIT_CRYPT_KEY:
+        from_secret: git-crypt-key
   - name: pkgx
     # image: pkgxdev/pkgx
     image: pkgxdev/pkgx@sha256:610bbc17475cb174c5e6a8a9e3cdf39decb93c552fa073542b6f593255e1cb0c
     commands:
       - apt-get update && apt-get install -y dnsutils netcat
       - mkdir -p ~/.ssh
-      - echo "$drone_ssh_priv_key" > ~/.ssh/id
+      - echo "$drone_ssh_priv_key" > ~/.ssh/id_rsa
       - chmod -R 700 ~/.ssh
-      - chmod 600 ~/.ssh/id
+      - chmod 600 ~/.ssh/id_rsa
       - ./pkgx-deploy.sh
     environment:
       PM_API_TOKEN_SECRET:
