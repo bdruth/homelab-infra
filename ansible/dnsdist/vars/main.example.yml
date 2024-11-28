@@ -1,0 +1,10 @@
+---
+static_dns_ip_addrs:
+  - address: "[2001:0db8:85a3::8a2e]"
+    name: newdns1
+    order: 2
+  - address: "[2001:0db8:85a3::8a2f]"
+    name: newdns2
+    order: 2
+remote_syslog_server: "192.168.1.100"
+remote_syslog_server_port: "514"

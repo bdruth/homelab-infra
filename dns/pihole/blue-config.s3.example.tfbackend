@@ -1,0 +1,5 @@
+bucket = "example-bucket-name" # Example: Name of the S3 bucket
+endpoints = {
+  s3 = "https://example-minio-endpoint.com" # Example: Minio endpoint
+} 
+key = "example-project/environment/variable.tfstate" # Example: Name of the tfstate file
