@@ -28,7 +28,7 @@ variable "ssh_public_keys" {
 variable "lxc_storage_pool" {
   description = "LXC storage pool to use for containers"
   type         = string
-  default      = "fe3b3982-b346-4780-9c84-75bc50c4d81f"
+  default      = "local"
 }
 
 variable "lxc_onboot" {
