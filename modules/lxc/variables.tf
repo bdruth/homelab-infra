@@ -8,6 +8,12 @@ variable "lxc_gw_addr" {
   type        = string
 }
 
+variable "lxc_hwaddr" {
+  description = "container hardware (MAC) address"
+  type        = string
+  default     = null
+}
+
 variable "lxc_hostname" {
   description = "container hostname"
   type        = string

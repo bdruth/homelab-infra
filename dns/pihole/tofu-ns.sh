@@ -21,7 +21,7 @@ fi
 
 set -x
 tofu init -backend-config="${TF_VAR_namespace}-config.s3.tfbackend" -upgrade  -reconfigure
-if [[ "$*" =~ "output" ]]
+if [[ "$*" =~ "output" || "$*" =~ "taint" || "$*" =~ "state" ]]
 then
   tofu "$@"
 else
