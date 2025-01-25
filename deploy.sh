@@ -1,27 +1,13 @@
 #!/bin/bash
 # shellcheck disable=SC2154
 
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
 ansible --version
 ansible-galaxy collection install amazon.aws ansible.utils
 ANSIBLE_VERSION=$(ansible --version | grep core | awk '{print $NF}' | sed 's/]//g')
 export PATH=/root/.pkgx/ansible.com/v${ANSIBLE_VERSION}/venv/bin:$PATH
 pip install netaddr
-
-
-# if [ ! -f ".local" ]; then
-#   echo "${ansible_pihole_vars_main_yml}" > ansible/pihole/vars/main.yml
-#   echo "${common_tfbackend}" > dns/dns-ha/config.s3.tfbackend
-#   echo "${common_tfbackend}" > dns/pihole/blue-config.s3.tfbackend
-#   echo "${common_tfbackend}" > dns/pihole/green-config.s3.tfbackend
-#   echo "${dnsdist_tfstate_key}" >> dns/dns-ha/config.s3.tfbackend
-#   echo "${blue_pihole_tfstate_key}" >> dns/pihole/blue-config.s3.tfbackend
-#   echo "${green_pihole_tfstate_key}" >> dns/pihole/green-config.s3.tfbackend
-#   echo "${dnsdist_tfvars}" > dns/dns-ha/terraform.tfvars
-#   echo "${pihole_blue_tfvars}" > dns/pihole/blue.tfvars
-#   echo "${pihole_green_tfvars}" > dns/pihole/green.tfvars
-#   echo "${pihole_default_tfvars}" > dns/pihole/terraform.tfvars
-#   echo "${dnsdist_ansible_vars}" > ansible/dnsdist/vars/main.yml
-# fi
 
 tofu --version
 
@@ -49,13 +35,13 @@ test_dns () {
 }
 
 set -e
-cd dns/pihole
+cd "${SCRIPT_DIR}/dns/pihole"
 ./tofu-ns.sh blue apply --auto-approve
 test_dns "$(./tofu-ns.sh blue output -raw pihole_ip | tail -n 1)"
 ./tofu-ns.sh green apply --auto-approve
 test_dns "$(./tofu-ns.sh green output -raw pihole_ip | tail -n 1)"
 
-cd ../dns-ha
+cd "${SCRIPT_DIR}/dns/dns-ha"
 set -x
 tofu init -backend-config=config.s3.tfbackend -upgrade -reconfigure
 # tofu plan

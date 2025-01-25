@@ -5,6 +5,7 @@ module "dns_ha_lxc" {
   lxc_gw_addr = var.gw_addr
   lxc_memory = "512"
   lxc_onboot = true
+  lxc_hwaddr = "BC:24:11:27:F6:81"
 }
 
 locals {

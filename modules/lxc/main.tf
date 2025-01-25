@@ -26,6 +26,7 @@ resource "proxmox_lxc" "container" {
     ip     = "${var.lxc_ip_addr}/24"
     gw     = var.lxc_gw_addr
     ip6    = "auto"
+    hwaddr = var.lxc_hwaddr
   }
 
   rootfs {
@@ -38,7 +39,7 @@ resource "proxmox_lxc" "container" {
     size      = var.lxc_rootfs_size
   }
 
-  ostemplate      = "f39ac8b4-7319-42ec-b12e-dd3d4d98a85f:vztmpl/debian-12-standard_12.2-1_amd64.tar.zst"
+  ostemplate      = "synology1:vztmpl/debian-12-standard_12.7-1_amd64.tar.zst"
   password        = random_password.root_password.result
   ssh_public_keys = var.ssh_public_keys
   start           = true
