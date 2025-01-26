@@ -17,7 +17,10 @@ steps:
       region: main
       path-style: true
       mount:
-        - '.cache'
+        - '/root/.cache'
+    volumes:
+      - name: cache
+        path: /root/.cache
   - name: unlock-secrets
     image: betalabs/drone-git-crypt
     pull: always
@@ -34,6 +37,9 @@ steps:
       - chmod -R 700 ~/.ssh
       - chmod 600 ~/.ssh/id_rsa
       - ./pkgx-deploy.sh
+    volumes:
+      - name: cache
+        path: /root/.cache
     environment:
       PM_API_TOKEN_SECRET:
         from_secret: PM_API_TOKEN_SECRET
@@ -82,8 +88,13 @@ steps:
       region: main
       path-style: true
       mount:
-        - '.cache'
-
+        - '/root/.cache'
+    volumes:
+      - name: cache
+        path: /root/.cache
+volumes:
+  - name: cache
+    temp: {}
 ---
 kind: pipeline
 type: docker
