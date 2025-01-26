@@ -19,6 +19,7 @@ steps:
       bucket: drone-cache-bucket
       region: main
       path-style: true
+      archive-format: gzip
       mount:
         - '/root/.cache'
     volumes:
@@ -93,6 +94,7 @@ steps:
       bucket: drone-cache-bucket
       region: main
       path-style: true
+      archive-format: gzip
       mount:
         - '/root/.cache'
     volumes:
