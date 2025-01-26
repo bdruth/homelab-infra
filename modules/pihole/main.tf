@@ -42,9 +42,9 @@ resource "null_resource" "run_ansible_playbook" {
 }
 
 resource "null_resource" "run_ansible_maintenance_tag" {
-  triggers = {
-    always_run = "${timestamp()}"
-  }
+  # triggers = {
+  #   always_run = "${timestamp()}"
+  # }
   depends_on = [ null_resource.run_ansible_playbook ]
 
   provisioner "local-exec" {
