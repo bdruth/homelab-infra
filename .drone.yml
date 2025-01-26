@@ -4,6 +4,20 @@ type: docker
 name: build
 
 steps:
+  - name: restore-cache
+    image: meltwater/drone-cache
+    settings:
+      access-key:
+        from_secret: AWS_ACCESS_KEY_ID
+      secret-key:
+        from_secret: AWS_SECRET_ACCESS_KEY
+      restore: true
+      endpoint: https://minio.cusack-ruth.name
+      bucket: drone-cache-bucket
+      region: main
+      path-style: true
+      mount:
+        - '.cache'
   - name: unlock-secrets
     image: betalabs/drone-git-crypt
     pull: always
@@ -55,6 +69,20 @@ steps:
         from_secret: drone_ssh_priv_key
       dnsdist_ansible_vars:
         from_secret: dnsdist_ansible_vars
+  - name: rebuild-cache
+    image: meltwater/drone-cache
+    settings:
+      access-key:
+        from_secret: AWS_ACCESS_KEY_ID
+      secret-key:
+        from_secret: AWS_SECRET_ACCESS_KEY
+      rebuild: true
+      endpoint: https://minio.cusack-ruth.name
+      bucket: drone-cache-bucket
+      region: main
+      path-style: true
+      mount:
+        - '.cache'
 
 ---
 kind: pipeline
