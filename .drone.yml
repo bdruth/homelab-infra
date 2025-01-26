@@ -7,10 +7,11 @@ steps:
   - name: restore-cache
     image: meltwater/drone-cache
     settings:
-      access-key:
+      AWS_ACCESS_KEY_ID:
         from_secret: AWS_ACCESS_KEY_ID
-      secret-key:
+      AWS_SECRET_ACCESS_KEY:
         from_secret: AWS_SECRET_ACCESS_KEY
+      AWS_PLUGIN_PATH_STYLE: true
       restore: true
       endpoint: https://minio.cusack-ruth.name
       bucket: drone-cache-bucket
@@ -78,10 +79,11 @@ steps:
   - name: rebuild-cache
     image: meltwater/drone-cache
     settings:
-      access-key:
+      AWS_ACCESS_KEY_ID:
         from_secret: AWS_ACCESS_KEY_ID
-      secret-key:
+      AWS_SECRET_ACCESS_KEY:
         from_secret: AWS_SECRET_ACCESS_KEY
+      AWS_PLUGIN_PATH_STYLE: true
       rebuild: true
       endpoint: https://minio.cusack-ruth.name
       bucket: drone-cache-bucket
