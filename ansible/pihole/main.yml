@@ -120,7 +120,7 @@
     - name: Install /etc/pihole/custom.list
       template:
         src: custom_list.j2
-        dest: "/etc/pihole/custom.list"
+        dest: "/etc/pihole/hosts/custom.list"
         owner: root
         group: root
         mode: '0644'
