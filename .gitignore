@@ -10,3 +10,8 @@
 .local
 
 *.log
+
+.ansible
+.cache
+.git-crypt-key
+.pkgx
