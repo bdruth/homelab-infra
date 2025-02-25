@@ -56,15 +56,15 @@ TMP_DIR=$(mktemp -d)
 cd "$TMP_DIR"
 # shellcheck disable=SC2154
 # aws s3 cp with path style bucket reference
-aws s3 cp "s3://{{ s3_teleporter_bucket_name }}/{{ s3_teleporter_object_name }}" ./pi-hole-pihole-teleporter.tar.gz
+aws s3 cp "s3://{{ s3_teleporter_bucket_name }}/{{ s3_teleporter_object_name }}" ./pi-hole-pihole-teleporter.zip
 
 mkdir -p current && cd current
-tar -xf ../pi-hole-pihole-teleporter.tar.gz && rm -f  ../pi-hole-pihole-teleporter.tar.gz && cd ..
+unzip ../pi-hole-pihole-teleporter.zip && rm -f  ../pi-hole-pihole-teleporter.zip && cd ..
 
 # generate new teleporter backup
-/usr/local/bin/pihole -a -t
+/usr/bin/pihole-FTL --teleporter
 mkdir -p new && cd new
-tar -xf ../pi-hole*tar.gz && cd ..
+unzip ../pi-hole*zip && cd ..
 
 changes=0
 rv=$(compare_file_list current new)
@@ -76,5 +76,5 @@ changes=$((changes+rv))
 if [ $changes -gt 0 ]
 then 
   echo "Found changes: $changes, upload new backup..."
-  aws s3 cp pi-hole*.tar.gz "s3://{{ s3_teleporter_bucket_name }}/{{ s3_teleporter_object_name }}"
+  aws s3 cp pi-hole*.zip "s3://{{ s3_teleporter_bucket_name }}/{{ s3_teleporter_object_name }}"
 fi
