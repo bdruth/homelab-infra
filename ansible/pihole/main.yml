@@ -117,11 +117,11 @@
     - debug: var=restore.stdout_lines
     - debug: var=restore.stderr_lines
 
-    - name: Install /etc/pihole/custom.list
+    - name: Install /etc/pihole/pihole.toml
       template:
-        src: custom_list.j2
-        dest: "/etc/pihole/hosts/custom.list"
-        owner: root
+        src: pihole.toml.j2
+        dest: "/etc/pihole/pihole.toml"
+        owner: pihole
         group: root
         mode: '0644'
 
