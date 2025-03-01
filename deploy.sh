@@ -14,14 +14,15 @@ tofu --version
 test_dns () {
   set +x
   local DNS_IP="$1";
+  local host="$2";
   # Use dig to look up DNS for api.github.com, on error, loop 5 times and wait 10 seconds between each
   for i in {1..5}; do
-    echo -n "Try ($i) of 5 to find DNS for api.github.com ($DNS_IP): "
+    echo -n "Try ($i) of 5 to find DNS for $host ($DNS_IP): "
     # Check provided IP
-    if dig api.github.com @"$DNS_IP" +short; then
+    if dig "$host" @"$DNS_IP" +short; then
       # Check default lookup
-      echo -n "Try ($i) of 5 to find DNS for api.github.com (default): "
-      if dig api.github.com +short; then
+      echo -n "Try ($i) of 5 to find DNS for $host (default): "
+      if dig "$host" +short; then
         return
       else
         sleep 10
@@ -30,20 +31,23 @@ test_dns () {
       sleep 10
     fi
   done
-  echo "DNS Test Failed for $DNS_IP"
+  echo "DNS Test Failed to retrieve $host for $DNS_IP"
   exit 1
 }
 
 set -e
 cd "${SCRIPT_DIR}/dns/pihole"
 ./tofu-ns.sh blue apply --auto-approve
-test_dns "$(./tofu-ns.sh blue output -raw pihole_ip | tail -n 1)"
+pihole_blue_ip=$(./tofu-ns.sh blue output -raw pihole_ip | tail -n 1)
+test_dns "$pihole_blue_ip" "api.github.com"
 ./tofu-ns.sh green apply --auto-approve
-test_dns "$(./tofu-ns.sh green output -raw pihole_ip | tail -n 1)"
+pihole_green_ip=$(./tofu-ns.sh green output -raw pihole_ip | tail -n 1)
+test_dns "$pihole_green_ip" "api.github.com"
 
 cd "${SCRIPT_DIR}/dns/dns-ha"
 set -x
 tofu init -backend-config=config.s3.tfbackend -upgrade -reconfigure
 # tofu plan
 tofu apply --auto-approve
-test_dns "$(tofu output -raw dns_ha_ip | tail -n 1)"
+dns_ha_ip=$(tofu output -raw dns_ha_ip | tail -n 1)
+test_dns "$dns_ha_ip" "api.github.com"
