@@ -110,12 +110,12 @@
         curl -L -o pihole_restore "https://github.com/chamilad/pihole-restore/releases/download/{{ pihole_restore_version }}/pihole_restore-{{ pihole_restore_version }}-linux-x86_64"
         chmod +x pihole_restore
 
-    - name: Restore pihole
-      command: /root/pihole_restore -f /root/pi-hole-pihole-teleporter.tar.gz --filters blacklist,blacklistregex,whitelist,whitelistregex,adlist,auditlog,client,staticdhcp,localdns,localcname -c
-      register: restore
-      when: teleporter_backup.changed
-    - debug: var=restore.stdout_lines
-    - debug: var=restore.stderr_lines
+    # - name: Restore pihole
+    #   command: /root/pihole_restore -f /root/pi-hole-pihole-teleporter.tar.gz --filters blacklist,blacklistregex,whitelist,whitelistregex,adlist,auditlog,client,staticdhcp,localdns,localcname -c
+    #   register: restore
+    #   when: teleporter_backup.changed
+    # - debug: var=restore.stdout_lines
+    # - debug: var=restore.stderr_lines
 
     - name: Install /etc/pihole/pihole.toml
       template:
@@ -125,13 +125,13 @@
         group: root
         mode: '0644'
 
-    - name: Install /etc/dnsmasq.d/05-pihole-custom-cname.conf
-      template:
-        src: pihole_custom_cname_conf.j2
-        dest: "/etc/dnsmasq.d/05-pihole-custom-cname.conf"
-        owner: root
-        group: root
-        mode: '0644'
+    # - name: Install /etc/dnsmasq.d/05-pihole-custom-cname.conf
+    #   template:
+    #     src: pihole_custom_cname_conf.j2
+    #     dest: "/etc/dnsmasq.d/05-pihole-custom-cname.conf"
+    #     owner: root
+    #     group: root
+    #     mode: '0644'
 
     # - name: Pause?
     #   pause:
