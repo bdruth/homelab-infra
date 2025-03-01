@@ -6,6 +6,7 @@ module "pihole_lxc" {
   ssh_public_keys = var.ssh_public_keys
   lxc_onboot = true
   lxc_rootfs_size = "8G"
+  lxc_memory = "1024"
 }
 
 data "http" "pihole_latest_release" {
