@@ -1,0 +1,9 @@
+version: '3'
+services:
+  ansible:
+    image: cytopia/ansible:latest-tools
+    volumes:
+      - .:/ansible
+    working_dir: /ansible
+    command: >
+      ansible-playbook -i test-inventory.yml test-playbook.yml --check -v

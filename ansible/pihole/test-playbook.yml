@@ -1,0 +1,25 @@
+---
+- name: Test pihole.toml template
+  hosts: all
+  vars_files:
+    - vars/main.yml
+  vars:
+    setupVars_path: /etc/pihole/setupVars.conf
+    web_password: "test_hash"
+
+  tasks:
+    - name: Test pihole.toml templating
+      template:
+        src: pihole.toml.j2
+        dest: /tmp/pihole.toml.test
+      check_mode: no
+      
+    - name: Display generated pihole.toml
+      command: cat /tmp/pihole.toml.test
+      register: pihole_toml_content
+      changed_when: false
+      check_mode: no
+      
+    - name: Show pihole.toml content
+      debug:
+        var: pihole_toml_content.stdout_lines
