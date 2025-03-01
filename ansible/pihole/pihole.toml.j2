@@ -10,10 +10,12 @@
   # Possible values are:
   #     array of IP addresses and/or hostnames, optionally with a port (#...)
   upstreams = [
-    "45.90.28.240",
-    "45.90.30.240",
-    "2a07:a8c0::f2:da97",
-    "2a07:a8c1::f2:da97"
+{% set ns = namespace(last_upstream=false) %}
+{% for upstream in upstreams %}
+{%- set ns.last_upstream = loop.last %}
+    "{{ upstream }}"{% if not ns.last_upstream %},{% endif %}
+
+{% endfor %}
   ]
 
   # Use this option to control deep CNAME inspection. Disabling it might be beneficial
@@ -95,7 +97,7 @@
   # over long times (printers, etc.).
   # Note that large values may render whitelisting ineffective due to client-side
   # caching of blocked queries.
-  blockTTL = 120
+  blockTTL = {{ block_ttl }}
 
   # Array of custom DNS records
   # Example: hosts = [ "127.0.0.1 mylocal", "192.168.0.1 therouter" ]
@@ -155,7 +157,7 @@
   #
   # Possible values are:
   #     a valid interface name
-  interface = "eth0"
+  interface = "{{ interface }}"
 
   # Add A, AAAA and PTR records to the DNS. This adds one or more names to the DNS with
   # associated IPv4 (A) and IPv6 (AAAA) records
@@ -213,7 +215,7 @@
 {%- set ns.last_host = loop.last %}
 {%- set ns.last_cname_index = host.cnames|length %}
 {% for cname in host.cnames %}
-    "{{ cname }},{{ host.hostname }}"{% if not (loop.last and ns.last_host) or not loop.last %},{% endif %}
+    "{{ cname }},{{ host.hostname }},{{ local_ttl }}"{% if not (loop.last and ns.last_host) or not loop.last %},{% endif %}
 
 {% endfor %}
 {% endfor %}
@@ -592,7 +594,7 @@
 
   # How long should queries be stored in the database [days]?
   # Setting this value to 0 will disable the database.
-  maxDBdays = 15
+  maxDBdays = {{ maxdbdays }}
 
   # How often do we store queries in FTL's database [seconds]?
   DBinterval = 60
@@ -952,7 +954,7 @@
   #       Anonymize everything. This setting disabled almost any statistics and query
   #       analysis. There will be no long-term database logging and no Query Log. You
   #       will also loose most regex features.
-  privacylevel = 0
+  privacylevel = {{ privacylevel }}
 
   # During startup, in some configurations, network interfaces appear only late during
   # system startup and are not ready when FTL tries to bind to them. Therefore, you may

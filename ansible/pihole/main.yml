@@ -48,18 +48,6 @@
     - debug: var=install.stdout_lines
     - debug: var=install.stderr_lines
       
-    - name: Create pihole-FTL configuration file for pihole
-      copy:
-        dest: /etc/pihole/pihole-FTL.conf
-        content: |
-          PRIVACYLEVEL=0
-          BLOCK_TTL=120
-          MAXDBDAYS=15
-        owner: pihole
-        group: root
-        mode: 0664
-      register: pihole_conf
-
     - name: Create local-ttl configuration file for pihole
       copy:
         dest: /etc/dnsmasq.d/99-local-ttl.conf
@@ -70,11 +58,20 @@
         mode: 0644
       register: local_ttf_conf
 
+    - name: Install /etc/pihole/pihole.toml
+      template:
+        src: pihole.toml.j2
+        dest: "/etc/pihole/pihole.toml"
+        owner: pihole
+        group: root
+        mode: '0644'
+      register: pihole_toml
+
     - name: Restart pihole-FTL
       service:
         name: pihole-FTL
         state: restarted
-      when: pihole_conf.changed or local_ttf_conf.changed
+      when: pihole_toml.changed or local_ttf_conf.changed
 
     ## Chicken & egg: on initial setup, pihole needs teleporter backup restored to provide these values ...
     ## but to get teleporter backup, needs to lookup local s3 host :/ Hard-coding for now.
@@ -117,14 +114,6 @@
     # - debug: var=restore.stdout_lines
     # - debug: var=restore.stderr_lines
 
-    - name: Install /etc/pihole/pihole.toml
-      template:
-        src: pihole.toml.j2
-        dest: "/etc/pihole/pihole.toml"
-        owner: pihole
-        group: root
-        mode: '0644'
-
     # - name: Install /etc/dnsmasq.d/05-pihole-custom-cname.conf
     #   template:
     #     src: pihole_custom_cname_conf.j2
@@ -143,24 +132,24 @@
     #     state: restarted
     #   when: restore.changed
 
-    - name: Run unattended `pihole -r`
-      command: /etc/.pihole/automated\ install/basic-install.sh --reconfigure --unattended
-      register: reconfigure
-      tags:
-        - maintenance
-    - debug: var=reconfigure.stdout_lines
-      tags:
-        - maintenance
-    - debug: var=reconfigure.stderr_lines
-      tags:
-        - maintenance
+    # - name: Run unattended `pihole -r`
+    #   command: /etc/.pihole/automated\ install/basic-install.sh --reconfigure --unattended
+    #   register: reconfigure
+    #   tags:
+    #     - maintenance
+    # - debug: var=reconfigure.stdout_lines
+    #   tags:
+    #     - maintenance
+    # - debug: var=reconfigure.stderr_lines
+    #   tags:
+    #     - maintenance
 
-    - name: Ensure pihole-FTL is started
-      service:
-        name: pihole-FTL
-        state: started
-      tags:
-        - maintenance
+    # - name: Ensure pihole-FTL is started
+    #   service:
+    #     name: pihole-FTL
+    #     state: started
+    #   tags:
+    #     - maintenance
 
     - name: Make sure destination dir exists
       file:
