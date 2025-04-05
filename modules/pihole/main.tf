@@ -15,7 +15,7 @@ data "http" "pihole_latest_release" {
 
 data "aws_s3_object" "pihole_teleporter_backup" {
   bucket = "homelab-configurations"
-  key    = "pihole/pi-hole-pihole-teleporter.tar.gz"
+  key    = "pihole/pi-hole-pihole-teleporter.zip"
 }
 
 locals {
