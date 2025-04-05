@@ -47,6 +47,8 @@
           - htop
           - dos2unix
           - tmux
+          - bolt  # For thunderbolt eGPU support
+          - pipx  # For isolated Python package installation
         state: present
         update_cache: yes
       register: package_install
@@ -60,6 +62,15 @@
         name: docker-compose
         state: absent
 
+    - name: Blacklist nouveau driver
+      ansible.builtin.template:
+        src: blacklist-nouveau.conf.j2
+        dest: /etc/modprobe.d/blacklist-nouveau.conf
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Update initramfs
+    
     - name: Load nvidia modules at boot
       ansible.builtin.template:
         src: nvidia-driver.conf.j2
@@ -161,3 +172,74 @@
         state: started
         daemon_reload: yes
       when: ollama_version_check.rc == 0 or ollama_install is defined
+      
+    - name: Check if uv is already installed
+      ansible.builtin.command:
+        cmd: uv --version
+      register: uv_version_check
+      changed_when: false
+      failed_when: false
+      
+    - name: Install uv package manager
+      block:
+        - name: Create temp directory for uv installation
+          ansible.builtin.tempfile:
+            state: directory
+            suffix: uv
+          register: uv_temp_dir
+          
+        - name: Download uv installer script
+          ansible.builtin.get_url:
+            url: https://astral.sh/uv/install.sh
+            dest: "{{ uv_temp_dir.path }}/install.sh"
+            mode: "0755"
+          register: uv_script_download
+          
+        - name: Run uv installer script
+          ansible.builtin.command:
+            cmd: ./install.sh
+            chdir: "{{ uv_temp_dir.path }}"
+          register: uv_install
+          changed_when: uv_install.rc == 0
+          
+        - name: Clean up temp directory
+          ansible.builtin.file:
+            path: "{{ uv_temp_dir.path }}"
+            state: absent
+      when: uv_version_check.rc != 0
+      
+    - name: Configure thunderbolt eGPU support
+      block:
+        - name: Check if thunderbolt devices are present
+          ansible.builtin.command:
+            cmd: boltctl
+          register: boltctl_check
+          changed_when: false
+          failed_when: false
+          
+        - name: List thunderbolt devices
+          ansible.builtin.command:
+            cmd: boltctl list
+          register: thunderbolt_devices
+          changed_when: false
+          when: boltctl_check.rc == 0
+          
+        - name: Enroll and authorize all thunderbolt devices with auto policy
+          ansible.builtin.command:
+            cmd: boltctl enroll --policy auto {{ item.split()[0] }}
+          loop: "{{ thunderbolt_devices.stdout_lines }}"
+          when: 
+            - boltctl_check.rc == 0
+            - thunderbolt_devices.stdout_lines | length > 0
+            - item.split() | length > 0
+            - "':' in item"
+          register: bolt_enroll
+          changed_when: bolt_enroll.rc == 0
+          failed_when: false
+      when: boltctl_check is not defined or boltctl_check.rc == 0
+      
+  handlers:
+    - name: Update initramfs
+      ansible.builtin.command:
+        cmd: update-initramfs -u
+      changed_when: true

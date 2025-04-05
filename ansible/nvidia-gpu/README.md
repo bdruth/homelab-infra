@@ -7,9 +7,12 @@ This Ansible module configures a system for AI/ML/CUDA workloads with NVIDIA GPU
 - Installs NVIDIA drivers (version 570)
 - Configures CUDA toolkit and samples
 - Sets up container runtime for GPU workloads
+- Blacklists nouveau drivers for compatibility
+- Configures thunderbolt eGPU support for external GPUs
 - Installs essential development tools
 - Installs latest btop system monitor from GitHub
 - Installs Ollama for running AI models locally
+- Installs uv Python package manager and pipx
 
 ## Requirements
 
