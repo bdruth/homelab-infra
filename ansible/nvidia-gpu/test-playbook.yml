@@ -1,0 +1,29 @@
+---
+# Test playbook for NVIDIA GPU configuration
+
+- name: Import NVIDIA GPU configuration playbook
+  import_playbook: main.yml
+
+- name: Validate NVIDIA GPU configuration
+  hosts: all
+  become: true
+  tasks:
+    - name: Check NVIDIA driver is installed
+      ansible.builtin.command: nvidia-smi
+      register: nvidia_smi_result
+      changed_when: false
+      ignore_errors: true
+
+    - name: Display NVIDIA driver status
+      ansible.builtin.debug:
+        msg: "NVIDIA driver status: {{ 'OK' if nvidia_smi_result.rc == 0 else 'Not properly installed' }}"
+
+    - name: Check CUDA toolkit is installed
+      ansible.builtin.command: nvcc --version
+      register: nvcc_result
+      changed_when: false
+      ignore_errors: true
+
+    - name: Display CUDA toolkit status
+      ansible.builtin.debug:
+        msg: "CUDA toolkit status: {{ 'OK' if nvcc_result.rc == 0 else 'Not properly installed' }}"

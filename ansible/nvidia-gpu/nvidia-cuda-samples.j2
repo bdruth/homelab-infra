@@ -1,0 +1,11 @@
+#!/bin/bash
+# {{ ansible_managed }}
+
+# Set environment variables for CUDA
+export PATH=/usr/local/cuda/bin:$PATH
+export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+
+# Create symlink to CUDA samples if it doesn't exist
+if [ ! -d "$HOME/nvidia_cuda_samples" ] && [ -d "/usr/local/cuda/samples" ]; then
+    ln -sf /usr/local/cuda/samples $HOME/nvidia_cuda_samples
+fi

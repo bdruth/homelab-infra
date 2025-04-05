@@ -1,0 +1,6 @@
+---
+# Example host-specific variables for GPU server
+# Copy this file and rename to your actual hostname
+
+# Host-specific NVIDIA settings can be overridden here
+# nvidia_load_kmods: false  # Example override
