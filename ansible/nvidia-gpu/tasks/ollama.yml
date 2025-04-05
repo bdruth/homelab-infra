@@ -1,0 +1,52 @@
+---
+# NVIDIA GPU Ollama Installation Tasks
+
+- name: Check if Ollama is already installed
+  ansible.builtin.command:
+    cmd: ollama --version
+  register: ollama_version_check
+  changed_when: false
+  failed_when: false
+  when: install_ollama | bool
+
+- name: Install latest Ollama using official installer
+  block:
+    - name: Create temp directory for Ollama installation
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: ollama
+      register: ollama_temp_dir
+
+    - name: Download Ollama installer script
+      ansible.builtin.get_url:
+        url: https://ollama.com/install.sh
+        dest: "{{ ollama_temp_dir.path }}/install.sh"
+        mode: "0755"
+      register: ollama_script_download
+
+    - name: Run Ollama installer script
+      ansible.builtin.command:
+        cmd: ./install.sh
+        chdir: "{{ ollama_temp_dir.path }}"
+      environment:
+        OLLAMA_YES: "yes" # Non-interactive installation
+      register: ollama_install
+      changed_when: ollama_install.rc == 0
+
+    - name: Clean up temp directory
+      ansible.builtin.file:
+        path: "{{ ollama_temp_dir.path }}"
+        state: absent
+  when:
+    - install_ollama | bool
+    - ollama_version_check.rc != 0
+
+- name: Enable Ollama service
+  ansible.builtin.systemd:
+    name: ollama
+    enabled: yes
+    state: started
+    daemon_reload: yes
+  when:
+    - install_ollama | bool
+    - ollama_version_check.rc == 0 or ollama_install is defined

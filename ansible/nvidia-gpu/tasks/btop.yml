@@ -1,0 +1,46 @@
+---
+# NVIDIA GPU Btop Installation Tasks
+
+- name: Check if btop is already installed with correct version
+  ansible.builtin.command:
+    cmd: btop --version
+  register: btop_version_check
+  changed_when: false
+  failed_when: false
+  when: install_btop | bool
+
+- name: Install latest btop from GitHub
+  block:
+    - name: Create temp directory for btop download
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: btop
+      register: btop_temp_dir
+
+    - name: Download latest btop release
+      ansible.builtin.get_url:
+        url: "https://github.com/aristocratos/btop/releases/download/v{{ btop_version }}/btop-x86_64-linux-musl.tbz"
+        dest: "{{ btop_temp_dir.path }}/btop.tbz"
+        mode: "0644"
+      register: btop_download
+
+    - name: Extract btop archive
+      ansible.builtin.unarchive:
+        src: "{{ btop_temp_dir.path }}/btop.tbz"
+        dest: "{{ btop_temp_dir.path }}"
+        remote_src: yes
+
+    - name: Install btop
+      ansible.builtin.command:
+        cmd: ./install.sh
+        chdir: "{{ btop_temp_dir.path }}/btop"
+      register: btop_install
+      changed_when: btop_install.rc == 0
+
+    - name: Clean up temp directory
+      ansible.builtin.file:
+        path: "{{ btop_temp_dir.path }}"
+        state: absent
+  when:
+    - install_btop | bool
+    - btop_version_check.rc != 0 or btop_version not in btop_version_check.stdout

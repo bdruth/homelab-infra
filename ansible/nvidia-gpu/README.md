@@ -4,7 +4,7 @@ This Ansible module configures a system for AI/ML/CUDA workloads with NVIDIA GPU
 
 ## Features
 
-- Installs NVIDIA drivers (version 570)
+- Installs NVIDIA drivers (version 570 by default, configurable)
 - Configures CUDA toolkit and samples
 - Sets up container runtime for GPU workloads
 - Blacklists nouveau drivers for compatibility
@@ -17,7 +17,18 @@ This Ansible module configures a system for AI/ML/CUDA workloads with NVIDIA GPU
 ## Requirements
 
 - Ubuntu Noble (24.04)
-- NVIDIA GPU compatible with driver version 570
+- NVIDIA GPU compatible with driver version 570 (or other configured version)
+
+## Module Structure
+
+The module is organized into separate task files for better maintainability:
+
+- `main.yml` - Main playbook that imports all task files
+- `tasks/gpu_setup.yml` - Consolidated GPU-related tasks (driver, CUDA, repositories, eGPU)
+- `tasks/packages.yml` - Installs base system packages
+- `tasks/btop.yml` - Installs btop system monitor
+- `tasks/ollama.yml` - Installs and configures Ollama
+- `tasks/uv_manager.yml` - Installs uv Python package manager
 
 ## Usage
 
@@ -29,9 +40,20 @@ This Ansible module configures a system for AI/ML/CUDA workloads with NVIDIA GPU
 ansible-playbook -i your_inventory.yml main.yml
 ```
 
+## Feature Toggles
+
+Each major component can be enabled or disabled using variables:
+
+- `nvidia_install_gpu_drivers` - Whether to install NVIDIA GPU drivers
+- `nvidia_install_cuda_toolkit` - Whether to install CUDA toolkit
+- `nvidia_install_btop` - Whether to install btop
+- `nvidia_install_ollama` - Whether to install Ollama
+- `nvidia_install_uv` - Whether to install uv Python package manager
+- `nvidia_configure_egpu` - Whether to configure thunderbolt eGPU support
+
 ## Testing
 
-To test the playbook on a local Docker container:
+To test the playbook on a local system:
 
 ```bash
 ansible-playbook -i test-inventory.yml test-playbook.yml
@@ -39,7 +61,7 @@ ansible-playbook -i test-inventory.yml test-playbook.yml
 
 ## Variables
 
-See `vars/main.example.yml` for available configuration options.
+See `vars/main.example.yml` for all available configuration options.
 
 ## Validation
 
@@ -48,4 +70,7 @@ After running the playbook, verify installation with:
 ```bash
 nvidia-smi  # Should display GPU information
 nvcc --version  # Should display CUDA compiler version
+ollama --version  # Should display Ollama version
+btop --version  # Should display btop version
+uv --version  # Should display uv version
 ```
