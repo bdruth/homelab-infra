@@ -76,6 +76,13 @@
         group: root
         mode: "0755"
         
+    - name: Check if btop is already installed with correct version
+      ansible.builtin.command:
+        cmd: btop --version
+      register: btop_version_check
+      changed_when: false
+      failed_when: false
+      
     - name: Install latest btop from GitHub
       block:
         - name: Create temp directory for btop download
@@ -108,3 +115,49 @@
           ansible.builtin.file:
             path: "{{ btop_temp_dir.path }}"
             state: absent
+      when: btop_version_check.rc != 0 or btop_version not in btop_version_check.stdout
+            
+    - name: Check if Ollama is already installed
+      ansible.builtin.command:
+        cmd: ollama --version
+      register: ollama_version_check
+      changed_when: false
+      failed_when: false
+      
+    - name: Install latest Ollama using official installer
+      block:
+        - name: Create temp directory for Ollama installation
+          ansible.builtin.tempfile:
+            state: directory
+            suffix: ollama
+          register: ollama_temp_dir
+          
+        - name: Download Ollama installer script
+          ansible.builtin.get_url:
+            url: https://ollama.com/install.sh
+            dest: "{{ ollama_temp_dir.path }}/install.sh"
+            mode: "0755"
+          register: ollama_script_download
+          
+        - name: Run Ollama installer script
+          ansible.builtin.command:
+            cmd: ./install.sh
+            chdir: "{{ ollama_temp_dir.path }}"
+          environment:
+            OLLAMA_YES: "yes"  # Non-interactive installation
+          register: ollama_install
+          changed_when: ollama_install.rc == 0
+          
+        - name: Clean up temp directory
+          ansible.builtin.file:
+            path: "{{ ollama_temp_dir.path }}"
+            state: absent
+      when: ollama_version_check.rc != 0
+            
+    - name: Enable Ollama service
+      ansible.builtin.systemd:
+        name: ollama
+        enabled: yes
+        state: started
+        daemon_reload: yes
+      when: ollama_version_check.rc == 0 or ollama_install is defined
