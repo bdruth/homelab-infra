@@ -1,0 +1,77 @@
+---
+# NVIDIA GPU Configuration Playbook
+
+- name: Configure NVIDIA GPU system for AI/ML/CUDA
+  hosts: all
+  become: true
+  vars_files:
+    - vars/main.yml
+
+  tasks:
+    - name: Add NVIDIA CUDA repository key
+      ansible.builtin.apt:
+        deb: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-keyring_1.1-1_all.deb
+        state: present
+      register: apt_key_result
+      until: apt_key_result is success
+      retries: 3
+      delay: 5
+
+    - name: Add NVIDIA CUDA repository
+      ansible.builtin.apt_repository:
+        repo: deb [signed-by=/usr/share/keyrings/cuda-archive-keyring.gpg] https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/ /
+        state: present
+        filename: cuda-ubuntu2404-x86_64.list
+        update_cache: yes
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - cuda-toolkit
+          - nvidia-driver-570
+          - nvidia-utils-570
+          - nvidia-cuda-toolkit
+          - nvidia-cuda-samples
+          - nvidia-container-toolkit
+          - vim
+          - python3
+          - pip
+          - net-tools
+          - git
+          - podman
+          - podman-docker
+          - htop
+          - dos2unix
+          - tmux
+        state: present
+        update_cache: yes
+      register: package_install
+      until: package_install is success
+      retries: 3
+      delay: 5
+      ignore_errors: "{{ ansible_check_mode }}"
+
+    - name: Remove docker-compose package
+      ansible.builtin.apt:
+        name: docker-compose
+        state: absent
+
+    - name: Load nvidia modules at boot
+      ansible.builtin.template:
+        src: nvidia-driver.conf.j2
+        dest: /etc/modules-load.d/nvidia-driver.conf
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Set up sample CUDA project
+      ansible.builtin.template:
+        src: nvidia-cuda-samples.j2
+        dest: /etc/profile.d/nvidia-cuda-samples.sh
+        owner: root
+        group: root
+        mode: "0755"
