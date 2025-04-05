@@ -1,0 +1,126 @@
+---
+# NVIDIA GPU Setup Tasks
+
+# Repository setup
+- name: Add NVIDIA CUDA repository key
+  ansible.builtin.apt:
+    deb: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-keyring_1.1-1_all.deb
+    state: present
+  register: apt_key_result
+  until: apt_key_result is success
+  retries: 3
+  delay: 5
+  when: nvidia_install_gpu_drivers | bool or nvidia_install_cuda_toolkit | bool
+
+- name: Add NVIDIA CUDA repository
+  ansible.builtin.apt_repository:
+    repo: deb [signed-by=/usr/share/keyrings/cuda-archive-keyring.gpg] https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/ /
+    state: present
+    filename: cuda-ubuntu2404-x86_64.list
+    update_cache: yes
+  when: nvidia_install_gpu_drivers | bool or nvidia_install_cuda_toolkit | bool
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: yes
+  when: nvidia_install_gpu_drivers | bool or nvidia_install_cuda_toolkit | bool
+
+# Install NVIDIA packages
+- name: Install NVIDIA driver packages
+  ansible.builtin.apt:
+    name:
+      - "nvidia-driver-{{ nvidia_driver_version }}"
+      - "nvidia-utils-{{ nvidia_driver_version }}"
+    state: present
+    update_cache: yes
+  register: driver_package_install
+  until: driver_package_install is success
+  retries: 3
+  delay: 5
+  ignore_errors: "{{ ansible_check_mode }}"
+  when: nvidia_install_gpu_drivers | bool
+
+- name: Install CUDA toolkit packages
+  ansible.builtin.apt:
+    name:
+      - cuda-toolkit
+      - nvidia-cuda-toolkit
+      - nvidia-cuda-samples
+      - nvidia-container-toolkit
+    state: present
+    update_cache: yes
+  register: cuda_package_install
+  until: cuda_package_install is success
+  retries: 3
+  delay: 5
+  ignore_errors: "{{ ansible_check_mode }}"
+  when: nvidia_install_cuda_toolkit | bool
+
+# Driver configuration
+- name: Blacklist nouveau driver
+  ansible.builtin.template:
+    src: blacklist-nouveau.conf.j2
+    dest: /etc/modprobe.d/blacklist-nouveau.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Update initramfs
+  when: nvidia_install_gpu_drivers | bool
+
+- name: Load nvidia modules at boot
+  ansible.builtin.template:
+    src: nvidia-driver.conf.j2
+    dest: /etc/modules-load.d/nvidia-driver.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when: nvidia_install_gpu_drivers | bool
+
+# CUDA setup
+- name: Set up sample CUDA project
+  ansible.builtin.template:
+    src: nvidia-cuda-samples.j2
+    dest: /etc/profile.d/nvidia-cuda-samples.sh
+    owner: root
+    group: root
+    mode: "0755"
+  when: nvidia_install_cuda_toolkit | bool
+
+# Thunderbolt eGPU support
+- name: Install thunderbolt support package
+  ansible.builtin.apt:
+    name: bolt
+    state: present
+  when: nvidia_configure_egpu | bool
+
+- name: Configure thunderbolt eGPU support
+  block:
+    - name: Check if thunderbolt devices are present
+      ansible.builtin.command:
+        cmd: boltctl
+      register: boltctl_check
+      changed_when: false
+      failed_when: false
+      
+    - name: List thunderbolt devices
+      ansible.builtin.command:
+        cmd: boltctl list
+      register: thunderbolt_devices
+      changed_when: false
+      when: boltctl_check.rc == 0
+      
+    - name: Enroll and authorize all thunderbolt devices with auto policy
+      ansible.builtin.command:
+        cmd: boltctl enroll --policy auto {{ item.split()[0] }}
+      loop: "{{ thunderbolt_devices.stdout_lines }}"
+      when: 
+        - boltctl_check.rc == 0
+        - thunderbolt_devices.stdout_lines | length > 0
+        - item.split() | length > 0
+        - "':' in item"
+      register: bolt_enroll
+      changed_when: bolt_enroll.rc == 0
+      failed_when: false
+  when: 
+    - nvidia_configure_egpu | bool
+    - boltctl_check is not defined or boltctl_check.rc == 0

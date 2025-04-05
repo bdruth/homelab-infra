@@ -1,0 +1,29 @@
+---
+# Base Package Management Tasks
+
+- name: Install base packages
+  ansible.builtin.apt:
+    name:
+      - vim
+      - python3
+      - pip
+      - net-tools
+      - git
+      - podman
+      - podman-docker
+      - htop
+      - dos2unix
+      - tmux
+      - pipx  # For isolated Python package installation
+    state: present
+    update_cache: yes
+  register: base_package_install
+  until: base_package_install is success
+  retries: 3
+  delay: 5
+  ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Remove docker-compose package
+  ansible.builtin.apt:
+    name: docker-compose
+    state: absent

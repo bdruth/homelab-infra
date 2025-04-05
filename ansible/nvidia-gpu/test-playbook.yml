@@ -13,17 +13,57 @@
       register: nvidia_smi_result
       changed_when: false
       ignore_errors: true
+      when: nvidia_install_gpu_drivers is defined and nvidia_install_gpu_drivers | bool
 
     - name: Display NVIDIA driver status
       ansible.builtin.debug:
-        msg: "NVIDIA driver status: {{ 'OK' if nvidia_smi_result.rc == 0 else 'Not properly installed' }}"
+        msg: "NVIDIA driver status: {{ 'OK' if nvidia_smi_result.rc is defined and nvidia_smi_result.rc == 0 else 'Not properly installed or not enabled' }}"
+      when: nvidia_install_gpu_drivers is defined and nvidia_install_gpu_drivers | bool
 
     - name: Check CUDA toolkit is installed
       ansible.builtin.command: nvcc --version
       register: nvcc_result
       changed_when: false
       ignore_errors: true
+      when: nvidia_install_cuda_toolkit is defined and nvidia_install_cuda_toolkit | bool
 
     - name: Display CUDA toolkit status
       ansible.builtin.debug:
-        msg: "CUDA toolkit status: {{ 'OK' if nvcc_result.rc == 0 else 'Not properly installed' }}"
+        msg: "CUDA toolkit status: {{ 'OK' if nvcc_result.rc is defined and nvcc_result.rc == 0 else 'Not properly installed or not enabled' }}"
+      when: nvidia_install_cuda_toolkit is defined and nvidia_install_cuda_toolkit | bool
+      
+    - name: Check if btop is installed
+      ansible.builtin.command: btop --version
+      register: btop_result
+      changed_when: false
+      ignore_errors: true
+      when: nvidia_install_btop is defined and nvidia_install_btop | bool
+      
+    - name: Display btop status
+      ansible.builtin.debug:
+        msg: "btop status: {{ 'OK' if btop_result.rc is defined and btop_result.rc == 0 else 'Not properly installed or not enabled' }}"
+      when: nvidia_install_btop is defined and nvidia_install_btop | bool
+      
+    - name: Check if Ollama is installed
+      ansible.builtin.command: ollama --version
+      register: ollama_result
+      changed_when: false
+      ignore_errors: true
+      when: nvidia_install_ollama is defined and nvidia_install_ollama | bool
+      
+    - name: Display Ollama status
+      ansible.builtin.debug:
+        msg: "Ollama status: {{ 'OK' if ollama_result.rc is defined and ollama_result.rc == 0 else 'Not properly installed or not enabled' }}"
+      when: nvidia_install_ollama is defined and nvidia_install_ollama | bool
+      
+    - name: Check if uv is installed
+      ansible.builtin.command: uv --version
+      register: uv_result
+      changed_when: false
+      ignore_errors: true
+      when: nvidia_install_uv is defined and nvidia_install_uv | bool
+      
+    - name: Display uv status
+      ansible.builtin.debug:
+        msg: "uv status: {{ 'OK' if uv_result.rc is defined and uv_result.rc == 0 else 'Not properly installed or not enabled' }}"
+      when: nvidia_install_uv is defined and nvidia_install_uv | bool
