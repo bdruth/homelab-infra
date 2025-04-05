@@ -1,0 +1,32 @@
+# /// script
+# dependencies = ["python-pushover @ git+https://github.com/almir1904/python-pushover.git#egg=python-pushover"]
+# ///
+
+from __future__ import print_function
+
+import os
+import sys
+
+from pushover import Pushover
+
+USER_KEY = "{{ pushover_userId }}"
+APP_TOKEN = "{{ pushover_token }}"
+
+message = ''
+if len(sys.argv) > 1:
+    message = sys.argv[1].strip()
+notify_type = os.environ.get('NOTIFYTYPE', "")
+
+if notify_type == "ONBATT":
+    message = "Connected UPS has entered battery mode"
+elif notify_type == "ONLINE":
+    message = "Connected UPS has returned to AC mode"
+elif not message:
+    message = "(no message)"
+
+print("Sending message: " + message)
+Pushover(APP_TOKEN).message(
+  USER_KEY,
+  message,
+  title="{{ ansible_facts['nodename'] }}",
+)
