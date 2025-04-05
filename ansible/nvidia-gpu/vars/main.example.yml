@@ -2,3 +2,13 @@
 # NVIDIA GPU Configuration Example Variables
 # Copy this file to main.yml and customize as needed
 
+# NVIDIA Container Runtime options
+nvidia_container_debug: false  # Set to true for debugging
+nvidia_runtime_debug: false   # Set to true for debugging
+nvidia_load_kmods: true      # Load kernel modules automatically
+nvidia_no_cgroups: false     # Set to true to disable cgroups support
+nvidia_require_cuda: true    # Require CUDA support
+
+# btop version
+btop_version: "1.4.0"  # Version to install from GitHub releases
+
