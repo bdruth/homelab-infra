@@ -8,6 +8,7 @@ This Ansible module configures a system for AI/ML/CUDA workloads with NVIDIA GPU
 - Configures CUDA toolkit and samples
 - Sets up container runtime for GPU workloads
 - Installs essential development tools
+- Installs latest btop system monitor from GitHub
 
 ## Requirements
 
