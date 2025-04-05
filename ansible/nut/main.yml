@@ -1,0 +1,66 @@
+---
+- name: Setup nut UPS monitoring
+  hosts: all
+  become: yes
+  vars_files:
+    - vars/main.yml
+  vars:
+    nut_conf_path: /etc/nut/nut.conf
+    upsmon_conf_path: /etc/nut/upsmon.conf
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install APT packages
+      apt:
+        pkg:
+          - nut
+          - python3
+          - pipx
+        state: latest
+
+    - name: Make sure destination dir exists
+      file:
+        path: "{{ nut_conf_path | dirname }}"
+        state: directory
+
+    - name: Create nut.conf
+      template:
+        src: nut.conf.j2
+        dest: "{{ nut_conf_path }}"
+        owner: root
+        group: nut
+        mode: "0640"
+      register: nut_conf
+
+    - name: Create notifycmd
+      template:
+        src: client/notifycmd.j2
+        dest: "/etc/nut/notifycmd"
+        owner: root
+        group: nut
+        mode: "0644"
+      when: nut_mode == 'netclient'
+
+    - name: Create upsmon.conf
+      template:
+        src: client/upsmon.conf.j2
+        dest: "{{ upsmon_conf_path }}"
+        owner: root
+        group: nut
+        mode: "0640"
+      register: upsmon_conf
+      when: nut_mode == 'netclient'
+
+    - name: restart nut
+      service:
+        name: "{{ (ansible_distribution == 'Debian')|ternary('nut.target', 'nut-monitor') }}"
+        state: restarted
+      when: nut_conf.changed or upsmon_conf.changed
+      ignore_errors: "{{ ansible_check_mode }}"
+
+    # - name: Print all available facts
+    #   ansible.builtin.debug:
+    #     var: ansible_facts
