@@ -1,0 +1,19 @@
+[Unit]
+Description=n8n AI Workflow Platform
+After=podman.service
+Requires=podman.service
+StartLimitIntervalSec=60
+
+[Service]
+WorkingDirectory={{ n8n_install_dir }}
+Type=oneshot
+RemainAfterExit=yes
+
+ExecStart=/usr/bin/docker compose --profile {{ docker_compose_profile }} up -d
+ExecStop=/usr/bin/docker compose --profile {{ docker_compose_profile }} down
+
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,77 @@
+# Custom docker-compose.yml without Ollama service
+# Uses system-installed Ollama instead
+
+name: n8n-ai-starter-kit
+
+services:
+  n8n:
+    container_name: n8n
+    image: docker.n8n.io/n8nio/n8n:latest
+    restart: always
+    user: "1000:1000"  # Explicitly set user to match host directory permissions
+    ports:
+      - ${N8N_PORT}:5678
+    environment:
+      - N8N_HOST=${N8N_HOST}
+      - N8N_PORT=${N8N_PORT}
+      - N8N_PROTOCOL=${N8N_PROTOCOL}
+      - NODE_ENV=production
+      - N8N_METRICS=true
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=${POSTGRES_DB}
+      - DB_POSTGRESDB_USER=${POSTGRES_USER}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - WEBHOOK_URL=${WEBHOOK_URL}
+      - N8N_AI_ENABLED=${N8N_AI_ENABLED}
+      - N8N_AI_OLLAMA_BASE_URL=${N8N_AI_OLLAMA_BASE_URL}
+    volumes:
+      - ${N8N_BASE_PATH}:/home/node/.n8n
+      - ${SHARED_PATH}:/data/shared
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - cpu
+      - gpu-nvidia
+      - gpu-amd
+
+  postgres:
+    container_name: n8n-postgres
+    image: postgres:16
+    restart: always
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_NON_ROOT_USER=${POSTGRES_NON_ROOT_USER}
+      - POSTGRES_NON_ROOT_PASSWORD=${POSTGRES_NON_ROOT_PASSWORD}
+    volumes:
+      - ${POSTGRES_BASE_PATH}:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    profiles:
+      - cpu
+      - gpu-nvidia
+      - gpu-amd
+
+  qdrant:
+    container_name: n8n-qdrant
+    image: qdrant/qdrant
+    restart: always
+    volumes:
+      - ${QDRANT_BASE_PATH}:/qdrant/storage
+    profiles:
+      - cpu
+      - gpu-nvidia
+      - gpu-amd

@@ -26,9 +26,17 @@
     - name: Import UV package manager installation tasks
       ansible.builtin.import_tasks: tasks/uv_manager.yml
       when: install_uv | bool
+      
+    - name: Import n8n AI workflow platform tasks
+      ansible.builtin.import_tasks: tasks/n8n.yml
+      when: install_n8n | bool
 
   handlers:
     - name: Update initramfs
       ansible.builtin.command:
         cmd: update-initramfs -u
       changed_when: true
+      
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: yes
