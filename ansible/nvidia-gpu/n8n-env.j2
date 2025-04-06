@@ -1,0 +1,29 @@
+# n8n Self-hosted AI Starter Kit Environment Configuration
+# {{ ansible_managed }}
+
+N8N_PORT={{ n8n_port }}
+N8N_PROTOCOL={{ n8n_protocol }}
+N8N_HOST={{ n8n_host }}
+N8N_HOST_PUBLIC={{ n8n_host_public | default(n8n_host) }}
+
+# Use external Ollama service instead of container
+N8N_AI_ENABLED=true
+N8N_AI_OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_SKIP=true
+
+# Data paths
+N8N_BASE_PATH={{ n8n_install_dir }}/data/n8n
+POSTGRES_BASE_PATH={{ n8n_install_dir }}/data/postgres
+QDRANT_BASE_PATH={{ n8n_install_dir }}/data/qdrant
+SHARED_PATH={{ n8n_install_dir }}/data/shared
+
+# Database configuration
+POSTGRES_USER={{ n8n_postgres_user }}
+POSTGRES_PASSWORD={{ n8n_postgres_password }}
+POSTGRES_DB={{ n8n_postgres_db }}
+POSTGRES_NON_ROOT_USER={{ n8n_postgres_user }}
+POSTGRES_NON_ROOT_PASSWORD={{ n8n_postgres_password }}
+
+# n8n configuration
+N8N_ENCRYPTION_KEY={{ n8n_encryption_key }}
+WEBHOOK_URL={{ n8n_webhook_url  }}

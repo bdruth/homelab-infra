@@ -31,6 +31,18 @@
       ansible.builtin.debug:
         msg: "CUDA toolkit status: {{ 'OK' if nvcc_result.rc is defined and nvcc_result.rc == 0 else 'Not properly installed or not enabled' }}"
       when: nvidia_install_cuda_toolkit is defined and nvidia_install_cuda_toolkit | bool
+      
+    - name: Check if docker-compose is installed
+      ansible.builtin.command: docker-compose --version
+      register: docker_compose_result
+      changed_when: false
+      ignore_errors: true
+      when: install_docker_compose is defined and install_docker_compose | bool
+
+    - name: Display docker-compose status
+      ansible.builtin.debug:
+        msg: "docker-compose status: {{ 'OK' if docker_compose_result.rc is defined and docker_compose_result.rc == 0 else 'Not properly installed or not enabled' }}"
+      when: install_docker_compose is defined and install_docker_compose | bool
 
     - name: Check if btop is installed
       ansible.builtin.command: btop --version
@@ -67,3 +79,15 @@
       ansible.builtin.debug:
         msg: "uv status: {{ 'OK' if uv_result.rc is defined and uv_result.rc == 0 else 'Not properly installed or not enabled' }}"
       when: install_uv is defined and install_uv | bool
+      
+    - name: Check if n8n is running
+      ansible.builtin.command: docker ps | grep n8n
+      register: n8n_result
+      changed_when: false
+      ignore_errors: true
+      when: install_n8n is defined and install_n8n | bool
+      
+    - name: Display n8n status
+      ansible.builtin.debug:
+        msg: "n8n status: {{ 'OK' if n8n_result.rc is defined and n8n_result.rc == 0 else 'Not properly installed or not running' }}"
+      when: install_n8n is defined and install_n8n | bool

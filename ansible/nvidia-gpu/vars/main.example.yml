@@ -8,11 +8,14 @@ nvidia_install_cuda_toolkit: true # Whether to install CUDA toolkit
 install_btop: true # Whether to install btop
 install_ollama: true # Whether to install Ollama
 install_uv: true # Whether to install uv Python package manager
+install_n8n: true # Whether to install n8n AI workflow platform
+install_docker_compose: true # Whether to install latest docker-compose
 nvidia_configure_egpu: true # Whether to configure thunderbolt eGPU support
 
 # Package versions and configuration
 nvidia_driver_version: "570" # Used in package name (nvidia-driver-570)
 btop_version: "1.4.0" # Version to install from GitHub releases
+n8n_version: "main" # Git branch or tag to use for n8n installation
 
 # NVIDIA Container Runtime options
 nvidia_container_debug: false # Set to true for debugging
@@ -20,4 +23,18 @@ nvidia_runtime_debug: false # Set to true for debugging
 nvidia_load_kmods: true # Load kernel modules automatically
 nvidia_no_cgroups: false # Set to true to disable cgroups support
 nvidia_require_cuda: true # Require CUDA support
+
+# n8n configuration
+n8n_install_dir: "/opt/n8n-ai-starter-kit" # Installation directory
+n8n_port: "5678" # Port for n8n web interface
+n8n_protocol: "http" # Protocol for n8n web interface (http or https)
+n8n_host: "localhost" # Host for n8n web interface
+n8n_host_public: "localhost" # Public host for n8n web interface
+n8n_webhook_url: "https://example.com/"
+
+# n8n database configuration
+n8n_postgres_user: "n8n" # PostgreSQL username
+n8n_postgres_password: "n8n_password" # PostgreSQL password (change in production)
+n8n_postgres_db: "n8n" # PostgreSQL database name
+n8n_encryption_key: "12345678901234567890123456789012" # 32-character encryption key (change in production)
 

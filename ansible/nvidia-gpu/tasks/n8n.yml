@@ -1,0 +1,92 @@
+---
+# n8n AI Workflow Platform Tasks
+
+# We're using podman-docker from packages.yml instead of docker.io
+
+- name: Create n8n base directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+  loop:
+    - "{{ n8n_install_dir }}"
+    - "{{ n8n_install_dir }}/data"
+    - "{{ n8n_install_dir }}/data/qdrant"
+    
+- name: Create postgres data directory with proper permissions
+  ansible.builtin.file:
+    path: "{{ n8n_install_dir }}/data/postgres"
+    state: directory
+    # postgres container typically runs as user 999:999
+    mode: '0700'  # postgres is strict about permissions
+    owner: 999
+    group: 999
+    
+- name: Create n8n shared data directory with proper permissions
+  ansible.builtin.file:
+    path: "{{ n8n_install_dir }}/data/shared"
+    state: directory
+    mode: '0777'  # Permissive mode to ensure all containers can access
+    owner: root
+    group: root
+
+- name: Create n8n data directory with 1000:1000 ownership
+  ansible.builtin.file:
+    path: "{{ n8n_install_dir }}/data/n8n"
+    state: directory
+    mode: '0777'  # Permissive mode to ensure container can write
+    owner: 1000   # This is the uid of the node user in the container
+    group: 1000   # This is the gid of the node user in the container
+
+- name: Determine Docker Compose profile based on GPU
+  ansible.builtin.set_fact:
+    docker_compose_profile: "{% if nvidia_install_gpu_drivers | bool %}gpu-nvidia{% else %}cpu{% endif %}"
+
+- name: Create .env file for n8n
+  ansible.builtin.template:
+    src: n8n-env.j2
+    dest: "{{ n8n_install_dir }}/.env"
+    owner: root
+    group: root
+    mode: '0600'
+    
+- name: Create custom docker-compose.yml without Ollama (using system Ollama)
+  ansible.builtin.template:
+    src: n8n-docker-compose.yml.j2
+    dest: "{{ n8n_install_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: '0644'
+
+# docker-compose is installed elsewhere as part of the base system
+  
+- name: Start n8n with Docker Compose
+  ansible.builtin.command:
+    cmd: "docker compose --profile {{ docker_compose_profile }} up -d"
+    chdir: "{{ n8n_install_dir }}"
+  register: docker_compose_result
+  changed_when: docker_compose_result.rc == 0
+
+- name: Configure podman service to start on boot (used by docker compatibility layer)
+  ansible.builtin.systemd:
+    name: podman
+    enabled: yes
+    state: started
+
+- name: Create systemd service for n8n
+  ansible.builtin.template:
+    src: n8n.service.j2
+    dest: /etc/systemd/system/n8n.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Reload systemd
+
+- name: Enable n8n service
+  ansible.builtin.systemd:
+    name: n8n
+    enabled: yes
+    daemon_reload: yes
+  ignore_errors: "{{ ansible_check_mode }}"
