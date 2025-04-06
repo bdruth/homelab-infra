@@ -15,6 +15,7 @@ This Ansible module configures a system for AI/ML/CUDA workloads with NVIDIA GPU
 - Installs Ollama for running AI models locally
 - Installs uv Python package manager and pipx
 - Installs n8n AI workflow platform with NVIDIA GPU acceleration
+- Installs Whisper ASR Webservice with NVIDIA GPU acceleration
 
 ## Requirements
 
@@ -32,6 +33,7 @@ The module is organized into separate task files for better maintainability:
 - `tasks/ollama.yml` - Installs and configures Ollama
 - `tasks/uv_manager.yml` - Installs uv Python package manager
 - `tasks/n8n.yml` - Installs and configures n8n AI workflow platform
+- `tasks/whisper_asr.yml` - Installs and configures Whisper ASR Webservice
 
 ## Usage
 
@@ -53,6 +55,7 @@ Each major component can be enabled or disabled using variables:
 - `install_ollama` - Whether to install Ollama
 - `install_uv` - Whether to install uv Python package manager
 - `install_n8n` - Whether to install n8n AI workflow platform
+- `install_whisper_asr` - Whether to install Whisper ASR Webservice
 - `install_docker_compose` - Whether to install latest docker-compose
 - `nvidia_configure_egpu` - Whether to configure thunderbolt eGPU support
 
@@ -80,6 +83,7 @@ ollama --version  # Should display Ollama version
 btop --version  # Should display btop version
 uv --version  # Should display uv version
 docker ps | grep n8n  # Should show running n8n containers
+docker ps | grep whisper  # Should show running Whisper ASR container
 ```
 
 ### n8n AI Workflow Platform
@@ -93,3 +97,15 @@ After installation, access the n8n web interface at `http://localhost:5678/` (or
 - Shared folder at `/opt/n8n-ai-starter-kit/data/shared` (configurable)
 
 This implementation uses the system-wide Ollama service installed by the `ollama.yml` task, avoiding port conflicts and duplicating services.
+
+### Whisper ASR Webservice
+
+After installation, access the Whisper ASR API at `http://localhost:9000/` (or the host/port configured in the variables). The service provides:
+
+- OpenAI-compatible Whisper API for automatic speech recognition
+- GPU acceleration for faster transcription when NVIDIA drivers are installed
+- Support for multiple Whisper model sizes (tiny, base, small, medium, large, large-v3)
+- Uses faster-whisper for improved performance
+- Data directory at `/opt/whisper-asr/data` (configurable) for persistent storage
+
+The service automatically detects if GPU support is available and uses the appropriate compute type (float16 for GPU, int8 for CPU).

@@ -1,0 +1,52 @@
+---
+# Whisper ASR Webservice Tasks
+
+- name: Create whisper ASR base directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+  loop:
+    - "{{ whisper_asr_install_dir }}"
+    - "{{ whisper_asr_install_dir }}/data"
+
+- name: Create whisper ASR docker-compose.yml
+  ansible.builtin.template:
+    src: whisper-asr-docker-compose.yml.j2
+    dest: "{{ whisper_asr_install_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Create whisper ASR .env file
+  ansible.builtin.template:
+    src: whisper-asr-env.j2
+    dest: "{{ whisper_asr_install_dir }}/.env"
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: Start whisper ASR with Docker Compose
+  ansible.builtin.command:
+    cmd: "docker compose up -d"
+    chdir: "{{ whisper_asr_install_dir }}"
+  register: docker_compose_result
+  changed_when: docker_compose_result.rc == 0
+
+- name: Create systemd service for whisper ASR
+  ansible.builtin.template:
+    src: whisper-asr.service.j2
+    dest: /etc/systemd/system/whisper-asr.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Reload systemd
+
+- name: Enable whisper ASR service
+  ansible.builtin.systemd:
+    name: whisper-asr
+    enabled: yes
+    daemon_reload: yes
+  ignore_errors: "{{ ansible_check_mode }}"

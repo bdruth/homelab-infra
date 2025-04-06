@@ -9,6 +9,7 @@ install_btop: true # Whether to install btop
 install_ollama: true # Whether to install Ollama
 install_uv: true # Whether to install uv Python package manager
 install_n8n: true # Whether to install n8n AI workflow platform
+install_whisper_asr: true # Whether to install Whisper ASR Webservice
 install_docker_compose: true # Whether to install latest docker-compose
 nvidia_configure_egpu: true # Whether to configure thunderbolt eGPU support
 
@@ -37,4 +38,11 @@ n8n_postgres_user: "n8n" # PostgreSQL username
 n8n_postgres_password: "n8n_password" # PostgreSQL password (change in production)
 n8n_postgres_db: "n8n" # PostgreSQL database name
 n8n_encryption_key: "12345678901234567890123456789012" # 32-character encryption key (change in production)
+
+# Whisper ASR Webservice configuration
+whisper_asr_install_dir: "/opt/whisper-asr" # Installation directory
+whisper_asr_port: "9000" # Port for Whisper ASR API
+whisper_asr_model: "large-v3" # Model size (tiny, base, small, medium, large, large-v3)
+whisper_asr_engine: "faster_whisper" # Engine: faster_whisper or whisper
+whisper_asr_compute_type: "{% if nvidia_install_gpu_drivers | bool %}float16{% else %}int8{% endif %}" # Compute type: float16 (GPU), int8 (CPU)
 

@@ -1,0 +1,23 @@
+version: '3'
+services:
+  whisper:
+    image: onerahmet/openai-whisper-asr-webservice:latest
+    ports:
+      - "{{ whisper_asr_port }}:9000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - ASR_MODEL={{ whisper_asr_model }}
+      - ASR_ENGINE={{ whisper_asr_engine }}
+      - ASR_COMPUTE_TYPE={{ whisper_asr_compute_type }}
+{% if nvidia_install_gpu_drivers | bool %}
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+{% endif %}
+    restart: unless-stopped
