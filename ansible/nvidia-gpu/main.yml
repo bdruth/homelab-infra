@@ -30,6 +30,10 @@
     - name: Import n8n AI workflow platform tasks
       ansible.builtin.import_tasks: tasks/n8n.yml
       when: install_n8n | bool
+      
+    - name: Import Whisper ASR Webservice tasks
+      ansible.builtin.import_tasks: tasks/whisper_asr.yml
+      when: install_whisper_asr | bool
 
   handlers:
     - name: Update initramfs
