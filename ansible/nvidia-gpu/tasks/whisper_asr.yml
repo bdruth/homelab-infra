@@ -12,6 +12,15 @@
     - "{{ whisper_asr_install_dir }}"
     - "{{ whisper_asr_install_dir }}/data"
 
+- name: Create or update whisper ASR config file
+  ansible.builtin.template:
+    src: whisper-asr-config.j2
+    dest: "{{ whisper_asr_install_dir }}/config.yml"
+    owner: root
+    group: root
+    mode: '0644'
+  register: whisper_config_file
+
 - name: Create systemd service for whisper ASR
   ansible.builtin.template:
     src: whisper-asr.service.j2
@@ -19,6 +28,7 @@
     owner: root
     group: root
     mode: '0644'
+  register: whisper_service_file
   notify: Reload systemd
 
 - name: Enable and start whisper ASR service
@@ -28,3 +38,9 @@
     state: started
     daemon_reload: yes
   ignore_errors: "{{ ansible_check_mode }}"
+  
+- name: Restart whisper ASR service if configuration changed
+  ansible.builtin.systemd:
+    name: whisper-asr
+    state: restarted
+  when: whisper_config_file.changed or whisper_service_file.changed
