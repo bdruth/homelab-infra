@@ -46,9 +46,9 @@ Each major component can be enabled or disabled using variables:
 
 - `nvidia_install_gpu_drivers` - Whether to install NVIDIA GPU drivers
 - `nvidia_install_cuda_toolkit` - Whether to install CUDA toolkit
-- `nvidia_install_btop` - Whether to install btop
-- `nvidia_install_ollama` - Whether to install Ollama
-- `nvidia_install_uv` - Whether to install uv Python package manager
+- `install_btop` - Whether to install btop
+- `install_ollama` - Whether to install Ollama
+- `install_uv` - Whether to install uv Python package manager
 - `nvidia_configure_egpu` - Whether to configure thunderbolt eGPU support
 
 ## Testing
