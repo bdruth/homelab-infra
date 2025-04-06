@@ -17,15 +17,15 @@
 
     - name: Import btop installation tasks
       ansible.builtin.import_tasks: tasks/btop.yml
-      when: nvidia_install_btop | bool
+      when: install_btop | bool
 
     - name: Import Ollama installation tasks
       ansible.builtin.import_tasks: tasks/ollama.yml
-      when: nvidia_install_ollama | bool
+      when: install_ollama | bool
 
     - name: Import UV package manager installation tasks
       ansible.builtin.import_tasks: tasks/uv_manager.yml
-      when: nvidia_install_uv | bool
+      when: install_uv | bool
 
   handlers:
     - name: Update initramfs
