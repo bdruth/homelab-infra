@@ -24,6 +24,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Always use Docker CLI commands (not podman commands) for consistency
 - Examples: `docker ps`, `docker compose up -d`, `docker build`
 - The underlying implementation uses podman but we use docker CLI syntax
+- IMPORTANT: For GPU access, avoid using docker/podman compose and use direct `docker run` commands with systemd services instead
+- When GPU access is needed, use `--device nvidia.com/gpu=all --security-opt=label=disable` flags in `docker run` commands
 
 ## Code Style Guidelines
 - Follow infrastructure-as-code best practices
