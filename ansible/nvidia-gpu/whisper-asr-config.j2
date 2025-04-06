@@ -1,0 +1,9 @@
+# Whisper ASR Webservice Configuration
+# This file is used to track configuration changes and trigger service restarts when needed
+
+install_dir: {{ whisper_asr_install_dir }}
+port: {{ whisper_asr_port }}
+model: {{ whisper_asr_model }}
+engine: {{ whisper_asr_engine }}
+compute_type: {{ whisper_asr_compute_type }}
+gpu_enabled: {{ nvidia_install_gpu_drivers | bool }}
