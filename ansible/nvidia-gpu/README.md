@@ -16,6 +16,8 @@ This Ansible module configures a system for AI/ML/CUDA workloads with NVIDIA GPU
 - Installs uv Python package manager and pipx
 - Installs n8n AI workflow platform with NVIDIA GPU acceleration
 - Installs Whisper ASR Webservice with NVIDIA GPU acceleration
+- Installs Open WebUI with NVIDIA GPU acceleration
+- Installs Watchtower for automatic container updates using beatkind/watchtower fork
 
 ## Requirements
 
@@ -34,6 +36,8 @@ The module is organized into separate task files for better maintainability:
 - `tasks/uv_manager.yml` - Installs uv Python package manager
 - `tasks/n8n.yml` - Installs and configures n8n AI workflow platform
 - `tasks/whisper_asr.yml` - Installs and configures Whisper ASR Webservice
+- `tasks/open_webui.yml` - Installs and configures Open WebUI
+- `tasks/watchtower.yml` - Installs and configures Watchtower for automatic container updates
 
 ## Usage
 
@@ -56,6 +60,8 @@ Each major component can be enabled or disabled using variables:
 - `install_uv` - Whether to install uv Python package manager
 - `install_n8n` - Whether to install n8n AI workflow platform
 - `install_whisper_asr` - Whether to install Whisper ASR Webservice
+- `install_open_webui` - Whether to install Open WebUI
+- `install_watchtower` - Whether to install Watchtower for automatic container updates
 - `install_docker_compose` - Whether to install latest docker-compose
 - `nvidia_configure_egpu` - Whether to configure thunderbolt eGPU support
 
@@ -84,6 +90,8 @@ btop --version  # Should display btop version
 uv --version  # Should display uv version
 docker ps | grep n8n  # Should show running n8n containers
 docker ps | grep whisper  # Should show running Whisper ASR container
+docker ps | grep open-webui  # Should show running Open WebUI container
+docker ps | grep watchtower  # Should show running Watchtower container
 ```
 
 ### n8n AI Workflow Platform
@@ -109,3 +117,34 @@ After installation, access the Whisper ASR API at `http://localhost:9000/` (or t
 - Data directory at `/opt/whisper-asr/data` (configurable) for persistent storage
 
 The service automatically detects if GPU support is available and uses the appropriate compute type (float16 for GPU, int8 for CPU).
+
+### Open WebUI
+
+After installation, access the Open WebUI interface at `http://localhost:3000/` (or the host/port configured in the variables). The service provides:
+
+- Modern web interface for interacting with Ollama models
+- GPU acceleration for faster inference when NVIDIA drivers are installed
+- Integration with local Ollama installation
+- User management and conversation history
+
+### Watchtower
+
+This playbook installs the [beatkind/watchtower](https://github.com/beatkind/watchtower) fork, which automatically updates running Docker containers when new image versions are available. Key features:
+
+- Automatic container updates based on schedule or polling interval
+- Optional cleanup of old images to save disk space
+- Support for label-based monitoring (only update containers with specific labels)
+- Rolling updates to minimize service disruption
+
+The service is configured with docker-compose and set to run daily at 4 AM by default, or at a specified interval. Container-specific update flags allow you to control which services get automatically updated:
+
+```yaml
+# Container update flags
+watchtower_update_n8n: true              # Update n8n container
+watchtower_update_postgres: false         # Don't update PostgreSQL container
+watchtower_update_qdrant: true           # Update Qdrant container
+watchtower_update_whisper_asr: true      # Update Whisper ASR container
+watchtower_update_open_webui: true       # Update Open WebUI container
+```
+
+These flags add the appropriate labels to containers to enable or disable automatic updates. This is especially useful for database containers like PostgreSQL where updates should be performed manually with proper data migration.

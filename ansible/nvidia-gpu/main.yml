@@ -38,6 +38,10 @@
     - name: Import Open WebUI tasks
       ansible.builtin.import_tasks: tasks/open_webui.yml
       when: install_open_webui | bool
+      
+    - name: Import Watchtower tasks
+      ansible.builtin.import_tasks: tasks/watchtower.yml
+      when: install_watchtower | bool
 
   handlers:
     - name: Update initramfs
