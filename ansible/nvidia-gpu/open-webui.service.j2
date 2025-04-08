@@ -17,6 +17,7 @@ ExecStart=/usr/bin/docker run --name open-webui \
   -e PORT={{ open_webui_port }} \
   -p {{ open_webui_port }}:{{ open_webui_port }} \
   {% if nvidia_install_gpu_drivers | bool %}--device nvidia.com/gpu=all --security-opt=label=disable {% endif %} \
+  --label com.centurylinklabs.watchtower.enable={{ watchtower_update_open_webui | bool }} \
   ghcr.io/open-webui/open-webui:main
 
 ExecStop=/usr/bin/docker stop open-webui

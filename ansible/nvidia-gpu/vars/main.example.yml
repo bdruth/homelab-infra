@@ -13,6 +13,7 @@ install_whisper_asr: true # Whether to install Whisper ASR Webservice
 install_open_webui: true # Whether to install Open WebUI
 install_docker_compose: true # Whether to install latest docker-compose
 nvidia_configure_egpu: true # Whether to configure thunderbolt eGPU support
+install_watchtower: true # Whether to install watchtower for automatic container updates
 
 # Package versions and configuration
 nvidia_driver_version: "570" # Used in package name (nvidia-driver-570)
@@ -50,4 +51,22 @@ whisper_asr_compute_type: "{% if nvidia_install_gpu_drivers | bool %}float16{% e
 # Open WebUI configuration
 open_webui_install_dir: "/opt/open-webui" # Installation directory
 open_webui_port: "3000" # Port for Open WebUI
+
+# Watchtower configuration
+watchtower_install_dir: "/opt/watchtower" # Installation directory
+watchtower_version: "latest" # Version of watchtower to use
+watchtower_debug: false # Enable debug logging
+watchtower_cleanup: true # Remove old images after updating
+watchtower_include_stopped: false # Include stopped containers when checking for updates
+watchtower_rolling_restart: true # Restart one container at a time
+watchtower_schedule: "0 0 4 * * *" # Update at 4 AM (cron format)
+watchtower_poll_interval: "86400" # Check every 24 hours (in seconds, alternative to schedule)
+watchtower_monitor_only_enable: [] # Only monitor containers with specific labels
+
+# Container update flags (set to true to enable automatic updates for specific containers)
+watchtower_update_n8n: true # Update n8n container
+watchtower_update_postgres: false # Update PostgreSQL container (generally not recommended)
+watchtower_update_qdrant: true # Update Qdrant container
+watchtower_update_whisper_asr: true # Update Whisper ASR container
+watchtower_update_open_webui: true # Update Open WebUI container
 

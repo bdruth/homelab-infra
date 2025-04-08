@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  watchtower:
+    image: beatkind/watchtower:{{ watchtower_version }}
+    container_name: watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
+    environment:
+      {% if watchtower_debug | bool %}
+      - WATCHTOWER_DEBUG=true
+      {% endif %}
+      {% if watchtower_cleanup | bool %}
+      - WATCHTOWER_CLEANUP=true
+      {% endif %}
+      {% if watchtower_include_stopped | bool %}
+      - WATCHTOWER_INCLUDE_STOPPED=true
+      {% endif %}
+      {% if watchtower_rolling_restart | bool %}
+      - WATCHTOWER_ROLLING_RESTART=true
+      {% endif %}
+      {% if watchtower_schedule %}
+      - WATCHTOWER_SCHEDULE={{ watchtower_schedule }}
+      {% endif %}
+      {% if watchtower_poll_interval %}
+      - WATCHTOWER_POLL_INTERVAL={{ watchtower_poll_interval }}
+      {% endif %}
+    {% if watchtower_monitor_only_enable | length > 0 %}
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+    {% endif %}

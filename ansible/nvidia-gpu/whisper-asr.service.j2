@@ -17,6 +17,7 @@ ExecStart=/usr/bin/docker run --name whisper-asr \
   -e ASR_COMPUTE_TYPE={{ whisper_asr_compute_type }} \
   -p {{ whisper_asr_port }}:9000 \
   {% if nvidia_install_gpu_drivers | bool %}--device nvidia.com/gpu=all --security-opt=label=disable {% endif %} \
+  --label com.centurylinklabs.watchtower.enable={{ watchtower_update_whisper_asr | bool }} \
   onerahmet/openai-whisper-asr-webservice:latest{% if nvidia_install_gpu_drivers | bool %}-gpu{% endif %}
 
 ExecStop=/usr/bin/docker stop whisper-asr
