@@ -1,0 +1,25 @@
+[Unit]
+Description=Open WebUI
+After=network.target podman.service
+Requires=podman.service
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=10
+WorkingDirectory={{ open_webui_install_dir }}
+ExecStartPre=-/usr/bin/docker stop open-webui
+ExecStartPre=-/usr/bin/docker rm open-webui
+ExecStart=/usr/bin/docker run --name open-webui \
+  -v {{ open_webui_install_dir }}/data:/app/backend/data \
+  -e OLLAMA_BASE_URL=http://{{ ansible_default_ipv4.address }}:11434 \
+  -e OLLAMA_API_BASE_URL=http://{{ ansible_default_ipv4.address }}:11434/api \
+  -e PORT={{ open_webui_port }} \
+  -p {{ open_webui_port }}:{{ open_webui_port }} \
+  {% if nvidia_install_gpu_drivers | bool %}--device nvidia.com/gpu=all --security-opt=label=disable {% endif %} \
+  ghcr.io/open-webui/open-webui:main
+
+ExecStop=/usr/bin/docker stop open-webui
+
+[Install]
+WantedBy=multi-user.target

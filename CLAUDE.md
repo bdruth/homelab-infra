@@ -37,3 +37,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Organize tasks into modular files with clear responsibilities
 - Use templates (.j2 files) for configuration generation
 - Register command outputs for validation and debugging
+- IMPORTANT: When adding new variables to example files (e.g., `main.example.yml`), always update the corresponding actual configuration files (e.g., `main.yml`) to maintain consistency
+- IMPORTANT: When adding new features or tasks, always add corresponding tests in the test playbook (e.g., `test-playbook.yml`) to verify the installation and functionality
+- For services that may take time to start (e.g., Docker containers), use Ansible's retry and until mechanisms instead of fixed delays to ensure reliable testing:
+  ```yaml
+  - name: Wait for service to start
+    ansible.builtin.shell: docker ps | grep service-name
+    register: service_result
+    changed_when: false
+    ignore_errors: true
+    retries: 15      # Number of attempts
+    delay: 4         # Seconds between retries
+    until: service_result.rc == 0
+    when: install_service | bool
+  ```

@@ -34,6 +34,10 @@
     - name: Import Whisper ASR Webservice tasks
       ansible.builtin.import_tasks: tasks/whisper_asr.yml
       when: install_whisper_asr | bool
+      
+    - name: Import Open WebUI tasks
+      ansible.builtin.import_tasks: tasks/open_webui.yml
+      when: install_open_webui | bool
 
   handlers:
     - name: Update initramfs

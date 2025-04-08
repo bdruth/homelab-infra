@@ -10,6 +10,7 @@ install_ollama: true # Whether to install Ollama
 install_uv: true # Whether to install uv Python package manager
 install_n8n: true # Whether to install n8n AI workflow platform
 install_whisper_asr: true # Whether to install Whisper ASR Webservice
+install_open_webui: true # Whether to install Open WebUI
 install_docker_compose: true # Whether to install latest docker-compose
 nvidia_configure_egpu: true # Whether to configure thunderbolt eGPU support
 
@@ -45,4 +46,8 @@ whisper_asr_port: "9000" # Port for Whisper ASR API
 whisper_asr_model: "large-v3" # Model size (tiny, base, small, medium, large, large-v3)
 whisper_asr_engine: "faster_whisper" # Engine: faster_whisper or whisper
 whisper_asr_compute_type: "{% if nvidia_install_gpu_drivers | bool %}float16{% else %}int8{% endif %}" # Compute type: float16 (GPU), int8 (CPU)
+
+# Open WebUI configuration
+open_webui_install_dir: "/opt/open-webui" # Installation directory
+open_webui_port: "3000" # Port for Open WebUI
 
