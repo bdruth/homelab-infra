@@ -82,11 +82,14 @@
         msg: "uv status: {{ 'OK' if uv_result.rc is defined and uv_result.rc == 0 else 'Not properly installed or not enabled' }}"
       when: install_uv is defined and install_uv | bool
 
-    - name: Check if n8n is running
+    - name: Wait for n8n container to start
       ansible.builtin.shell: docker ps | grep n8n
       register: n8n_result
       changed_when: false
       ignore_errors: true
+      retries: 15
+      delay: 4
+      until: n8n_result.rc == 0
       when: install_n8n is defined and install_n8n | bool
 
     - name: Display n8n status
@@ -94,11 +97,14 @@
         msg: "n8n status: {{ 'OK' if n8n_result.rc is defined and n8n_result.rc == 0 else 'Not properly installed or not running' }}"
       when: install_n8n is defined and install_n8n | bool
 
-    - name: Check if Whisper ASR is running
+    - name: Wait for Whisper ASR container to start
       ansible.builtin.shell: docker ps | grep whisper
       register: whisper_asr_result
       changed_when: false
       ignore_errors: true
+      retries: 15
+      delay: 4
+      until: whisper_asr_result.rc == 0
       when: install_whisper_asr is defined and install_whisper_asr | bool
 
     - name: Display Whisper ASR status
@@ -141,3 +147,54 @@
         - nvidia_install_gpu_drivers is defined and nvidia_install_gpu_drivers | bool
         - whisper_asr_result.rc is defined and whisper_asr_result.rc == 0
         - whisper_http_check.status is defined and whisper_http_check.status == 200
+        
+    - name: Wait for Open WebUI container to start
+      ansible.builtin.shell: docker ps | grep open-webui
+      register: open_webui_result
+      changed_when: false
+      ignore_errors: true
+      retries: 15
+      delay: 4
+      until: open_webui_result.rc == 0
+      when: install_open_webui is defined and install_open_webui | bool
+
+    - name: Display Open WebUI status
+      ansible.builtin.debug:
+        msg: "Open WebUI status: {{ 'OK' if open_webui_result.rc is defined and open_webui_result.rc == 0 else 'Not properly installed or not running' }}"
+      when: install_open_webui is defined and install_open_webui | bool
+
+    - name: Wait for Open WebUI HTTP service to become available
+      ansible.builtin.uri:
+        url: "http://localhost:{{ open_webui_port }}"
+        method: GET
+        status_code: 200
+        timeout: 120
+      register: open_webui_http_check
+      retries: 12
+      delay: 5
+      until: open_webui_http_check.status == 200
+      ignore_errors: true
+      when:
+        - install_open_webui is defined and install_open_webui | bool
+        - open_webui_result.rc is defined and open_webui_result.rc == 0
+
+    - name: Check if CUDA is available inside Open WebUI container
+      ansible.builtin.shell: >
+        docker exec open-webui /bin/bash -c "python3 -c 'import torch; print(torch.cuda.is_available())'"
+      register: open_webui_cuda_result
+      changed_when: false
+      ignore_errors: true
+      when:
+        - install_open_webui is defined and install_open_webui | bool
+        - nvidia_install_gpu_drivers is defined and nvidia_install_gpu_drivers | bool
+        - open_webui_result.rc is defined and open_webui_result.rc == 0
+        - open_webui_http_check.status is defined and open_webui_http_check.status == 200
+
+    - name: Display Open WebUI CUDA access status
+      ansible.builtin.debug:
+        msg: "Open WebUI CUDA access: {{ 'OK - GPU access confirmed' if open_webui_cuda_result.stdout_lines[0] == 'True' else 'Not connected to GPU' }}"
+      when:
+        - install_open_webui is defined and install_open_webui | bool
+        - nvidia_install_gpu_drivers is defined and nvidia_install_gpu_drivers | bool
+        - open_webui_result.rc is defined and open_webui_result.rc == 0
+        - open_webui_http_check.status is defined and open_webui_http_check.status == 200
