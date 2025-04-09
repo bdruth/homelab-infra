@@ -11,6 +11,7 @@ install_uv: true # Whether to install uv Python package manager
 install_n8n: true # Whether to install n8n AI workflow platform
 install_whisper_asr: true # Whether to install Whisper ASR Webservice
 install_open_webui: true # Whether to install Open WebUI
+install_comfyui: true # Whether to install ComfyUI for image generation
 install_docker_compose: true # Whether to install latest docker-compose
 nvidia_configure_egpu: true # Whether to configure thunderbolt eGPU support
 install_watchtower: true # Whether to install watchtower for automatic container updates
@@ -55,6 +56,20 @@ open_webui_enable_rag_web_search: true # Enable RAG web search
 open_webui_enable_search_query_generation: true # Enable search query generation
 open_webui_rag_web_search_engine: "duckduckgo" # Web search engine to use
 open_webui_rag_web_loader_engine: "playwright" # Web loader engine to use
+open_webui_enable_image_generation: true # Enable image generation integration
+
+# ComfyUI configuration
+comfyui_install_dir: "/opt/comfyui" # Installation directory
+comfyui_port: "8188" # Port for ComfyUI
+comfyui_user: "comfyui" # User to run ComfyUI
+comfyui_group: "comfyui" # Group for ComfyUI user
+comfyui_create_user: true # Whether to create a dedicated user for ComfyUI
+comfyui_venv_path: "/opt/comfyui/venv" # Path to Python virtual environment
+comfyui_git_repo: "https://github.com/comfyanonymous/ComfyUI.git" # Git repository
+comfyui_git_branch: "master" # Git branch or tag
+comfyui_torch_cuda_url: "https://download.pytorch.org/whl/cu121" # PyTorch CUDA wheels URL
+comfyui_low_vram: true # Enable low VRAM mode (8GB VRAM or less)
+comfyui_force_reinstall: false # Set to true to force removal and reinstallation
 
 # Watchtower configuration
 watchtower_install_dir: "/opt/watchtower" # Installation directory
