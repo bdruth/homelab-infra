@@ -358,6 +358,55 @@
         - install_comfyui is defined and install_comfyui | bool
         - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
         - comfyui_venv_check.stat.exists is defined and comfyui_venv_check.stat.exists
+        
+    - name: Check if FLUX.1 model files are installed
+      ansible.builtin.stat:
+        path: "{{ comfyui_install_dir }}/models/checkpoints/{{ comfyui_flux1_model_filename }}"
+      register: flux1_model_check
+      when:
+        - install_comfyui is defined and install_comfyui | bool
+        - comfyui_install_flux1 is defined and comfyui_install_flux1 | bool
+        - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
+
+    - name: Check if FLUX.1 VAE model is installed
+      ansible.builtin.stat:
+        path: "{{ comfyui_install_dir }}/models/vae/ae.safetensors"
+      register: flux1_vae_check
+      when:
+        - install_comfyui is defined and install_comfyui | bool
+        - comfyui_install_flux1 is defined and comfyui_install_flux1 | bool
+        - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
+
+    - name: Check if FLUX.1 CLIP model is installed
+      ansible.builtin.stat:
+        path: "{{ comfyui_install_dir }}/models/clip/clip_l.safetensors"
+      register: flux1_clip_check
+      when:
+        - install_comfyui is defined and install_comfyui | bool
+        - comfyui_install_flux1 is defined and comfyui_install_flux1 | bool
+        - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
+
+    - name: Check if FLUX.1 T5XXL model is installed
+      ansible.builtin.stat:
+        path: "{{ comfyui_install_dir }}/models/clip/{{ comfyui_t5xxl_filename }}"
+      register: flux1_t5xxl_check
+      when:
+        - install_comfyui is defined and install_comfyui | bool
+        - comfyui_install_flux1 is defined and comfyui_install_flux1 | bool
+        - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
+
+    - name: Display FLUX.1 models status
+      ansible.builtin.debug:
+        msg: >
+          FLUX.1 models status:
+          - Main model ({{ comfyui_flux1_model_filename }}): {{ 'OK - Installed' if flux1_model_check.stat.exists else 'Not found' }}
+          - VAE model: {{ 'OK - Installed' if flux1_vae_check.stat.exists else 'Not found' }}
+          - CLIP model: {{ 'OK - Installed' if flux1_clip_check.stat.exists else 'Not found' }}
+          - T5XXL model: {{ 'OK - Installed' if flux1_t5xxl_check.stat.exists else 'Not found' }}
+      when:
+        - install_comfyui is defined and install_comfyui | bool
+        - comfyui_install_flux1 is defined and comfyui_install_flux1 | bool
+        - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
 
     - name: Wait for ComfyUI HTTP service to become available
       ansible.builtin.uri:

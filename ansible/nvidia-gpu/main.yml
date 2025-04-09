@@ -43,6 +43,10 @@
       ansible.builtin.import_tasks: tasks/comfyui.yml
       when: install_comfyui | bool
       
+    - name: Import ComfyUI models tasks
+      ansible.builtin.import_tasks: tasks/comfyui_models.yml
+      when: install_comfyui | bool
+      
     - name: Import Watchtower tasks
       ansible.builtin.import_tasks: tasks/watchtower.yml
       when: install_watchtower | bool
