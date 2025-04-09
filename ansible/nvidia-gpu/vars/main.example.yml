@@ -71,6 +71,7 @@ comfyui_git_repo: "https://github.com/comfyanonymous/ComfyUI.git" # Git reposito
 comfyui_git_branch: "master" # Git branch or tag
 comfyui_torch_cuda_url: "https://download.pytorch.org/whl/cu121" # PyTorch CUDA wheels URL
 comfyui_low_vram: true # Enable low VRAM mode (8GB VRAM or less)
+comfyui_cpu_vae: true # Move VAE processing to CPU to reduce VRAM usage
 comfyui_force_reinstall: false # Set to true to force removal and reinstallation
 
 # ComfyUI model configuration
