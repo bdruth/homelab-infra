@@ -51,6 +51,7 @@
     owner: root
     group: root
     mode: '0600'
+  register: n8n_env_updated
     
 - name: Create custom docker-compose.yml without Ollama (using system Ollama)
   ansible.builtin.template:
@@ -59,6 +60,7 @@
     owner: root
     group: root
     mode: '0644'
+  register: n8n_compose_updated
 
 # docker-compose is installed elsewhere as part of the base system
   
@@ -68,6 +70,15 @@
     chdir: "{{ n8n_install_dir }}"
   register: docker_compose_result
   changed_when: docker_compose_result.rc == 0
+  when: n8n_env_updated is not changed and n8n_compose_updated is not changed
+
+- name: Restart n8n with Docker Compose if configuration changed
+  ansible.builtin.command:
+    cmd: "docker compose --profile {{ docker_compose_profile }} up -d --force-recreate"
+    chdir: "{{ n8n_install_dir }}"
+  register: docker_compose_restart_result
+  changed_when: docker_compose_restart_result.rc == 0
+  when: n8n_env_updated is changed or n8n_compose_updated is changed
 
 - name: Configure podman service to start on boot (used by docker compatibility layer)
   ansible.builtin.systemd:

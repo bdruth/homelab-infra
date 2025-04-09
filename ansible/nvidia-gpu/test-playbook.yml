@@ -216,12 +216,23 @@
 
     - name: Check Watchtower configuration
       ansible.builtin.shell: >
-        docker inspect watchtower | grep -A 5 -i env
+        docker inspect watchtower | grep -A 10 -i env
       register: watchtower_config_result
       changed_when: false
       ignore_errors: true
       when:
         - install_watchtower is defined and install_watchtower | bool
+        - watchtower_result.rc is defined and watchtower_result.rc == 0
+        
+    - name: Check for Pushover notification configuration
+      ansible.builtin.shell: >
+        docker inspect watchtower | grep -i pushover
+      register: watchtower_pushover_result
+      changed_when: false
+      ignore_errors: true
+      when:
+        - install_watchtower is defined and install_watchtower | bool
+        - watchtower_notifications_enabled is defined and watchtower_notifications_enabled | bool
         - watchtower_result.rc is defined and watchtower_result.rc == 0
 
     - name: Display Watchtower configuration status
@@ -229,6 +240,14 @@
         msg: "Watchtower configuration: {{ 'OK' if watchtower_config_result.rc is defined and watchtower_config_result.rc == 0 else 'Could not retrieve configuration' }}"
       when:
         - install_watchtower is defined and install_watchtower | bool
+        - watchtower_result.rc is defined and watchtower_result.rc == 0
+        
+    - name: Display Pushover notification status
+      ansible.builtin.debug:
+        msg: "Watchtower Pushover notifications: {{ 'Configured' if watchtower_pushover_result.rc is defined and watchtower_pushover_result.rc == 0 else 'Not configured' }}"
+      when:
+        - install_watchtower is defined and install_watchtower | bool
+        - watchtower_notifications_enabled is defined and watchtower_notifications_enabled | bool
         - watchtower_result.rc is defined and watchtower_result.rc == 0
         
     - name: Check docker-compose file
