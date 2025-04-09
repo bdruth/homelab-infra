@@ -36,9 +36,35 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Handle errors with retries and proper ignore_errors handling
 - Organize tasks into modular files with clear responsibilities
 - Use templates (.j2 files) for configuration generation
+- When creating templates for YAML files (especially docker-compose.yml), use list building in Jinja2 to ensure proper indentation and avoid whitespace issues:
+  ```jinja
+  environment:
+    # Build environment variables list to ensure consistent formatting
+  {% set env_vars = [] %}
+  {% if some_condition %}
+  {% set env_vars = env_vars + ['SOME_ENV_VAR=value'] %}
+  {% endif %}
+  {% for var in env_vars %}
+        - {{ var }}
+  {% endfor %}
+  ```
 - Register command outputs for validation and debugging
 - IMPORTANT: When adding new variables to example files (e.g., `main.example.yml`), always update the corresponding actual configuration files (e.g., `main.yml`) to maintain consistency
 - IMPORTANT: When adding new features or tasks, always add corresponding tests in the test playbook (e.g., `test-playbook.yml`) to verify the installation and functionality
+- IMPORTANT: When updating configuration files for services (e.g., docker-compose.yml templates), always ensure the service is restarted to apply the new configuration. Use the `register` directive to track when files change, and conditionally restart services:
+  ```yaml
+  - name: Update service configuration
+    ansible.builtin.template:
+      src: config-template.j2
+      dest: /path/to/config
+    register: config_updated
+    
+  - name: Restart service if configuration changed
+    ansible.builtin.systemd:
+      name: service-name
+      state: restarted
+    when: config_updated is changed
+  ```
 - For services that may take time to start (e.g., Docker containers), use Ansible's retry and until mechanisms instead of fixed delays to ensure reliable testing:
   ```yaml
   - name: Wait for service to start

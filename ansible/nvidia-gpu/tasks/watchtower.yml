@@ -21,6 +21,7 @@
     owner: root
     group: root
     mode: "0644"
+  register: watchtower_config_updated
   when: install_watchtower | bool
 
 - name: Create watchtower service file
@@ -42,7 +43,7 @@
   ansible.builtin.systemd:
     name: watchtower
     enabled: yes
-    state: started
+    state: "{{ 'restarted' if service_file_updated is changed or watchtower_config_updated is changed else 'started' }}"
     daemon_reload: yes
   register: watchtower_service
   when: install_watchtower | bool

@@ -8,25 +8,33 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: always
     environment:
-      {% if watchtower_debug | bool %}
-      - WATCHTOWER_DEBUG=true
-      {% endif %}
-      {% if watchtower_cleanup | bool %}
-      - WATCHTOWER_CLEANUP=true
-      {% endif %}
-      {% if watchtower_include_stopped | bool %}
-      - WATCHTOWER_INCLUDE_STOPPED=true
-      {% endif %}
-      {% if watchtower_rolling_restart | bool %}
-      - WATCHTOWER_ROLLING_RESTART=true
-      {% endif %}
-      {% if watchtower_schedule %}
-      - WATCHTOWER_SCHEDULE={{ watchtower_schedule }}
-      {% endif %}
-      {% if watchtower_poll_interval %}
-      - WATCHTOWER_POLL_INTERVAL={{ watchtower_poll_interval }}
-      {% endif %}
-    {% if watchtower_monitor_only_enable | length > 0 %}
+      # Build environment variables list to ensure consistent formatting
+{% set env_vars = [] %}
+{% if watchtower_debug | bool %}
+{% set env_vars = env_vars + ['WATCHTOWER_DEBUG=true'] %}
+{% endif %}
+{% if watchtower_cleanup | bool %}
+{% set env_vars = env_vars + ['WATCHTOWER_CLEANUP=true'] %}
+{% endif %}
+{% if watchtower_include_stopped | bool %}
+{% set env_vars = env_vars + ['WATCHTOWER_INCLUDE_STOPPED=true'] %}
+{% endif %}
+{% if watchtower_rolling_restart | bool %}
+{% set env_vars = env_vars + ['WATCHTOWER_ROLLING_RESTART=true'] %}
+{% endif %}
+{% if watchtower_schedule %}
+{% set env_vars = env_vars + ['WATCHTOWER_SCHEDULE=' + watchtower_schedule] %}
+{% endif %}
+{% if watchtower_poll_interval %}
+{% set env_vars = env_vars + ['WATCHTOWER_POLL_INTERVAL=' + watchtower_poll_interval] %}
+{% endif %}
+{% if watchtower_notifications_enabled | bool %}
+{% set env_vars = env_vars + ['WATCHTOWER_NOTIFICATIONS=shoutrrr', 'WATCHTOWER_NOTIFICATION_URL=pushover://shoutrrr:' + watchtower_pushover_app_token + '@' + watchtower_pushover_user_key] %}
+{% endif %}
+{% for var in env_vars %}
+      - {{ var }}
+{% endfor %}
+{% if watchtower_monitor_only_enable | length > 0 %}
     labels:
       - com.centurylinklabs.watchtower.enable=true
-    {% endif %}
+{% endif %}

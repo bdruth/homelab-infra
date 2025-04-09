@@ -135,6 +135,7 @@ This playbook installs the [beatkind/watchtower](https://github.com/beatkind/wat
 - Optional cleanup of old images to save disk space
 - Support for label-based monitoring (only update containers with specific labels)
 - Rolling updates to minimize service disruption
+- Pushover notifications for update events
 
 The service is configured with docker-compose and set to run daily at 4 AM by default, or at a specified interval. Container-specific update flags allow you to control which services get automatically updated:
 
