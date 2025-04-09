@@ -407,6 +407,23 @@
         - install_comfyui is defined and install_comfyui | bool
         - comfyui_install_flux1 is defined and comfyui_install_flux1 | bool
         - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
+        
+    - name: Check if SD v1.5 model is installed
+      ansible.builtin.stat:
+        path: "{{ comfyui_install_dir }}/models/checkpoints/{{ comfyui_sd_v15_filename }}"
+      register: sd_v15_check
+      when:
+        - install_comfyui is defined and install_comfyui | bool
+        - comfyui_install_sd_v15 is defined and comfyui_install_sd_v15 | bool
+        - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
+        
+    - name: Display SD v1.5 model status
+      ansible.builtin.debug:
+        msg: "Stable Diffusion v1.5 model status: {{ 'OK - Installed' if sd_v15_check.stat.exists else 'Not found' }}"
+      when:
+        - install_comfyui is defined and install_comfyui | bool
+        - comfyui_install_sd_v15 is defined and comfyui_install_sd_v15 | bool
+        - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
 
     - name: Wait for ComfyUI HTTP service to become available
       ansible.builtin.uri:

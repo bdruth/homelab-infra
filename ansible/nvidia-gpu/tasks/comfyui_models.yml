@@ -13,7 +13,7 @@
     - unet
     - vae
     - clip
-  when: comfyui_install_flux1 | bool
+  when: comfyui_install_flux1 | bool or comfyui_install_sd_v15 | bool
 
 - name: Check if model files already exist
   ansible.builtin.stat:
@@ -110,10 +110,31 @@
     - not t5xxl_model_exists.stat.exists
     - not comfyui_skip_model_downloads | bool
 
+# Stable Diffusion v1.5 model installation
+- name: Check if SD v1.5 model already exists
+  ansible.builtin.stat:
+    path: "{{ comfyui_install_dir }}/models/checkpoints/{{ comfyui_sd_v15_filename }}"
+  register: sd_v15_model_exists
+  when: comfyui_install_sd_v15 | bool
+
+- name: Download SD v1.5 model
+  ansible.builtin.get_url:
+    url: "{{ comfyui_sd_v15_url }}"
+    dest: "{{ comfyui_install_dir }}/models/checkpoints/{{ comfyui_sd_v15_filename }}"
+    timeout: 3600
+    owner: "{{ comfyui_user }}"
+    group: "{{ comfyui_group }}"
+    mode: '0644'
+  when: 
+    - comfyui_install_sd_v15 | bool
+    - not sd_v15_model_exists.stat.exists
+    - not comfyui_skip_model_downloads | bool
+
+# Restart ComfyUI service after all model changes
 - name: Restart ComfyUI service
   ansible.builtin.systemd:
     name: comfyui
     state: restarted
   when:
-    - comfyui_install_flux1 | bool
+    - (comfyui_install_flux1 | bool or comfyui_install_sd_v15 | bool)
     - install_comfyui | bool

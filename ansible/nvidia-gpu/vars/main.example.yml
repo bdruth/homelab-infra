@@ -71,9 +71,12 @@ comfyui_torch_cuda_url: "https://download.pytorch.org/whl/cu121" # PyTorch CUDA 
 comfyui_low_vram: true # Enable low VRAM mode (8GB VRAM or less)
 comfyui_force_reinstall: false # Set to true to force removal and reinstallation
 
-# ComfyUI FLUX.1 model configuration
+# ComfyUI model configuration
 comfyui_install_flux1: true # Whether to install FLUX.1 models
+comfyui_install_sd_v15: true # Whether to install Stable Diffusion v1.5 model
 comfyui_skip_model_downloads: false # Skip downloading models (useful for testing)
+
+# FLUX.1 model configuration
 comfyui_flux1_variant: "schnell" # Which FLUX.1 variant to use (schnell or dev)
 comfyui_flux1_model_url: "https://huggingface.co/black-forest-labs/FLUX.1-{{ comfyui_flux1_variant }}/resolve/main/flux1-{{ comfyui_flux1_variant }}.safetensors" # URL to the FLUX.1 model
 comfyui_flux1_model_filename: "flux1-{{ comfyui_flux1_variant }}.safetensors" # Filename for the FLUX.1 model
@@ -82,6 +85,10 @@ comfyui_clip_url: "https://huggingface.co/comfyanonymous/flux_text_encoders/reso
 comfyui_t5xxl_use_fp8: false # Use FP8 version (smaller file, less precise) instead of FP16
 comfyui_t5xxl_url: "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/{% if comfyui_t5xxl_use_fp8 %}t5xxl_fp8_e4m3fn.safetensors{% else %}t5xxl_fp16.safetensors{% endif %}" # URL to the T5XXL model
 comfyui_t5xxl_filename: "{% if comfyui_t5xxl_use_fp8 %}t5xxl_fp8_e4m3fn.safetensors{% else %}t5xxl_fp16.safetensors{% endif %}" # Filename for the T5XXL model
+
+# Stable Diffusion v1.5 model configuration
+comfyui_sd_v15_url: "https://huggingface.co/runwayml/stable-diffusion-v1-5/resolve/main/v1-5-pruned-emaonly.safetensors" # URL to the SD v1.5 model
+comfyui_sd_v15_filename: "v1-5-pruned-emaonly.safetensors" # Filename for the SD v1.5 model
 
 # Watchtower configuration
 watchtower_install_dir: "/opt/watchtower" # Installation directory
