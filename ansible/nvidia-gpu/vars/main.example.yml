@@ -12,6 +12,8 @@ install_n8n: true # Whether to install n8n AI workflow platform
 install_whisper_asr: true # Whether to install Whisper ASR Webservice
 install_open_webui: true # Whether to install Open WebUI
 install_comfyui: true # Whether to install ComfyUI for image generation
+install_shared_models: true # Whether to install shared models for multiple services
+shared_models_backup_existing: true # Back up existing files before replacing with symlinks
 install_docker_compose: true # Whether to install latest docker-compose
 nvidia_configure_egpu: true # Whether to configure thunderbolt eGPU support
 install_watchtower: true # Whether to install watchtower for automatic container updates
