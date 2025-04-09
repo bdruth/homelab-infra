@@ -15,6 +15,10 @@ ExecStart=/usr/bin/docker run --name open-webui \
   -e OLLAMA_BASE_URL=http://{{ ansible_default_ipv4.address }}:11434 \
   -e OLLAMA_API_BASE_URL=http://{{ ansible_default_ipv4.address }}:11434/api \
   -e PORT={{ open_webui_port }} \
+  -e ENABLE_RAG_WEB_SEARCH={{ open_webui_enable_rag_web_search | string | lower }} \
+  -e ENABLE_SEARCH_QUERY_GENERATION={{ open_webui_enable_search_query_generation | string | lower }} \
+  -e RAG_WEB_SEARCH_ENGINE={{ open_webui_rag_web_search_engine }} \
+  -e RAG_WEB_LOADER_ENGINE={{ open_webui_rag_web_loader_engine }} \
   -p {{ open_webui_port }}:{{ open_webui_port }} \
   {% if nvidia_install_gpu_drivers | bool %}--device nvidia.com/gpu=all --security-opt=label=disable {% endif %} \
   --label com.centurylinklabs.watchtower.enable={{ watchtower_update_open_webui | bool }} \
