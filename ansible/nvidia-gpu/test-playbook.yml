@@ -351,9 +351,24 @@
         - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
         - comfyui_venv_check.stat.exists is defined and comfyui_venv_check.stat.exists
 
+    - name: Check ComfyUI service configuration
+      ansible.builtin.shell: >
+        systemctl cat comfyui | grep -o '\-\-\(lowvram\|cpu-vae\)'
+      register: comfyui_service_flags
+      changed_when: false
+      ignore_errors: true
+      when: 
+        - install_comfyui is defined and install_comfyui | bool
+        - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
+        - comfyui_service_status.status.ActiveState is defined and comfyui_service_status.status.ActiveState == 'active'
+    
     - name: Display ComfyUI service status
       ansible.builtin.debug:
-        msg: "ComfyUI service status: {{ 'OK - Service running' if comfyui_service_status.status.ActiveState == 'active' else 'Service not running' }}"
+        msg: >
+          ComfyUI service:
+          - Status: {{ 'OK - Service running' if comfyui_service_status.status.ActiveState == 'active' else 'Service not running' }}
+          - Low VRAM mode: {{ 'Enabled' if comfyui_service_flags.stdout is defined and 'lowvram' in comfyui_service_flags.stdout else 'Disabled' }}
+          - CPU VAE mode: {{ 'Enabled' if comfyui_service_flags.stdout is defined and 'cpu-vae' in comfyui_service_flags.stdout else 'Disabled' }}
       when: 
         - install_comfyui is defined and install_comfyui | bool
         - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
