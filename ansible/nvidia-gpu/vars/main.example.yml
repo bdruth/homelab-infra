@@ -51,6 +51,10 @@ whisper_asr_compute_type: "{% if nvidia_install_gpu_drivers | bool %}float16{% e
 # Open WebUI configuration
 open_webui_install_dir: "/opt/open-webui" # Installation directory
 open_webui_port: "3000" # Port for Open WebUI
+open_webui_enable_rag_web_search: true # Enable RAG web search
+open_webui_enable_search_query_generation: true # Enable search query generation
+open_webui_rag_web_search_engine: "duckduckgo" # Web search engine to use
+open_webui_rag_web_loader_engine: "playwright" # Web loader engine to use
 
 # Watchtower configuration
 watchtower_install_dir: "/opt/watchtower" # Installation directory
