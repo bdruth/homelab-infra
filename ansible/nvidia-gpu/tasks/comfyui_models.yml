@@ -1,0 +1,119 @@
+---
+# tasks/comfyui_models.yml - Install ComfyUI models
+
+- name: Create model directories for ComfyUI
+  ansible.builtin.file:
+    path: "{{ comfyui_install_dir }}/models/{{ item }}"
+    state: directory
+    owner: "{{ comfyui_user }}"
+    group: "{{ comfyui_group }}"
+    mode: '0755'
+  loop:
+    - checkpoints
+    - unet
+    - vae
+    - clip
+  when: comfyui_install_flux1 | bool
+
+- name: Check if model files already exist
+  ansible.builtin.stat:
+    path: "{{ comfyui_install_dir }}/models/checkpoints/{{ comfyui_flux1_model_filename }}"
+  register: flux1_model_exists
+  when: comfyui_install_flux1 | bool
+
+- name: Download FLUX.1 model checkpoint
+  ansible.builtin.get_url:
+    url: "{{ comfyui_flux1_model_url }}"
+    dest: "{{ comfyui_install_dir }}/models/checkpoints/{{ comfyui_flux1_model_filename }}"
+    timeout: 3600
+    owner: "{{ comfyui_user }}"
+    group: "{{ comfyui_group }}"
+    mode: '0644'
+  register: model_download
+  when: 
+    - comfyui_install_flux1 | bool
+    - not flux1_model_exists.stat.exists
+    - not comfyui_skip_model_downloads | bool
+
+- name: Check if unet model already exists or is symlinked
+  ansible.builtin.stat:
+    path: "{{ comfyui_install_dir }}/models/unet/{{ comfyui_flux1_model_filename }}"
+  register: unet_model_exists
+  when: comfyui_install_flux1 | bool
+
+- name: Link FLUX.1 model from checkpoints to unet directory
+  ansible.builtin.file:
+    src: "{{ comfyui_install_dir }}/models/checkpoints/{{ comfyui_flux1_model_filename }}"
+    dest: "{{ comfyui_install_dir }}/models/unet/{{ comfyui_flux1_model_filename }}"
+    state: link
+    owner: "{{ comfyui_user }}"
+    group: "{{ comfyui_group }}"
+  when: 
+    - comfyui_install_flux1 | bool
+    - flux1_model_exists.stat.exists
+    - not unet_model_exists.stat.exists
+
+- name: Check if VAE model already exists
+  ansible.builtin.stat:
+    path: "{{ comfyui_install_dir }}/models/vae/ae.safetensors"
+  register: vae_model_exists
+  when: comfyui_install_flux1 | bool
+
+- name: Download VAE model
+  ansible.builtin.get_url:
+    url: "{{ comfyui_vae_url }}"
+    dest: "{{ comfyui_install_dir }}/models/vae/ae.safetensors"
+    timeout: 600
+    owner: "{{ comfyui_user }}"
+    group: "{{ comfyui_group }}"
+    mode: '0644'
+  when: 
+    - comfyui_install_flux1 | bool
+    - not vae_model_exists.stat.exists
+    - not comfyui_skip_model_downloads | bool
+
+- name: Check if CLIP model already exists
+  ansible.builtin.stat:
+    path: "{{ comfyui_install_dir }}/models/clip/clip_l.safetensors"
+  register: clip_model_exists
+  when: comfyui_install_flux1 | bool
+
+- name: Download CLIP model
+  ansible.builtin.get_url:
+    url: "{{ comfyui_clip_url }}"
+    dest: "{{ comfyui_install_dir }}/models/clip/clip_l.safetensors"
+    timeout: 600
+    owner: "{{ comfyui_user }}"
+    group: "{{ comfyui_group }}"
+    mode: '0644'
+  when: 
+    - comfyui_install_flux1 | bool
+    - not clip_model_exists.stat.exists
+    - not comfyui_skip_model_downloads | bool
+
+- name: Check if T5XXL model already exists
+  ansible.builtin.stat:
+    path: "{{ comfyui_install_dir }}/models/clip/{{ comfyui_t5xxl_filename }}"
+  register: t5xxl_model_exists
+  when: comfyui_install_flux1 | bool
+
+- name: Download T5XXL model
+  ansible.builtin.get_url:
+    url: "{{ comfyui_t5xxl_url }}"
+    dest: "{{ comfyui_install_dir }}/models/clip/{{ comfyui_t5xxl_filename }}"
+    timeout: 3600
+    owner: "{{ comfyui_user }}"
+    group: "{{ comfyui_group }}"
+    mode: '0644'
+  when: 
+    - comfyui_install_flux1 | bool
+    - not t5xxl_model_exists.stat.exists
+    - not comfyui_skip_model_downloads | bool
+
+- name: Restart ComfyUI service
+  ansible.builtin.systemd:
+    name: comfyui
+    state: restarted
+  when:
+    - comfyui_install_flux1 | bool
+    - install_comfyui | bool
