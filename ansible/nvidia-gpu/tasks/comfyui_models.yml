@@ -129,6 +129,24 @@
     - comfyui_install_sd_v15 | bool
     - not sd_v15_model_exists.stat.exists
     - not comfyui_skip_model_downloads | bool
+    
+- name: Check if SD v1.5 unet model already exists or is symlinked
+  ansible.builtin.stat:
+    path: "{{ comfyui_install_dir }}/models/unet/{{ comfyui_sd_v15_filename }}"
+  register: sd_v15_unet_exists
+  when: comfyui_install_sd_v15 | bool
+
+- name: Link SD v1.5 model from checkpoints to unet directory
+  ansible.builtin.file:
+    src: "{{ comfyui_install_dir }}/models/checkpoints/{{ comfyui_sd_v15_filename }}"
+    dest: "{{ comfyui_install_dir }}/models/unet/{{ comfyui_sd_v15_filename }}"
+    state: link
+    owner: "{{ comfyui_user }}"
+    group: "{{ comfyui_group }}"
+  when: 
+    - comfyui_install_sd_v15 | bool
+    - sd_v15_model_exists.stat.exists
+    - not sd_v15_unet_exists.stat.exists
 
 # Restart ComfyUI service after all model changes
 - name: Restart ComfyUI service
