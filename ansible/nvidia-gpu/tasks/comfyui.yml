@@ -1,0 +1,123 @@
+---
+# ComfyUI Tasks
+
+- name: Install ComfyUI dependencies
+  ansible.builtin.apt:
+    name:
+      - python3
+      - python3-pip
+      - python3-venv
+      - git
+    state: present
+    update_cache: yes
+
+- name: Create ComfyUI group
+  ansible.builtin.group:
+    name: "{{ comfyui_group }}"
+    system: yes
+    state: present
+  when: comfyui_create_user | bool
+
+- name: Create ComfyUI user
+  ansible.builtin.user:
+    name: "{{ comfyui_user }}"
+    system: yes
+    group: "{{ comfyui_group }}"
+    shell: /bin/bash
+    state: present
+  when: comfyui_create_user | bool
+
+# We'll take a simpler approach - just install as root and fix permissions at the end
+- name: Check if ComfyUI directory exists
+  ansible.builtin.stat:
+    path: "{{ comfyui_install_dir }}"
+  register: comfyui_dir_check
+
+- name: Remove existing ComfyUI directory if it exists
+  ansible.builtin.file:
+    path: "{{ comfyui_install_dir }}"
+    state: absent
+  when: comfyui_force_reinstall | bool and comfyui_dir_check.stat.exists
+
+- name: Create ComfyUI installation directory
+  ansible.builtin.file:
+    path: "{{ comfyui_install_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Clone ComfyUI repository
+  ansible.builtin.git:
+    repo: "{{ comfyui_git_repo }}"
+    dest: "{{ comfyui_install_dir }}"
+    version: "{{ comfyui_git_branch }}"
+  register: comfyui_repo_clone
+  when: not comfyui_dir_check.stat.exists or comfyui_force_reinstall | bool
+
+- name: Create ComfyUI model directories
+  ansible.builtin.file:
+    path: "{{ comfyui_install_dir }}/{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "models"
+    - "models/checkpoints"
+    - "models/vae"
+    - "models/clip"
+    - "models/t5"
+    - "models/loras"
+    - "models/controlnet"
+    - "models/upscale_models"
+
+- name: Create Python virtual environment directory
+  ansible.builtin.file:
+    path: "{{ comfyui_venv_path }}"
+    state: directory
+    mode: '0755'
+
+- name: Create Python virtual environment
+  ansible.builtin.command:
+    cmd: python3 -m venv {{ comfyui_venv_path }}
+    creates: "{{ comfyui_venv_path }}/bin/python"
+
+- name: Install PyTorch with CUDA support
+  ansible.builtin.command:
+    cmd: "{{ comfyui_venv_path }}/bin/pip install torch torchvision torchaudio --extra-index-url {{ comfyui_torch_cuda_url }}"
+  when: nvidia_install_gpu_drivers | bool
+
+- name: Install ComfyUI requirements
+  ansible.builtin.command:
+    cmd: "{{ comfyui_venv_path }}/bin/pip install -r {{ comfyui_install_dir }}/requirements.txt"
+
+- name: Set ownership of ComfyUI directory and all subdirectories
+  ansible.builtin.file:
+    path: "{{ comfyui_install_dir }}"
+    state: directory
+    owner: "{{ comfyui_user }}"
+    group: "{{ comfyui_group }}"
+    recurse: yes
+    mode: '0755'
+  when: comfyui_create_user | bool
+
+- name: Create systemd service for ComfyUI
+  ansible.builtin.template:
+    src: comfyui.service.j2
+    dest: /etc/systemd/system/comfyui.service
+    owner: root
+    group: root
+    mode: '0644'
+  register: comfyui_service_file
+  notify: Reload systemd
+
+- name: Enable and start ComfyUI service
+  ansible.builtin.systemd:
+    name: comfyui
+    enabled: yes
+    state: started
+    daemon_reload: yes
+  ignore_errors: "{{ ansible_check_mode }}"
+  
+- name: Restart ComfyUI service if service file changed
+  ansible.builtin.systemd:
+    name: comfyui
+    state: restarted
+  when: comfyui_service_file.changed

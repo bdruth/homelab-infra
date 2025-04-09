@@ -1,0 +1,19 @@
+[Unit]
+Description=ComfyUI Image Generation Service
+After=network.target
+
+[Service]
+Type=simple
+User={{ comfyui_user }}
+Group={{ comfyui_group }}
+Restart=always
+RestartSec=10
+WorkingDirectory={{ comfyui_install_dir }}
+{% if comfyui_low_vram %}
+ExecStart={{ comfyui_venv_path }}/bin/python main.py --lowvram --port {{ comfyui_port }} --listen {{ ansible_default_ipv4.address }}
+{% else %}
+ExecStart={{ comfyui_venv_path }}/bin/python main.py --port {{ comfyui_port }} --listen {{ ansible_default_ipv4.address }}
+{% endif %}
+
+[Install]
+WantedBy=multi-user.target
