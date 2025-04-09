@@ -359,83 +359,159 @@
         - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
         - comfyui_venv_check.stat.exists is defined and comfyui_venv_check.stat.exists
         
-    - name: Check if FLUX.1 model files are installed
+    # Check shared models base directory
+    - name: Check if shared models directory exists
+      ansible.builtin.stat:
+        path: "/opt/shared-models"
+      register: shared_models_dir
+      when:
+        - install_shared_models is defined and install_shared_models | bool
+
+    # Check ComfyUI model links
+    - name: Check if FLUX.1 model is linked to ComfyUI
       ansible.builtin.stat:
         path: "{{ comfyui_install_dir }}/models/checkpoints/{{ comfyui_flux1_model_filename }}"
       register: flux1_model_check
       when:
         - install_comfyui is defined and install_comfyui | bool
+        - install_shared_models is defined and install_shared_models | bool
         - comfyui_install_flux1 is defined and comfyui_install_flux1 | bool
         - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
 
-    - name: Check if FLUX.1 VAE model is installed
+    - name: Check if FLUX.1 VAE model is linked to ComfyUI
       ansible.builtin.stat:
         path: "{{ comfyui_install_dir }}/models/vae/ae.safetensors"
       register: flux1_vae_check
       when:
         - install_comfyui is defined and install_comfyui | bool
+        - install_shared_models is defined and install_shared_models | bool
         - comfyui_install_flux1 is defined and comfyui_install_flux1 | bool
         - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
 
-    - name: Check if FLUX.1 CLIP model is installed
+    - name: Check if FLUX.1 CLIP model is linked to ComfyUI
       ansible.builtin.stat:
         path: "{{ comfyui_install_dir }}/models/clip/clip_l.safetensors"
       register: flux1_clip_check
       when:
         - install_comfyui is defined and install_comfyui | bool
+        - install_shared_models is defined and install_shared_models | bool
         - comfyui_install_flux1 is defined and comfyui_install_flux1 | bool
         - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
 
-    - name: Check if FLUX.1 T5XXL model is installed
+    - name: Check if FLUX.1 T5XXL model is linked to ComfyUI
       ansible.builtin.stat:
         path: "{{ comfyui_install_dir }}/models/clip/{{ comfyui_t5xxl_filename }}"
       register: flux1_t5xxl_check
       when:
         - install_comfyui is defined and install_comfyui | bool
+        - install_shared_models is defined and install_shared_models | bool
         - comfyui_install_flux1 is defined and comfyui_install_flux1 | bool
         - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
 
-    - name: Display FLUX.1 models status
+    - name: Display FLUX.1 models status in ComfyUI
       ansible.builtin.debug:
         msg: >
-          FLUX.1 models status:
-          - Main model ({{ comfyui_flux1_model_filename }}): {{ 'OK - Installed' if flux1_model_check.stat.exists else 'Not found' }}
-          - VAE model: {{ 'OK - Installed' if flux1_vae_check.stat.exists else 'Not found' }}
-          - CLIP model: {{ 'OK - Installed' if flux1_clip_check.stat.exists else 'Not found' }}
-          - T5XXL model: {{ 'OK - Installed' if flux1_t5xxl_check.stat.exists else 'Not found' }}
+          FLUX.1 models in ComfyUI:
+          - Main model ({{ comfyui_flux1_model_filename }}): {{ 'OK - Linked' if flux1_model_check.stat.exists else 'Not found' }}
+          - VAE model: {{ 'OK - Linked' if flux1_vae_check.stat.exists else 'Not found' }}
+          - CLIP model: {{ 'OK - Linked' if flux1_clip_check.stat.exists else 'Not found' }}
+          - T5XXL model: {{ 'OK - Linked' if flux1_t5xxl_check.stat.exists else 'Not found' }}
       when:
         - install_comfyui is defined and install_comfyui | bool
+        - install_shared_models is defined and install_shared_models | bool
         - comfyui_install_flux1 is defined and comfyui_install_flux1 | bool
         - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
         
-    - name: Check if SD v1.5 model is installed in checkpoints
+    - name: Check if SD v1.5 model is linked to ComfyUI checkpoints
       ansible.builtin.stat:
         path: "{{ comfyui_install_dir }}/models/checkpoints/{{ comfyui_sd_v15_filename }}"
       register: sd_v15_check
       when:
         - install_comfyui is defined and install_comfyui | bool
+        - install_shared_models is defined and install_shared_models | bool
         - comfyui_install_sd_v15 is defined and comfyui_install_sd_v15 | bool
         - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
         
-    - name: Check if SD v1.5 model is symlinked to unet directory
+    - name: Check if SD v1.5 model is linked to ComfyUI unet directory
       ansible.builtin.stat:
         path: "{{ comfyui_install_dir }}/models/unet/{{ comfyui_sd_v15_filename }}"
       register: sd_v15_unet_check
       when:
         - install_comfyui is defined and install_comfyui | bool
+        - install_shared_models is defined and install_shared_models | bool
         - comfyui_install_sd_v15 is defined and comfyui_install_sd_v15 | bool
         - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
         
-    - name: Display SD v1.5 model status
+    - name: Display SD v1.5 model status in ComfyUI
       ansible.builtin.debug:
         msg: >
-          Stable Diffusion v1.5 model status:
-          - Checkpoints directory: {{ 'OK - Installed' if sd_v15_check.stat.exists else 'Not found' }}
-          - Unet directory: {{ 'OK - Symlinked' if sd_v15_unet_check.stat.exists else 'Not found' }}
+          Stable Diffusion v1.5 model in ComfyUI:
+          - Checkpoints directory: {{ 'OK - Linked' if sd_v15_check.stat.exists else 'Not found' }}
+          - Unet directory: {{ 'OK - Linked' if sd_v15_unet_check.stat.exists else 'Not found' }}
       when:
         - install_comfyui is defined and install_comfyui | bool
+        - install_shared_models is defined and install_shared_models | bool
         - comfyui_install_sd_v15 is defined and comfyui_install_sd_v15 | bool
         - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
+        
+    # Check Open WebUI model links
+    - name: Check if FLUX.1 model is linked to Open WebUI diffusion models
+      ansible.builtin.stat:
+        path: "{{ open_webui_install_dir }}/data/models/diffusion_models/{{ comfyui_flux1_model_filename }}"
+      register: openwebui_flux1_diffusion_check
+      when:
+        - install_open_webui is defined and install_open_webui | bool
+        - install_shared_models is defined and install_shared_models | bool
+        - comfyui_install_flux1 is defined and comfyui_install_flux1 | bool
+        
+    - name: Check if FLUX.1 model is linked to Open WebUI checkpoints
+      ansible.builtin.stat:
+        path: "{{ open_webui_install_dir }}/data/models/checkpoints/{{ comfyui_flux1_model_filename }}"
+      register: openwebui_flux1_checkpoints_check
+      when:
+        - install_open_webui is defined and install_open_webui | bool
+        - install_shared_models is defined and install_shared_models | bool
+        - comfyui_install_flux1 is defined and comfyui_install_flux1 | bool
+        
+    - name: Display FLUX.1 model status in Open WebUI
+      ansible.builtin.debug:
+        msg: >
+          FLUX.1 model in Open WebUI:
+          - Diffusion models directory: {{ 'OK - Linked' if openwebui_flux1_diffusion_check.stat.exists else 'Not found' }}
+          - Checkpoints directory: {{ 'OK - Linked' if openwebui_flux1_checkpoints_check.stat.exists else 'Not found' }}
+      when:
+        - install_open_webui is defined and install_open_webui | bool
+        - install_shared_models is defined and install_shared_models | bool
+        - comfyui_install_flux1 is defined and comfyui_install_flux1 | bool
+        
+    - name: Check if SD v1.5 model is linked to Open WebUI diffusion models
+      ansible.builtin.stat:
+        path: "{{ open_webui_install_dir }}/data/models/diffusion_models/{{ comfyui_sd_v15_filename }}"
+      register: openwebui_sd_v15_diffusion_check
+      when:
+        - install_open_webui is defined and install_open_webui | bool
+        - install_shared_models is defined and install_shared_models | bool
+        - comfyui_install_sd_v15 is defined and comfyui_install_sd_v15 | bool
+        
+    - name: Check if SD v1.5 model is linked to Open WebUI checkpoints
+      ansible.builtin.stat:
+        path: "{{ open_webui_install_dir }}/data/models/checkpoints/{{ comfyui_sd_v15_filename }}"
+      register: openwebui_sd_v15_checkpoints_check
+      when:
+        - install_open_webui is defined and install_open_webui | bool
+        - install_shared_models is defined and install_shared_models | bool
+        - comfyui_install_sd_v15 is defined and comfyui_install_sd_v15 | bool
+        
+    - name: Display SD v1.5 model status in Open WebUI
+      ansible.builtin.debug:
+        msg: >
+          Stable Diffusion v1.5 model in Open WebUI:
+          - Diffusion models directory: {{ 'OK - Linked' if openwebui_sd_v15_diffusion_check.stat.exists else 'Not found' }}
+          - Checkpoints directory: {{ 'OK - Linked' if openwebui_sd_v15_checkpoints_check.stat.exists else 'Not found' }}
+      when:
+        - install_open_webui is defined and install_open_webui | bool
+        - install_shared_models is defined and install_shared_models | bool
+        - comfyui_install_sd_v15 is defined and comfyui_install_sd_v15 | bool
 
     - name: Wait for ComfyUI HTTP service to become available
       ansible.builtin.uri:

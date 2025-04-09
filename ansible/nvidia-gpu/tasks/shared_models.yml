@@ -1,0 +1,458 @@
+---
+# tasks/shared_models.yml - Install shared models across services
+#
+# This file manages models that are shared between ComfyUI and Open WebUI.
+# Models are downloaded once to a central location and then symlinked to both services.
+# This saves disk space and ensures both services use the same models.
+#
+# If existing files are found, they can be backed up or removed before creating symlinks.
+# Use the shared_models_backup_existing flag to control this behavior.
+
+- name: Create shared models base directory
+  ansible.builtin.file:
+    path: "/opt/shared-models"
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+  when: install_shared_models | bool
+
+- name: Create shared models subdirectories
+  ansible.builtin.file:
+    path: "/opt/shared-models/{{ item }}"
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+  loop:
+    - diffusion
+    - vae
+    - clip
+    - lora
+  when: install_shared_models | bool
+
+# FLUX.1 Model Installation
+- name: Check if FLUX.1 model already exists
+  ansible.builtin.stat:
+    path: "/opt/shared-models/diffusion/{{ comfyui_flux1_model_filename }}"
+  register: flux1_model_exists
+  when: 
+    - install_shared_models | bool
+    - comfyui_install_flux1 | bool
+
+- name: Download FLUX.1 model
+  ansible.builtin.get_url:
+    url: "{{ comfyui_flux1_model_url }}"
+    dest: "/opt/shared-models/diffusion/{{ comfyui_flux1_model_filename }}"
+    timeout: 3600
+    mode: '0644'
+  register: model_download
+  when: 
+    - install_shared_models | bool
+    - comfyui_install_flux1 | bool
+    - not flux1_model_exists.stat.exists
+    - not comfyui_skip_model_downloads | bool
+
+# Stable Diffusion v1.5 Model Installation
+- name: Check if SD v1.5 model already exists
+  ansible.builtin.stat:
+    path: "/opt/shared-models/diffusion/{{ comfyui_sd_v15_filename }}"
+  register: sd_v15_model_exists
+  when: 
+    - install_shared_models | bool
+    - comfyui_install_sd_v15 | bool
+
+- name: Download SD v1.5 model
+  ansible.builtin.get_url:
+    url: "{{ comfyui_sd_v15_url }}"
+    dest: "/opt/shared-models/diffusion/{{ comfyui_sd_v15_filename }}"
+    timeout: 3600
+    mode: '0644'
+  register: sd_v15_download
+  when: 
+    - install_shared_models | bool
+    - comfyui_install_sd_v15 | bool
+    - not sd_v15_model_exists.stat.exists
+    - not comfyui_skip_model_downloads | bool
+
+# VAE Model Installation
+- name: Check if VAE model already exists
+  ansible.builtin.stat:
+    path: "/opt/shared-models/vae/ae.safetensors"
+  register: vae_model_exists
+  when: 
+    - install_shared_models | bool
+    - comfyui_install_flux1 | bool
+
+- name: Download VAE model
+  ansible.builtin.get_url:
+    url: "{{ comfyui_vae_url }}"
+    dest: "/opt/shared-models/vae/ae.safetensors"
+    timeout: 600
+    mode: '0644'
+  when:
+    - install_shared_models | bool
+    - comfyui_install_flux1 | bool
+    - not vae_model_exists.stat.exists
+    - not comfyui_skip_model_downloads | bool
+
+# CLIP model Installation
+- name: Check if CLIP model already exists
+  ansible.builtin.stat:
+    path: "/opt/shared-models/clip/clip_l.safetensors"
+  register: clip_model_exists
+  when: 
+    - install_shared_models | bool
+    - comfyui_install_flux1 | bool
+
+- name: Download CLIP model
+  ansible.builtin.get_url:
+    url: "{{ comfyui_clip_url }}"
+    dest: "/opt/shared-models/clip/clip_l.safetensors"
+    timeout: 600
+    mode: '0644'
+  when:
+    - install_shared_models | bool
+    - comfyui_install_flux1 | bool
+    - not clip_model_exists.stat.exists
+    - not comfyui_skip_model_downloads | bool
+
+# T5XXL model Installation
+- name: Check if T5XXL model already exists
+  ansible.builtin.stat:
+    path: "/opt/shared-models/clip/{{ comfyui_t5xxl_filename }}"
+  register: t5xxl_model_exists
+  when: 
+    - install_shared_models | bool
+    - comfyui_install_flux1 | bool
+
+- name: Download T5XXL model
+  ansible.builtin.get_url:
+    url: "{{ comfyui_t5xxl_url }}"
+    dest: "/opt/shared-models/clip/{{ comfyui_t5xxl_filename }}"
+    timeout: 3600
+    mode: '0644'
+  when:
+    - install_shared_models | bool
+    - comfyui_install_flux1 | bool
+    - not t5xxl_model_exists.stat.exists
+    - not comfyui_skip_model_downloads | bool
+
+# Transition handling and clean up existing files before symlinking
+- name: Check for existing model files in ComfyUI
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  register: existing_comfyui_files
+  loop:
+    - "{{ comfyui_install_dir }}/models/checkpoints/{{ comfyui_flux1_model_filename }}"
+    - "{{ comfyui_install_dir }}/models/unet/{{ comfyui_flux1_model_filename }}"
+    - "{{ comfyui_install_dir }}/models/checkpoints/{{ comfyui_sd_v15_filename }}"
+    - "{{ comfyui_install_dir }}/models/unet/{{ comfyui_sd_v15_filename }}"
+    - "{{ comfyui_install_dir }}/models/vae/ae.safetensors"
+    - "{{ comfyui_install_dir }}/models/clip/clip_l.safetensors"
+    - "{{ comfyui_install_dir }}/models/clip/{{ comfyui_t5xxl_filename }}"
+  when:
+    - install_shared_models | bool
+    - install_comfyui | bool
+
+- name: Get timestamp for backup files
+  ansible.builtin.set_fact:
+    backup_timestamp: "{{ ansible_date_time.iso8601_basic_short }}"
+  run_once: true
+  when:
+    - install_shared_models | bool
+    - shared_models_backup_existing | bool
+
+- name: Back up existing model files from ComfyUI directories (if not symlinks)
+  ansible.builtin.copy:
+    src: "{{ item.item }}"
+    dest: "{{ item.item }}.bak.{{ backup_timestamp }}"
+    remote_src: yes
+    mode: preserve
+  loop: "{{ existing_comfyui_files.results }}"
+  when:
+    - install_shared_models | bool
+    - install_comfyui | bool
+    - shared_models_backup_existing | bool
+    - item.stat.exists | default(false)
+    - not item.stat.islnk | default(false)
+  loop_control:
+    label: "Backing up {{ item.item }} (regular file)"
+
+- name: Remove existing model files from ComfyUI directories (if not symlinks)
+  ansible.builtin.file:
+    path: "{{ item.item }}"
+    state: absent
+  loop: "{{ existing_comfyui_files.results }}"
+  when:
+    - install_shared_models | bool
+    - install_comfyui | bool
+    - item.stat.exists | default(false)
+    - not item.stat.islnk | default(false)
+  loop_control:
+    label: "Removing {{ item.item }} (regular file)"
+
+# Link models to ComfyUI directories
+- name: Ensure ComfyUI model directories exist
+  ansible.builtin.file:
+    path: "{{ comfyui_install_dir }}/models/{{ item }}"
+    state: directory
+    owner: "{{ comfyui_user }}"
+    group: "{{ comfyui_group }}"
+    mode: '0755'
+  loop:
+    - checkpoints
+    - unet
+    - vae
+    - clip
+  when: 
+    - install_shared_models | bool
+    - install_comfyui | bool
+
+- name: Link FLUX.1 model to ComfyUI checkpoints
+  ansible.builtin.file:
+    src: "/opt/shared-models/diffusion/{{ comfyui_flux1_model_filename }}"
+    dest: "{{ comfyui_install_dir }}/models/checkpoints/{{ comfyui_flux1_model_filename }}"
+    state: link
+    owner: "{{ comfyui_user }}"
+    group: "{{ comfyui_group }}"
+  when: 
+    - install_shared_models | bool
+    - install_comfyui | bool
+    - comfyui_install_flux1 | bool
+    - flux1_model_exists.stat.exists or model_download is succeeded
+
+- name: Link FLUX.1 model to ComfyUI unet
+  ansible.builtin.file:
+    src: "/opt/shared-models/diffusion/{{ comfyui_flux1_model_filename }}"
+    dest: "{{ comfyui_install_dir }}/models/unet/{{ comfyui_flux1_model_filename }}"
+    state: link
+    owner: "{{ comfyui_user }}"
+    group: "{{ comfyui_group }}"
+  when: 
+    - install_shared_models | bool
+    - install_comfyui | bool
+    - comfyui_install_flux1 | bool
+    - flux1_model_exists.stat.exists or model_download is succeeded
+
+- name: Link SD v1.5 model to ComfyUI checkpoints
+  ansible.builtin.file:
+    src: "/opt/shared-models/diffusion/{{ comfyui_sd_v15_filename }}"
+    dest: "{{ comfyui_install_dir }}/models/checkpoints/{{ comfyui_sd_v15_filename }}"
+    state: link
+    owner: "{{ comfyui_user }}"
+    group: "{{ comfyui_group }}"
+  when: 
+    - install_shared_models | bool
+    - install_comfyui | bool
+    - comfyui_install_sd_v15 | bool
+    - sd_v15_model_exists.stat.exists or sd_v15_download is succeeded
+
+- name: Link SD v1.5 model to ComfyUI unet
+  ansible.builtin.file:
+    src: "/opt/shared-models/diffusion/{{ comfyui_sd_v15_filename }}"
+    dest: "{{ comfyui_install_dir }}/models/unet/{{ comfyui_sd_v15_filename }}"
+    state: link
+    owner: "{{ comfyui_user }}"
+    group: "{{ comfyui_group }}"
+  when: 
+    - install_shared_models | bool
+    - install_comfyui | bool
+    - comfyui_install_sd_v15 | bool
+    - sd_v15_model_exists.stat.exists or sd_v15_download is succeeded
+
+- name: Link VAE model to ComfyUI
+  ansible.builtin.file:
+    src: "/opt/shared-models/vae/ae.safetensors"
+    dest: "{{ comfyui_install_dir }}/models/vae/ae.safetensors"
+    state: link
+    owner: "{{ comfyui_user }}"
+    group: "{{ comfyui_group }}"
+  when: 
+    - install_shared_models | bool
+    - install_comfyui | bool
+    - comfyui_install_flux1 | bool
+    - vae_model_exists.stat.exists
+
+- name: Link CLIP model to ComfyUI
+  ansible.builtin.file:
+    src: "/opt/shared-models/clip/clip_l.safetensors"
+    dest: "{{ comfyui_install_dir }}/models/clip/clip_l.safetensors"
+    state: link
+    owner: "{{ comfyui_user }}"
+    group: "{{ comfyui_group }}"
+  when: 
+    - install_shared_models | bool
+    - install_comfyui | bool
+    - comfyui_install_flux1 | bool
+    - clip_model_exists.stat.exists
+
+- name: Link T5XXL model to ComfyUI
+  ansible.builtin.file:
+    src: "/opt/shared-models/clip/{{ comfyui_t5xxl_filename }}"
+    dest: "{{ comfyui_install_dir }}/models/clip/{{ comfyui_t5xxl_filename }}"
+    state: link
+    owner: "{{ comfyui_user }}"
+    group: "{{ comfyui_group }}"
+  when: 
+    - install_shared_models | bool
+    - install_comfyui | bool
+    - comfyui_install_flux1 | bool
+    - t5xxl_model_exists.stat.exists
+
+# Transition handling and clean up existing files in Open WebUI
+- name: Check for existing model files in Open WebUI
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  register: existing_openwebui_files
+  loop:
+    - "{{ open_webui_install_dir }}/data/models/diffusion_models/{{ comfyui_flux1_model_filename }}"
+    - "{{ open_webui_install_dir }}/data/models/checkpoints/{{ comfyui_flux1_model_filename }}"
+    - "{{ open_webui_install_dir }}/data/models/diffusion_models/{{ comfyui_sd_v15_filename }}"
+    - "{{ open_webui_install_dir }}/data/models/checkpoints/{{ comfyui_sd_v15_filename }}"
+    - "{{ open_webui_install_dir }}/data/models/vae/ae.safetensors"
+    - "{{ open_webui_install_dir }}/data/models/clip/clip_l.safetensors"
+    - "{{ open_webui_install_dir }}/data/models/clip/{{ comfyui_t5xxl_filename }}"
+  when:
+    - install_shared_models | bool
+    - install_open_webui | bool
+
+- name: Back up existing model files from Open WebUI directories (if not symlinks)
+  ansible.builtin.copy:
+    src: "{{ item.item }}"
+    dest: "{{ item.item }}.bak.{{ backup_timestamp }}"
+    remote_src: yes
+    mode: preserve
+  loop: "{{ existing_openwebui_files.results }}"
+  when:
+    - install_shared_models | bool
+    - install_open_webui | bool
+    - shared_models_backup_existing | bool
+    - item.stat.exists | default(false)
+    - not item.stat.islnk | default(false)
+  loop_control:
+    label: "Backing up {{ item.item }} (regular file)"
+
+- name: Remove existing model files from Open WebUI directories (if not symlinks)
+  ansible.builtin.file:
+    path: "{{ item.item }}"
+    state: absent
+  loop: "{{ existing_openwebui_files.results }}"
+  when:
+    - install_shared_models | bool
+    - install_open_webui | bool
+    - item.stat.exists | default(false)
+    - not item.stat.islnk | default(false)
+  loop_control:
+    label: "Removing {{ item.item }} (regular file)"
+
+# Link models to Open WebUI directories
+- name: Ensure Open WebUI model directories exist
+  ansible.builtin.file:
+    path: "{{ open_webui_install_dir }}/data/models/{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - diffusion_models
+    - checkpoints
+    - vae
+    - clip
+  when: 
+    - install_shared_models | bool
+    - install_open_webui | bool
+
+- name: Link FLUX.1 model to Open WebUI diffusion models
+  ansible.builtin.file:
+    src: "/opt/shared-models/diffusion/{{ comfyui_flux1_model_filename }}"
+    dest: "{{ open_webui_install_dir }}/data/models/diffusion_models/{{ comfyui_flux1_model_filename }}"
+    state: link
+  when: 
+    - install_shared_models | bool
+    - install_open_webui | bool
+    - comfyui_install_flux1 | bool
+    - flux1_model_exists.stat.exists or model_download is succeeded
+
+- name: Link FLUX.1 model to Open WebUI checkpoints
+  ansible.builtin.file:
+    src: "/opt/shared-models/diffusion/{{ comfyui_flux1_model_filename }}"
+    dest: "{{ open_webui_install_dir }}/data/models/checkpoints/{{ comfyui_flux1_model_filename }}"
+    state: link
+  when: 
+    - install_shared_models | bool
+    - install_open_webui | bool
+    - comfyui_install_flux1 | bool
+    - flux1_model_exists.stat.exists or model_download is succeeded
+
+- name: Link SD v1.5 model to Open WebUI diffusion models
+  ansible.builtin.file:
+    src: "/opt/shared-models/diffusion/{{ comfyui_sd_v15_filename }}"
+    dest: "{{ open_webui_install_dir }}/data/models/diffusion_models/{{ comfyui_sd_v15_filename }}"
+    state: link
+  when: 
+    - install_shared_models | bool
+    - install_open_webui | bool
+    - comfyui_install_sd_v15 | bool
+    - sd_v15_model_exists.stat.exists or sd_v15_download is succeeded
+
+- name: Link SD v1.5 model to Open WebUI checkpoints
+  ansible.builtin.file:
+    src: "/opt/shared-models/diffusion/{{ comfyui_sd_v15_filename }}"
+    dest: "{{ open_webui_install_dir }}/data/models/checkpoints/{{ comfyui_sd_v15_filename }}"
+    state: link
+  when: 
+    - install_shared_models | bool
+    - install_open_webui | bool
+    - comfyui_install_sd_v15 | bool
+    - sd_v15_model_exists.stat.exists or sd_v15_download is succeeded
+
+- name: Link VAE model to Open WebUI
+  ansible.builtin.file:
+    src: "/opt/shared-models/vae/ae.safetensors"
+    dest: "{{ open_webui_install_dir }}/data/models/vae/ae.safetensors"
+    state: link
+  when: 
+    - install_shared_models | bool
+    - install_open_webui | bool
+    - comfyui_install_flux1 | bool
+    - vae_model_exists.stat.exists
+
+- name: Link CLIP model to Open WebUI
+  ansible.builtin.file:
+    src: "/opt/shared-models/clip/clip_l.safetensors"
+    dest: "{{ open_webui_install_dir }}/data/models/clip/clip_l.safetensors"
+    state: link
+  when: 
+    - install_shared_models | bool
+    - install_open_webui | bool
+    - comfyui_install_flux1 | bool
+    - clip_model_exists.stat.exists
+
+- name: Link T5XXL model to Open WebUI
+  ansible.builtin.file:
+    src: "/opt/shared-models/clip/{{ comfyui_t5xxl_filename }}"
+    dest: "{{ open_webui_install_dir }}/data/models/clip/{{ comfyui_t5xxl_filename }}"
+    state: link
+  when: 
+    - install_shared_models | bool
+    - install_open_webui | bool
+    - comfyui_install_flux1 | bool
+    - t5xxl_model_exists.stat.exists
+
+# Restart services
+- name: Restart ComfyUI service
+  ansible.builtin.systemd:
+    name: comfyui
+    state: restarted
+  when:
+    - install_shared_models | bool
+    - install_comfyui | bool
+    - (comfyui_install_flux1 | bool or comfyui_install_sd_v15 | bool)
+
+- name: Restart Open WebUI service
+  ansible.builtin.systemd:
+    name: open-webui
+    state: restarted
+  when:
+    - install_shared_models | bool
+    - install_open_webui | bool
+    - (comfyui_install_flux1 | bool or comfyui_install_sd_v15 | bool)
