@@ -7,7 +7,7 @@ docker run -it -v $(pwd):/workdir -w /workdir nixos/nix
 # nix-shell
 ```
 
-`opentofu`, `ansible`, and `netcat` will be installed automatically by nixOS, via the `shell.nix` configuration.
+`opentofu`, `ansible`, and `netcat-traditional` will be installed automatically by nixOS, via the `shell.nix` configuration.
 
 _*NOTE*_: ci/cd uses [pkgx](https://pkgx.sh) instead of `nix` currently.
 
@@ -30,7 +30,7 @@ Example `config.s3.tfbackend`
 bucket = "<your-bucket-name>" # Name of the S3 bucket
 endpoints = {
   s3 = "http://<your-url-to-alt-s3-api-endpoint>:9000" # Minio endpoint
-} 
+}
 key = "<unique-name-of-your-state-file>.tfstate" # Name of the tfstate file
 ```
 
@@ -42,6 +42,7 @@ key = "<unique-name-of-your-state-file>.tfstate" # Name of the tfstate file
 Configuration of the pihole is done via restoring a teleporter backup (from a pre-existing pihole). This backup file is pulled from an S3 bucket as well and requires some configuration in `ansible/pihole/vars/main.yml`
 
 Example:
+
 ```
 ---
 s3_api_host_ip: <ip-addr-of-s3-api-host>

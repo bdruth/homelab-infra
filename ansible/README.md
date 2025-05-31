@@ -8,8 +8,8 @@ docker run --rm -it \
   -v "<PATH_TO_SSH_KEY>:/root/.ssh/id_rsa" \ # SSH key to use
   -v "$PWD:/opt/app" --workdir=/opt/app \ # mount the workspace into the container
   --env-file .env \ # load secrets from .env file
-  pkgxdev/pkgx \ # this is the container we're running
-  bash -c 'apt-get update && apt-get install -y dnsutils netcat; \ # container deps to install that aren't in pkgx
+  pkgxdev/pkgx:v1 \ # this is the container we're running
+  bash -c 'apt-get update && apt-get install -y dnsutils netcat-traditional; \ # container deps to install that aren't in pkgx
     pkgx +tofu +pip +ansible +ssh /bin/bash' # setup pkgx environment
 ```
 
