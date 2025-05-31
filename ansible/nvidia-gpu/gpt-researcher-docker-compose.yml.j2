@@ -1,0 +1,29 @@
+version: '3'
+
+services:
+  gpt-researcher:
+    container_name: gpt-researcher
+    image: gptresearcher/gpt-researcher:latest
+    restart: always
+    ports:
+      - "{{ gpt_researcher_port }}:8000"
+    environment:
+      - OLLAMA_BASE_URL=http://{{ ansible_default_ipv4.address }}:11434
+      - FAST_LLM={{ gpt_researcher_ollama_model }}
+      - SMART_LLM={{ gpt_researcher_ollama_model }}
+      - STRATEGIC_LLM={{ gpt_researcher_ollama_model }}
+      - EMBEDDING={{ gpt_researcher_ollama_embed_model }}
+      - PORT=8000
+    labels:
+      - com.centurylinklabs.watchtower.enable={{ watchtower_update_gpt_researcher | bool }}
+    volumes:
+      - {{ gpt_researcher_install_dir }}/data:/app/data
+{% if nvidia_install_gpu_drivers | bool %}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+{% endif %}

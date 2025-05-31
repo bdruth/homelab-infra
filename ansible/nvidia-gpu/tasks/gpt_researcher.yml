@@ -1,0 +1,46 @@
+---
+# GPT Researcher Installation Tasks
+
+- name: Create GPT Researcher base directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+  loop:
+    - "{{ gpt_researcher_install_dir }}"
+    - "{{ gpt_researcher_install_dir }}/data"
+
+- name: Create docker-compose.yml file for GPT Researcher
+  ansible.builtin.template:
+    src: gpt-researcher-docker-compose.yml.j2
+    dest: "{{ gpt_researcher_install_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: '0644'
+  register: gpt_researcher_compose_file
+
+- name: Create systemd service for GPT Researcher
+  ansible.builtin.template:
+    src: gpt-researcher.service.j2
+    dest: /etc/systemd/system/gpt-researcher.service
+    owner: root
+    group: root
+    mode: '0644'
+  register: gpt_researcher_service_file
+  notify: Reload systemd
+
+- name: Enable and start GPT Researcher service
+  ansible.builtin.systemd:
+    name: gpt-researcher
+    enabled: yes
+    state: started
+    daemon_reload: yes
+  ignore_errors: "{{ ansible_check_mode }}"
+  
+- name: Restart GPT Researcher service if service file or compose file changed
+  ansible.builtin.systemd:
+    name: gpt-researcher
+    state: restarted
+  when: gpt_researcher_service_file.changed or gpt_researcher_compose_file.changed
