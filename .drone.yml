@@ -21,7 +21,7 @@ steps:
       path-style: true
       archive-format: gzip
       mount:
-        - '/root/.cache'
+        - "/root/.cache"
     volumes:
       - name: cache
         path: /root/.cache
@@ -35,7 +35,7 @@ steps:
     # image: pkgxdev/pkgx
     image: pkgxdev/pkgx@sha256:610bbc17475cb174c5e6a8a9e3cdf39decb93c552fa073542b6f593255e1cb0c
     commands:
-      - apt-get update && apt-get install -y dnsutils netcat
+      - apt-get update && apt-get install -y dnsutils netcat-traditional
       - mkdir -p ~/.ssh
       - echo "$drone_ssh_priv_key" > ~/.ssh/id_rsa
       - chmod -R 700 ~/.ssh
@@ -96,7 +96,7 @@ steps:
       path-style: true
       archive-format: gzip
       mount:
-        - '/root/.cache'
+        - "/root/.cache"
     volumes:
       - name: cache
         path: /root/.cache
@@ -109,22 +109,22 @@ type: docker
 name: notify-on-fail
 
 steps:
-- name: pushover
-  # this is a fork of plugins/pushover, which currently throws an error
-  # https://github.com/drone-plugins/drone-pushover/issues/17
-  # https://github.com/drone/drone-template-lib/pull/13
-  # image: tmacro/drone-pushover
-  image: tmacro/drone-pushover@sha256:0a60ff10cd77fee59444571c827c278faa8c18afc1950e40558c5692d6518125
-  settings:
-    token: 
-      from_secret: PUSHOVER_TOKEN
-    user: 
-      from_secret: PUSHOVER_USER_ID
-    message: "{{ repo.name }} - Pipeline Failure"
+  - name: pushover
+    # this is a fork of plugins/pushover, which currently throws an error
+    # https://github.com/drone-plugins/drone-pushover/issues/17
+    # https://github.com/drone/drone-template-lib/pull/13
+    # image: tmacro/drone-pushover
+    image: tmacro/drone-pushover@sha256:0a60ff10cd77fee59444571c827c278faa8c18afc1950e40558c5692d6518125
+    settings:
+      token:
+        from_secret: PUSHOVER_TOKEN
+      user:
+        from_secret: PUSHOVER_USER_ID
+      message: "{{ repo.name }} - Pipeline Failure"
 
 trigger:
   status:
     - failure
 
 depends_on:
-- build
+  - build
