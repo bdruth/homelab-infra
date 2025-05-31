@@ -290,6 +290,80 @@
         - watchtower_notifications_enabled is defined and watchtower_notifications_enabled | bool
         - watchtower_result.rc is defined and watchtower_result.rc == 0
         
+    - name: Check GPT Researcher service status
+      ansible.builtin.systemd:
+        name: gpt-researcher
+      register: gpt_researcher_service_status
+      ignore_errors: true
+      when: install_gpt_researcher is defined and install_gpt_researcher | bool
+
+    - name: Display GPT Researcher service status
+      ansible.builtin.debug:
+        msg: "GPT Researcher service status: {{ 'OK - Active' if gpt_researcher_service_status.status.ActiveState is defined and gpt_researcher_service_status.status.ActiveState == 'active' else 'Failed - Not active' }}"
+      when: install_gpt_researcher is defined and install_gpt_researcher | bool
+
+    - name: Check GPT Researcher service journal for errors (last 20 lines)
+      ansible.builtin.command: journalctl -u gpt-researcher -n 20 --no-pager
+      register: gpt_researcher_journal
+      changed_when: false
+      ignore_errors: true
+      when: 
+        - install_gpt_researcher is defined and install_gpt_researcher | bool
+        - gpt_researcher_service_status.status.ActiveState is defined and gpt_researcher_service_status.status.ActiveState != 'active'
+
+    - name: Display GPT Researcher journal errors
+      ansible.builtin.debug:
+        msg: "GPT Researcher service errors found in journal. See output for details."
+        verbosity: 0
+      when:
+        - install_gpt_researcher is defined and install_gpt_researcher | bool
+        - gpt_researcher_service_status.status.ActiveState is defined and gpt_researcher_service_status.status.ActiveState != 'active'
+        - gpt_researcher_journal is defined
+
+    - name: Display GPT Researcher journal output
+      ansible.builtin.debug:
+        var: gpt_researcher_journal.stdout_lines
+        verbosity: 0
+      when:
+        - install_gpt_researcher is defined and install_gpt_researcher | bool
+        - gpt_researcher_service_status.status.ActiveState is defined and gpt_researcher_service_status.status.ActiveState != 'active'
+        - gpt_researcher_journal is defined
+
+    - name: Wait for GPT Researcher container to start
+      ansible.builtin.shell: docker ps | grep gpt-researcher
+      register: gpt_researcher_result
+      changed_when: false
+      ignore_errors: true
+      retries: 15
+      delay: 4
+      until: gpt_researcher_result.rc == 0
+      when: 
+        - install_gpt_researcher is defined and install_gpt_researcher | bool
+        - gpt_researcher_service_status.status.ActiveState is defined and gpt_researcher_service_status.status.ActiveState == 'active'
+
+    - name: Display GPT Researcher container status
+      ansible.builtin.debug:
+        msg: "GPT Researcher container status: {{ 'OK' if gpt_researcher_result.rc is defined and gpt_researcher_result.rc == 0 else 'Not running' }}"
+      when: 
+        - install_gpt_researcher is defined and install_gpt_researcher | bool
+        - gpt_researcher_service_status.status.ActiveState is defined and gpt_researcher_service_status.status.ActiveState == 'active'
+
+    - name: Wait for GPT Researcher HTTP service to become available
+      ansible.builtin.uri:
+        url: "http://localhost:{{ gpt_researcher_port }}"
+        method: GET
+        status_code: 200
+        timeout: 120
+      register: gpt_researcher_http_check
+      retries: 12
+      delay: 5
+      until: gpt_researcher_http_check.status == 200
+      ignore_errors: true
+      when:
+        - install_gpt_researcher is defined and install_gpt_researcher | bool
+        - gpt_researcher_service_status.status.ActiveState is defined and gpt_researcher_service_status.status.ActiveState == 'active'
+        - gpt_researcher_result.rc is defined and gpt_researcher_result.rc == 0
+        
     - name: Check if ComfyUI installation exists
       ansible.builtin.stat:
         path: "{{ comfyui_install_dir }}/main.py"

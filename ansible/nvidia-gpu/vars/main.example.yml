@@ -17,6 +17,7 @@ shared_models_backup_existing: true # Back up existing files before replacing wi
 install_docker_compose: true # Whether to install latest docker-compose
 nvidia_configure_egpu: true # Whether to configure thunderbolt eGPU support
 install_watchtower: true # Whether to install watchtower for automatic container updates
+install_gpt_researcher: true # Whether to install GPT Researcher
 
 # Package versions and configuration
 nvidia_driver_version: "570" # Used in package name (nvidia-driver-570)
@@ -113,4 +114,11 @@ watchtower_update_postgres: false # Update PostgreSQL container (generally not r
 watchtower_update_qdrant: true # Update Qdrant container
 watchtower_update_whisper_asr: true # Update Whisper ASR container
 watchtower_update_open_webui: true # Update Open WebUI container
+watchtower_update_gpt_researcher: true # Update GPT Researcher container
+
+# GPT Researcher configuration
+gpt_researcher_install_dir: "/opt/gpt-researcher" # Installation directory
+gpt_researcher_port: "7000" # Port for GPT Researcher web interface
+gpt_researcher_ollama_model: "llama3" # Ollama model to use for research
+gpt_researcher_ollama_embed_model: "nomic-embed-text" # Ollama model to use for embeddings
 

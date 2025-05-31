@@ -1,0 +1,16 @@
+[Unit]
+Description=GPT Researcher Service
+After=network.target podman.service
+Requires=podman.service
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=10
+WorkingDirectory={{ gpt_researcher_install_dir }}
+ExecStartPre=-/usr/bin/docker compose down
+ExecStart=/usr/bin/docker compose up
+ExecStop=/usr/bin/docker compose down
+
+[Install]
+WantedBy=multi-user.target
