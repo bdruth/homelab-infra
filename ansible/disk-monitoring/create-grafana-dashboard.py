@@ -251,12 +251,7 @@ class GrafanaDashboardCreator:
         response = requests.get(url, headers=self.headers)
         
         if response.status_code == 200:
-            rules = response.json()
-            print(f"Found {len(rules)} existing alert rules")
-            if rules:
-                print("Example rule structure:")
-                print(json.dumps(rules[0], indent=2))
-            return rules
+            return response.json()
         else:
             print(f"❌ Failed to get existing alert rules: {response.status_code}")
             print(f"   Response: {response.text}")
@@ -274,15 +269,28 @@ class GrafanaDashboardCreator:
             return []
 
     def create_alert_rule(self):
-        """Create alert rule for disk usage threshold."""
+        """Create or update alert rule for disk usage threshold."""
         threshold = self.config.get('disk_usage_threshold', 85)
+        eval_for = self.config.get('alert_eval_for', '5m')
+        interval_seconds = self.config.get('alert_interval_seconds', 60)
+        
+        # Check if alert rule already exists
+        existing_rules = self.get_existing_alert_rules()
+        existing_rule = None
+        for rule in existing_rules:
+            if rule.get('title') == 'Disk Usage Alert':
+                existing_rule = rule
+                print(f"Found existing alert rule with UID: {rule['uid']}")
+                break
         
         # Get available folders
         folders = self.get_folders()
         folder_uid = ""
         
-        # Try to find a suitable folder or use the first one
-        if folders:
+        # Use existing rule's folder or find a suitable one
+        if existing_rule:
+            folder_uid = existing_rule.get('folderUID', '')
+        elif folders:
             # Look for a monitoring/alerting folder, or use the first available
             for folder in folders:
                 if any(keyword in folder['title'].lower() for keyword in ['monitor', 'alert', 'disk']):
@@ -292,11 +300,11 @@ class GrafanaDashboardCreator:
             if not folder_uid:
                 folder_uid = folders[0]['uid']
         
-        # Try with minimal required fields first
+        # Create rule with proper 3-query structure (A -> B -> C)
         alert_rule = {
             "folderUID": folder_uid,
             "title": "Disk Usage Alert",
-            "condition": "B",
+            "condition": "C",
             "data": [
                 {
                     "refId": "A",
@@ -307,20 +315,28 @@ class GrafanaDashboardCreator:
                     },
                     "datasourceUid": "denl7c5ccxam8a",
                     "model": {
-                        "measurement": "disk",
-                        "select": [
-                            [{"params": ["used_percent"], "type": "field"}, {"params": [], "type": "last"}]
-                        ],
+                        "datasource": {"type": "influxdb", "uid": "denl7c5ccxam8a"},
                         "groupBy": [
-                            {"params": ["host"], "type": "tag"},
-                            {"params": ["path"], "type": "tag"}
+                            {"params": ["$__interval"], "type": "time"},
+                            {"params": ["host::tag"], "type": "tag"},
+                            {"params": ["path::tag"], "type": "tag"},
+                            {"params": ["null"], "type": "fill"}
                         ],
-                        "tags": [],
-                        "refId": "A"
+                        "intervalMs": 1000,
+                        "maxDataPoints": 43200,
+                        "measurement": "disk",
+                        "orderByTime": "ASC",
+                        "policy": "default",
+                        "refId": "A",
+                        "resultFormat": "time_series",
+                        "select": [
+                            [{"params": ["used_percent"], "type": "field"}, {"params": [], "type": "mean"}]
+                        ],
+                        "tags": []
                     }
                 },
                 {
-                    "refId": "B", 
+                    "refId": "B",
                     "queryType": "",
                     "relativeTimeRange": {
                         "from": 0,
@@ -328,35 +344,197 @@ class GrafanaDashboardCreator:
                     },
                     "datasourceUid": "__expr__",
                     "model": {
-                        "type": "threshold",
-                        "expression": f"A > {threshold}",
-                        "refId": "B"
+                        "conditions": [
+                            {
+                                "evaluator": {"params": [], "type": "gt"},
+                                "operator": {"type": "and"},
+                                "query": {"params": ["B"]},
+                                "reducer": {"params": [], "type": "last"},
+                                "type": "query"
+                            }
+                        ],
+                        "datasource": {"type": "__expr__", "uid": "__expr__"},
+                        "expression": "A",
+                        "intervalMs": 1000,
+                        "maxDataPoints": 43200,
+                        "reducer": "last",
+                        "refId": "B",
+                        "settings": {"mode": "dropNN"},
+                        "type": "reduce"
+                    }
+                },
+                {
+                    "refId": "C",
+                    "queryType": "",
+                    "relativeTimeRange": {
+                        "from": 0,
+                        "to": 0
+                    },
+                    "datasourceUid": "__expr__",
+                    "model": {
+                        "conditions": [
+                            {
+                                "evaluator": {"params": [threshold], "type": "gt"},
+                                "operator": {"type": "and"},
+                                "query": {"params": ["C"]},
+                                "reducer": {"params": [], "type": "last"},
+                                "type": "query"
+                            }
+                        ],
+                        "datasource": {"type": "__expr__", "uid": "__expr__"},
+                        "expression": "B",
+                        "intervalMs": 1000,
+                        "maxDataPoints": 43200,
+                        "refId": "C",
+                        "type": "threshold"
                     }
                 }
             ],
             "noDataState": "NoData",
             "execErrState": "Alerting",
-            "for": "5m",
+            "for": eval_for,
             "annotations": {
-                "description": f"Disk usage exceeded {threshold}%",
-                "summary": "High disk usage detected"
+                "description": f"Disk usage on {{{{ $labels.host }}}}:{{{{ $labels.path }}}} is {{{{ printf \"%.1f\" $values.B.Value }}}}% which exceeds the threshold of {threshold}%",
+                "summary": "High disk usage detected on {{ $labels.host }}"
             },
             "labels": {},
-            "intervalSeconds": 60
+            "intervalSeconds": interval_seconds
         }
         
-        # Create the alert rule
-        url = f"{self.grafana_url}/api/v1/provisioning/alert-rules"
-        response = requests.post(url, json=alert_rule, headers=self.headers)
+        # Create or update the alert rule
+        if existing_rule:
+            # Update existing rule
+            alert_rule['uid'] = existing_rule['uid']
+            url = f"{self.grafana_url}/api/v1/provisioning/alert-rules/{existing_rule['uid']}"
+            response = requests.put(url, json=alert_rule, headers=self.headers)
+            action = "updated"
+        else:
+            # Create new rule
+            url = f"{self.grafana_url}/api/v1/provisioning/alert-rules"
+            response = requests.post(url, json=alert_rule, headers=self.headers)
+            action = "created"
         
         if response.status_code in [200, 201]:
             result = response.json()
-            print(f"✅ Alert rule created successfully!")
-            return result.get('uid', '')
+            print(f"✅ Alert rule {action} successfully!")
+            return result.get('uid', existing_rule['uid'] if existing_rule else '')
         else:
-            print(f"❌ Failed to create alert rule: {response.status_code}")
+            print(f"❌ Failed to {action[:-1]} alert rule: {response.status_code}")
             print(f"   Response: {response.text}")
             return None
+
+    def create_notification_template(self):
+        """Create notification template for disk usage alerts."""
+        template_name = "pushover-disk-usage"
+        
+        # The template content
+        template_content = """{{ define "pushover-disk-usage" }}
+  {{- /* Define variables at the top */ -}}
+    {{- $hasFiringAlerts := false -}}
+    {{- $hasResolvedAlerts := false -}}
+  
+    {{- /* Firing Alerts Section */ -}}
+    {{- range .Alerts.Firing -}}
+      {{- if not $hasFiringAlerts -}}
+  Firing alerts:<br><br> {{/* Header and a blank line after it using HTML */}}
+        {{- $hasFiringAlerts = true -}}
+      {{- end -}}
+    Host: {{ .Labels.host }}, Path: {{ .Labels.path }} - Value: {{ printf "%.1f" .Values.B }}<br>
+    {{- end -}}
+  
+    {{- /* Add a blank line between sections if both exist */ -}}
+    {{- if and $hasFiringAlerts $hasResolvedAlerts -}}
+  <br><br> {{/* Blank line between Firing and Resolved sections using HTML */}}
+    {{- end -}}
+  
+    {{- /* Resolved Alerts Section */ -}}
+    {{- range .Alerts.Resolved -}}
+      {{- if not $hasResolvedAlerts -}}
+  Resolved alerts:<br><br> {{/* Header and a blank line after it using HTML */}}
+        {{- $hasResolvedAlerts = true -}}
+      {{- end -}}
+    Host: {{ .Labels.host }}, Path: {{ .Labels.path }}<br>
+    {{- end -}}
+{{ end }}"""
+        
+        template_data = {
+            "name": template_name,
+            "template": template_content
+        }
+        
+        # Check if template already exists
+        url = f"{self.grafana_url}/api/v1/provisioning/templates"
+        response = requests.get(url, headers=self.headers)
+        
+        existing_template = None
+        if response.status_code == 200:
+            templates = response.json()
+            for template in templates:
+                if template.get('name') == template_name:
+                    existing_template = template
+                    break
+        
+        # Create or update template
+        if existing_template:
+            # Update existing template
+            url = f"{self.grafana_url}/api/v1/provisioning/templates/{template_name}"
+            response = requests.put(url, json=template_data, headers=self.headers)
+            action = "updated"
+        else:
+            # Create new template
+            url = f"{self.grafana_url}/api/v1/provisioning/templates"
+            response = requests.post(url, json=template_data, headers=self.headers)
+            action = "created"
+        
+        if response.status_code in [200, 201, 202]:
+            print(f"✅ Notification template {action} successfully!")
+            return template_name
+        else:
+            print(f"❌ Failed to {action[:-1]} notification template: {response.status_code}")
+            print(f"   Response: {response.text}")
+            return None
+
+    def update_contact_point_template(self, template_name):
+        """Update contact point to use the custom notification template."""
+        # Get existing contact points
+        url = f"{self.grafana_url}/api/v1/provisioning/contact-points"
+        response = requests.get(url, headers=self.headers)
+        
+        if response.status_code != 200:
+            print(f"❌ Failed to get contact points: {response.status_code}")
+            return False
+        
+        contact_points = response.json()
+        pushover_contact = None
+        
+        # Find the disk-monitoring-pushover contact point
+        for cp in contact_points:
+            if cp.get('name') == 'disk-monitoring-pushover':
+                pushover_contact = cp
+                break
+        
+        if not pushover_contact:
+            print("⚠️  disk-monitoring-pushover contact point not found, skipping template update")
+            return False
+        
+        # Update the contact point to use our template
+        if pushover_contact.get('type') == 'pushover':
+            # Update the message template to use our custom template
+            pushover_contact['settings']['message'] = f'{{{{ template "{template_name}" . }}}}'
+            # Update the title to be more concise - include hostname but keep it simple
+            pushover_contact['settings']['title'] = '{{ if .Alerts.Firing }}🔥 {{ range .Alerts.Firing }}{{ .Labels.host }}{{ break }}{{ end }}{{ else }}✅ Disk OK{{ end }}'
+        
+        # Update the contact point
+        url = f"{self.grafana_url}/api/v1/provisioning/contact-points/{pushover_contact['uid']}"
+        response = requests.put(url, json=pushover_contact, headers=self.headers)
+        
+        if response.status_code in [200, 202]:
+            print(f"✅ Contact point updated to use template '{template_name}'!")
+            return True
+        else:
+            print(f"❌ Failed to update contact point: {response.status_code}")
+            print(f"   Response: {response.text}")
+            return False
 
     def create_notification_policy(self, alert_rule_uid):
         """Create notification policy to route alerts to Pushover."""
@@ -370,9 +548,18 @@ class GrafanaDashboardCreator:
             
         existing_policy = response.json()
         
+        # Remove any existing "Disk Usage Alert" policies to avoid duplicates
+        if "routes" in existing_policy:
+            existing_policy["routes"] = [
+                route for route in existing_policy["routes"] 
+                if not (route.get("object_matchers") and 
+                       any(matcher[0] == "alertname" and matcher[2] == "Disk Usage Alert" 
+                           for matcher in route.get("object_matchers", [])))
+            ]
+        
         # Add our disk monitoring policy as a nested policy
         disk_policy = {
-            "receiver": "autogen-contact-point-default",
+            "receiver": "disk-monitoring-pushover",
             "object_matchers": [
                 [
                     "alertname",
@@ -424,12 +611,14 @@ class GrafanaDashboardCreator:
     def export_alert_config(self):
         """Export alert rule configuration for manual import."""
         threshold = self.config.get('disk_usage_threshold', 85)
+        eval_for = self.config.get('alert_eval_for', '5m')
+        interval_seconds = self.config.get('alert_interval_seconds', 60)
         
-        # Create alert rule configuration
+        # Create alert rule configuration with proper 3-query structure (A -> B -> C)
         alert_rule = {
             "folderUID": "",
             "title": "Disk Usage Alert",
-            "condition": "B",
+            "condition": "C",
             "data": [
                 {
                     "refId": "A",
@@ -441,16 +630,23 @@ class GrafanaDashboardCreator:
                     "datasourceUid": "denl7c5ccxam8a",
                     "model": {
                         "datasource": {"type": "influxdb", "uid": "denl7c5ccxam8a"},
-                        "measurement": "disk",
-                        "select": [
-                            [{"params": ["used_percent"], "type": "field"}, {"params": [], "type": "last"}]
-                        ],
                         "groupBy": [
-                            {"params": ["host"], "type": "tag"},
-                            {"params": ["path"], "type": "tag"}
+                            {"params": ["$__interval"], "type": "time"},
+                            {"params": ["host::tag"], "type": "tag"},
+                            {"params": ["path::tag"], "type": "tag"},
+                            {"params": ["null"], "type": "fill"}
                         ],
-                        "tags": [],
-                        "refId": "A"
+                        "intervalMs": 1000,
+                        "maxDataPoints": 43200,
+                        "measurement": "disk",
+                        "orderByTime": "ASC",
+                        "policy": "default",
+                        "refId": "A",
+                        "resultFormat": "time_series",
+                        "select": [
+                            [{"params": ["used_percent"], "type": "field"}, {"params": [], "type": "mean"}]
+                        ],
+                        "tags": []
                     }
                 },
                 {
@@ -462,24 +658,64 @@ class GrafanaDashboardCreator:
                     },
                     "datasourceUid": "__expr__",
                     "model": {
-                        "type": "threshold",
-                        "expression": f"A > {threshold}",
-                        "refId": "B"
+                        "conditions": [
+                            {
+                                "evaluator": {"params": [], "type": "gt"},
+                                "operator": {"type": "and"},
+                                "query": {"params": ["B"]},
+                                "reducer": {"params": [], "type": "last"},
+                                "type": "query"
+                            }
+                        ],
+                        "datasource": {"type": "__expr__", "uid": "__expr__"},
+                        "expression": "A",
+                        "intervalMs": 1000,
+                        "maxDataPoints": 43200,
+                        "reducer": "last",
+                        "refId": "B",
+                        "settings": {"mode": "dropNN"},
+                        "type": "reduce"
+                    }
+                },
+                {
+                    "refId": "C",
+                    "queryType": "",
+                    "relativeTimeRange": {
+                        "from": 0,
+                        "to": 0
+                    },
+                    "datasourceUid": "__expr__",
+                    "model": {
+                        "conditions": [
+                            {
+                                "evaluator": {"params": [threshold], "type": "gt"},
+                                "operator": {"type": "and"},
+                                "query": {"params": ["C"]},
+                                "reducer": {"params": [], "type": "last"},
+                                "type": "query"
+                            }
+                        ],
+                        "datasource": {"type": "__expr__", "uid": "__expr__"},
+                        "expression": "B",
+                        "intervalMs": 1000,
+                        "maxDataPoints": 43200,
+                        "refId": "C",
+                        "type": "threshold"
                     }
                 }
             ],
             "noDataState": "NoData",
             "execErrState": "Alerting",
-            "for": "5m",
+            "for": eval_for,
             "annotations": {
-                "description": f"Disk usage on {{{{ $labels.host }}}}:{{{{ $labels.path }}}} is {{{{ $value }}}}% which exceeds the threshold of {threshold}%",
+                "description": f"Disk usage on {{{{ $labels.host }}}}:{{{{ $labels.path }}}} is {{{{ printf \"%.1f\" $values.B.Value }}}}% which exceeds the threshold of {threshold}%",
                 "summary": "High disk usage detected on {{ $labels.host }}"
             },
             "labels": {
                 "severity": "warning",
                 "team": "infrastructure"
             },
-            "intervalSeconds": 60
+            "intervalSeconds": interval_seconds
         }
         
         # Export to file
@@ -489,14 +725,14 @@ class GrafanaDashboardCreator:
         
         # Create notification policy update
         notification_policy = {
-            "receiver": "autogen-contact-point-default",
+            "receiver": "disk-monitoring-pushover",
             "object_matchers": [
                 ["alertname", "=", "Disk Usage Alert"]
             ],
             "continue": False,
             "group_by": ["host", "path"],
             "group_wait": "5s",
-            "group_interval": "5m",
+            "group_interval": "10s",
             "repeat_interval": "1h"
         }
         
@@ -525,12 +761,21 @@ class GrafanaDashboardCreator:
         print("     • Matcher: alertname = Disk Usage Alert")
         print("     • Contact point: autogen-contact-point-default")
         print("     • Group by: host, path")
-        print("     • Timing: 5s wait, 5m interval, 1h repeat")
+        print("     • Timing: 5s wait, 10s interval, 1h repeat")
         
         return True
 
     def create_alerting(self):
-        """Create alert rule and notification policy."""
+        """Create alert rule, notification template, and notification policy."""
+        print("Creating notification template...")
+        template_name = self.create_notification_template()
+        if template_name is None:
+            print("⚠️  Template creation failed, continuing with alert rule...")
+        
+        if template_name:
+            print("Updating contact point to use custom template...")
+            self.update_contact_point_template(template_name)
+        
         print("Creating alert rule...")
         alert_rule_uid = self.create_alert_rule()
         if alert_rule_uid is None:
