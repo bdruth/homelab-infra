@@ -8,10 +8,16 @@
     - group_vars/all.yml
 
   tasks:
+    - name: Check if host-specific variables file exists
+      ansible.builtin.stat:
+        path: "host_vars/{{ inventory_hostname }}.yml"
+      register: host_vars_check
+      delegate_to: localhost
+
     - name: Load host-specific variables
       ansible.builtin.include_vars:
         file: "host_vars/{{ inventory_hostname }}.yml"
-      ignore_errors: true
+      when: host_vars_check.stat.exists
 
     - name: Add InfluxData GPG key
       ansible.builtin.get_url:

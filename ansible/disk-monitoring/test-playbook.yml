@@ -10,10 +10,16 @@
   vars_files:
     - group_vars/all.yml
   tasks:
+    - name: Check if host-specific variables file exists
+      ansible.builtin.stat:
+        path: "host_vars/{{ inventory_hostname }}.yml"
+      register: host_vars_check
+      delegate_to: localhost
+
     - name: Load host-specific variables
       ansible.builtin.include_vars:
         file: "host_vars/{{ inventory_hostname }}.yml"
-      ignore_errors: true
+      when: host_vars_check.stat.exists
 
     - name: Debug InfluxDB host variable
       ansible.builtin.debug:
@@ -85,12 +91,8 @@
 
     - name: Check if disk metrics are being sent to InfluxDB
       ansible.builtin.uri:
-        url: "http://{{ influxdb_host }}:{{ influxdb_port }}/query"
+        url: "http://{{ influxdb_host }}:{{ influxdb_port }}/query?db={{ influxdb_database | urlencode }}&q={{ ('SELECT * FROM disk WHERE host=\\'' + inventory_hostname + '\\' ORDER BY time DESC LIMIT 1') | urlencode }}"
         method: GET
-        body_format: form-urlencoded
-        body:
-          db: "{{ influxdb_database }}"
-          q: "SELECT * FROM disk WHERE host='{{ inventory_hostname }}' ORDER BY time DESC LIMIT 1"
         status_code: 200
       register: disk_metrics_check
       ignore_errors: true
