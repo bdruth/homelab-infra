@@ -77,3 +77,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
     until: service_result.rc == 0
     when: install_service | bool
   ```
+
+## Grafana Alerting API Guidelines
+- **Permissions**: Grafana OSS requires Admin role for alert management (no granular RBAC like Enterprise)
+- **Required Fields**: Alert rules MUST have `folderUID` (cannot be empty), proper `condition` reference, and correct datasource UIDs
+- **API Structure**: Use `/api/v1/provisioning/alert-rules` for creation with proper InfluxDB + Expression query format
+- **Notification Policies**: Use `object_matchers` format (not old `matcher` format) and PUT method for updates to `/api/v1/provisioning/policies`
+- **Error Handling**: Always include fallback to export JSON files when API permissions fail
+- **InfluxDB Queries**: Use visual query builder format in alert rules, not raw SQL format
+- **Expression Datasource**: Use `__expr__` UID for threshold conditions with `type: "threshold"`
+- **Integration**: Route alerts to existing contact points like `autogen-contact-point-default` using object_matchers
+- **Testing**: Test API permissions before attempting rule creation to provide better user experience
