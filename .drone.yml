@@ -106,6 +106,132 @@ volumes:
 ---
 kind: pipeline
 type: docker
+name: disk-monitoring
+
+steps:
+  - name: restore-cache
+    image: meltwater/drone-cache
+    environment:
+      AWS_ACCESS_KEY_ID:
+        from_secret: AWS_ACCESS_KEY_ID
+      AWS_SECRET_ACCESS_KEY:
+        from_secret: AWS_SECRET_ACCESS_KEY
+      AWS_PLUGIN_PATH_STYLE: true
+    settings:
+      debug: true
+      restore: true
+      endpoint: https://minio.cusack-ruth.name
+      bucket: drone-cache-bucket
+      region: main
+      path-style: true
+      archive-format: gzip
+      mount:
+        - "/root/.cache"
+    volumes:
+      - name: cache
+        path: /root/.cache
+  - name: unlock-secrets
+    image: betalabs/drone-git-crypt
+    pull: always
+    environment:
+      GIT_CRYPT_KEY:
+        from_secret: git-crypt-key
+  - name: deploy-ansible
+    image: pkgxdev/pkgx@sha256:610bbc17475cb174c5e6a8a9e3cdf39decb93c552fa073542b6f593255e1cb0c
+    commands:
+      - apt-get update && apt-get install -y dnsutils netcat-traditional
+      - mkdir -p ~/.ssh
+      - echo "$drone_ssh_priv_key" > ~/.ssh/id_rsa
+      - chmod -R 700 ~/.ssh
+      - chmod 600 ~/.ssh/id_rsa
+      - cd ansible/disk-monitoring
+      - ./pkgx-deploy.sh --ansible
+    volumes:
+      - name: cache
+        path: /root/.cache
+    environment:
+      drone_ssh_priv_key:
+        from_secret: drone_ssh_priv_key
+    when:
+      changeset:
+        includes:
+          - "ansible/disk-monitoring/main.yml"
+          - "ansible/disk-monitoring/test-playbook.yml"
+          - "ansible/disk-monitoring/telegraf-disk.conf.j2"
+          - "ansible/disk-monitoring/group_vars/**"
+          - "ansible/disk-monitoring/host_vars/**"
+          - "ansible/disk-monitoring/host-inventory.yml"
+          - "ansible/disk-monitoring/deploy.sh"
+          - "ansible/disk-monitoring/pkgx-deploy.sh"
+          - ".drone.yml"
+  - name: deploy-grafana
+    image: pkgxdev/pkgx@sha256:610bbc17475cb174c5e6a8a9e3cdf39decb93c552fa073542b6f593255e1cb0c
+    commands:
+      - apt-get update && apt-get install -y curl
+      - mkdir -p ~/.ssh
+      - echo "$drone_ssh_priv_key" > ~/.ssh/id_rsa
+      - chmod -R 700 ~/.ssh
+      - chmod 600 ~/.ssh/id_rsa
+      - cd ansible/disk-monitoring
+      - ./pkgx-deploy.sh --grafana
+    volumes:
+      - name: cache
+        path: /root/.cache
+    environment:
+      drone_ssh_priv_key:
+        from_secret: drone_ssh_priv_key
+      GRAFANA_URL:
+        from_secret: GRAFANA_URL
+      GRAFANA_API_KEY:
+        from_secret: GRAFANA_API_KEY
+    when:
+      changeset:
+        includes:
+          - "ansible/disk-monitoring/create-grafana-dashboard.py"
+          - "ansible/disk-monitoring/group_vars/**"
+          - "ansible/disk-monitoring/host_vars/**"
+          - "ansible/disk-monitoring/host-inventory.yml"
+          - "ansible/disk-monitoring/pyproject.toml"
+          - "ansible/disk-monitoring/deploy.sh"
+          - "ansible/disk-monitoring/pkgx-deploy.sh"
+          - ".drone.yml"
+  - name: rebuild-cache
+    image: meltwater/drone-cache
+    environment:
+      AWS_ACCESS_KEY_ID:
+        from_secret: AWS_ACCESS_KEY_ID
+      AWS_SECRET_ACCESS_KEY:
+        from_secret: AWS_SECRET_ACCESS_KEY
+      AWS_PLUGIN_PATH_STYLE: true
+    settings:
+      debug: true
+      rebuild: true
+      endpoint: https://minio.cusack-ruth.name
+      bucket: drone-cache-bucket
+      region: main
+      path-style: true
+      archive-format: gzip
+      mount:
+        - "/root/.cache"
+    volumes:
+      - name: cache
+        path: /root/.cache
+
+trigger:
+  changeset:
+    includes:
+      - "ansible/disk-monitoring/**"
+    excludes:
+      - "ansible/disk-monitoring/README.md"
+      - "ansible/disk-monitoring/.nvmrc"
+      - "ansible/disk-monitoring/.python-version"
+
+volumes:
+  - name: cache
+    temp: {}
+---
+kind: pipeline
+type: docker
 name: notify-on-fail
 
 steps:
