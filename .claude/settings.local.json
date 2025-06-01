@@ -9,7 +9,8 @@
       "Bash(touch:*)",
       "WebFetchTool(domain:github.com)",
       "Bash(chmod:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(uv:*)"
     ],
     "deny": []
   }
