@@ -66,43 +66,62 @@ monitor_mount_points:
 
 ## Installation
 
-### 1. Deploy Telegraf Configuration
+### Automated Deployment (CI/CD)
 
+The system automatically deploys via Drone CI when changes are detected:
+
+- **Ansible deployment**: Triggered by changes to playbooks, templates, or configuration files
+- **Grafana updates**: Triggered by changes to the dashboard script, configuration, or dependencies
+
+### Manual Deployment
+
+#### Option 1: Full Deployment (Recommended)
+```bash
+# Deploy both Ansible configuration and Grafana dashboard
+./pkgx-deploy.sh
+
+# Or explicitly deploy all components
+./pkgx-deploy.sh --all
+```
+
+#### Option 2: Ansible Only
+```bash
+# Deploy only Telegraf configuration via Ansible
+./pkgx-deploy.sh --ansible
+```
+
+#### Option 3: Grafana Only
+```bash
+# Update only Grafana dashboard and alerts
+export GRAFANA_URL="http://grafana.example.com:3000"
+export GRAFANA_API_KEY="your_api_key_here"
+./pkgx-deploy.sh --grafana
+```
+
+#### Option 4: Direct Commands (Advanced)
+
+Deploy Telegraf configuration:
 ```bash
 # Run on all hosts
 ansible-playbook -i host-inventory.yml main.yml
 
 # Run on specific host
 ansible-playbook -i host-inventory.yml main.yml --limit hostname
-```
 
-### 2. Validate Installation
-
-```bash
-# Test the monitoring setup
+# Validate installation
 ansible-playbook -i host-inventory.yml test-playbook.yml
 ```
 
-### 3. Create Grafana Dashboard and Alerts
-
-Install Python dependencies:
+Update Grafana dashboard:
 ```bash
+# Install dependencies
 uv sync
-```
 
-Create dashboard with alerting:
-```bash
+# Create dashboard with alerting
 uv run python create-grafana-dashboard.py \
   --grafana-url http://grafana.example.com:3000 \
   --api-key YOUR_GRAFANA_API_KEY \
   --with-alerts
-```
-
-For dashboard only:
-```bash
-uv run python create-grafana-dashboard.py \
-  --grafana-url http://grafana.example.com:3000 \
-  --api-key YOUR_GRAFANA_API_KEY
 ```
 
 ## Features
@@ -194,6 +213,31 @@ This repository uses `git-crypt` to encrypt sensitive configuration files. The f
 - `**/host_vars/*.yml` - Host-specific variable files
 
 These encrypted files contain sensitive information like hostnames, IP addresses, and other infrastructure details.
+
+## CI/CD Configuration
+
+The disk monitoring system uses Drone CI for automated deployment. The pipeline includes:
+
+### Pipeline Triggers
+- Changes to Ansible playbooks, templates, or configuration files trigger the `deploy-ansible` step
+- Changes to the Grafana dashboard script or dependencies trigger the `deploy-grafana` step  
+- Documentation changes (README, .nvmrc, .python-version) are excluded from deployments
+
+### Required Secrets
+Configure these secrets in your Drone CI environment:
+- `drone_ssh_priv_key` - SSH private key for connecting to managed hosts
+- `GRAFANA_URL` - Grafana instance URL (e.g., http://grafana.example.com:3000)  
+- `GRAFANA_API_KEY` - Grafana API key with dashboard and alerting permissions
+- `git-crypt-key` - Key for decrypting encrypted configuration files
+
+### Pipeline Steps
+1. **Cache Management** - Restore dependency cache for faster builds
+2. **Secret Decryption** - Unlock git-crypt encrypted files
+3. **Ansible Deployment** - Run Telegraf configuration and validation tests
+4. **Grafana Updates** - Create/update dashboard and alert rules
+5. **Cache Rebuild** - Update dependency cache for subsequent builds
+
+The pipeline uses `pkgx` for consistent dependency management across environments.
 
 ## Development
 
