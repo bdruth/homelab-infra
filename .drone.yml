@@ -4,6 +4,18 @@ type: docker
 name: build
 
 steps:
+  - name: check-changes
+    image: alpine/git
+    commands:
+      - |
+        echo "Checking for relevant file changes..."
+        if git diff --name-only HEAD~1 | grep -E "^(ansible/dnsdist/|ansible/pihole/|dns/|modules/|deploy\.sh|pkgx-deploy\.sh|setup-ansible\.sh|\.drone\.yml)"; then
+          echo "✅ DNS/infrastructure files changed, proceeding with deployment"
+          exit 0
+        else
+          echo "ℹ️ No DNS/infrastructure files changed, skipping deployment"
+          exit 78
+        fi
   - name: restore-cache
     image: meltwater/drone-cache
     environment:
@@ -101,18 +113,6 @@ steps:
       - name: cache
         path: /root/.cache
 
-trigger:
-  changeset:
-    includes:
-      - "ansible/dnsdist/**"
-      - "ansible/pihole/**"
-      - "dns/**"
-      - "modules/**"
-      - "deploy.sh"
-      - "pkgx-deploy.sh"
-      - "setup-ansible.sh"
-      - ".drone.yml"
-
 volumes:
   - name: cache
     temp: {}
@@ -122,6 +122,21 @@ type: docker
 name: disk-monitoring
 
 steps:
+  - name: check-changes
+    image: alpine/git
+    commands:
+      - |
+        echo "Checking for relevant file changes..."
+        if git diff --name-only HEAD~1 | grep -E "^ansible/disk-monitoring/(main\.yml|test-playbook\.yml|telegraf-disk\.conf\.j2|group_vars/|host_vars/|host-inventory\.yml|deploy\.sh|pkgx-deploy\.sh|create-grafana-dashboard\.py|pyproject\.toml)" | grep -v -E "(README\.md|\.nvmrc|\.python-version)$"; then
+          echo "✅ Disk monitoring files changed, proceeding with deployment"
+          exit 0
+        elif [ "$(git diff --name-only HEAD~1 | grep '^\.drone\.yml$')" ]; then
+          echo "✅ Drone configuration changed, proceeding with deployment"
+          exit 0
+        else
+          echo "ℹ️ No relevant disk monitoring files changed, skipping deployment"
+          exit 78
+        fi
   - name: restore-cache
     image: meltwater/drone-cache
     environment:
@@ -165,18 +180,6 @@ steps:
     environment:
       drone_ssh_priv_key:
         from_secret: drone_ssh_priv_key
-    when:
-      changeset:
-        includes:
-          - "ansible/disk-monitoring/main.yml"
-          - "ansible/disk-monitoring/test-playbook.yml"
-          - "ansible/disk-monitoring/telegraf-disk.conf.j2"
-          - "ansible/disk-monitoring/group_vars/**"
-          - "ansible/disk-monitoring/host_vars/**"
-          - "ansible/disk-monitoring/host-inventory.yml"
-          - "ansible/disk-monitoring/deploy.sh"
-          - "ansible/disk-monitoring/pkgx-deploy.sh"
-          - ".drone.yml"
   - name: deploy-grafana
     image: pkgxdev/pkgx@sha256:610bbc17475cb174c5e6a8a9e3cdf39decb93c552fa073542b6f593255e1cb0c
     commands:
@@ -197,17 +200,6 @@ steps:
         from_secret: GRAFANA_URL
       GRAFANA_API_KEY:
         from_secret: GRAFANA_API_KEY
-    when:
-      changeset:
-        includes:
-          - "ansible/disk-monitoring/create-grafana-dashboard.py"
-          - "ansible/disk-monitoring/group_vars/**"
-          - "ansible/disk-monitoring/host_vars/**"
-          - "ansible/disk-monitoring/host-inventory.yml"
-          - "ansible/disk-monitoring/pyproject.toml"
-          - "ansible/disk-monitoring/deploy.sh"
-          - "ansible/disk-monitoring/pkgx-deploy.sh"
-          - ".drone.yml"
   - name: rebuild-cache
     image: meltwater/drone-cache
     environment:
@@ -229,15 +221,6 @@ steps:
     volumes:
       - name: cache
         path: /root/.cache
-
-trigger:
-  changeset:
-    includes:
-      - "ansible/disk-monitoring/**"
-    excludes:
-      - "ansible/disk-monitoring/README.md"
-      - "ansible/disk-monitoring/.nvmrc"
-      - "ansible/disk-monitoring/.python-version"
 
 volumes:
   - name: cache
