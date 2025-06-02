@@ -536,7 +536,165 @@ class GrafanaDashboardCreator:
             print(f"   Response: {response.text}")
             return False
 
-    def create_notification_policy(self, alert_rule_uid):
+    def create_data_freshness_alert_rule(self):
+        """Create alert rule to detect when hosts stop sending data."""
+        max_staleness_minutes = self.config.get('max_data_staleness_minutes', 5)
+        eval_for = self.config.get('staleness_alert_eval_for', '2m')
+        interval_seconds = self.config.get('alert_interval_seconds', 60)
+        
+        # Check if alert rule already exists
+        existing_rules = self.get_existing_alert_rules()
+        existing_rule = None
+        for rule in existing_rules:
+            if rule.get('title') == 'Host Data Staleness Alert':
+                existing_rule = rule
+                print(f"Found existing data staleness alert rule with UID: {rule['uid']}")
+                break
+        
+        # Get available folders
+        folders = self.get_folders()
+        folder_uid = ""
+        
+        # Use existing rule's folder or find a suitable one
+        if existing_rule:
+            folder_uid = existing_rule.get('folderUID', '')
+        elif folders:
+            # Look for a monitoring/alerting folder, or use the first available
+            for folder in folders:
+                if any(keyword in folder['title'].lower() for keyword in ['monitor', 'alert', 'disk']):
+                    folder_uid = folder['uid']
+                    break
+            
+            if not folder_uid:
+                folder_uid = folders[0]['uid']
+        
+        # Create rule with 3-query structure (A -> B -> C) to handle data reduction properly
+        alert_rule = {
+            "folderUID": folder_uid,
+            "title": "Host Data Staleness Alert",
+            "condition": "C",
+            "data": [
+                {
+                    "refId": "A",
+                    "queryType": "",
+                    "relativeTimeRange": {
+                        "from": max_staleness_minutes * 60,  # Look back for data
+                        "to": 0
+                    },
+                    "datasourceUid": "denl7c5ccxam8a",
+                    "model": {
+                        "datasource": {"type": "influxdb", "uid": "denl7c5ccxam8a"},
+                        "groupBy": [
+                            {"params": ["$__interval"], "type": "time"},
+                            {"params": ["host::tag"], "type": "tag"},
+                            {"params": ["null"], "type": "fill"}
+                        ],
+                        "measurement": "disk",
+                        "orderByTime": "ASC",
+                        "policy": "default",
+                        "refId": "A",
+                        "resultFormat": "time_series",
+                        "select": [
+                            [{"params": ["used_percent"], "type": "field"}, {"params": [], "type": "count"}]
+                        ],
+                        "tags": [],
+                        "intervalMs": 1000,
+                        "maxDataPoints": 43200
+                    }
+                },
+                {
+                    "refId": "B",
+                    "queryType": "",
+                    "relativeTimeRange": {
+                        "from": 0,
+                        "to": 0
+                    },
+                    "datasourceUid": "__expr__",
+                    "model": {
+                        "conditions": [
+                            {
+                                "evaluator": {"params": [], "type": "gt"},
+                                "operator": {"type": "and"},
+                                "query": {"params": ["B"]},
+                                "reducer": {"params": [], "type": "last"},
+                                "type": "query"
+                            }
+                        ],
+                        "datasource": {"type": "__expr__", "uid": "__expr__"},
+                        "expression": "A",
+                        "intervalMs": 1000,
+                        "maxDataPoints": 43200,
+                        "reducer": "sum",
+                        "refId": "B",
+                        "settings": {"mode": "dropNN"},
+                        "type": "reduce"
+                    }
+                },
+                {
+                    "refId": "C",
+                    "queryType": "",
+                    "relativeTimeRange": {
+                        "from": 0,
+                        "to": 0
+                    },
+                    "datasourceUid": "__expr__",
+                    "model": {
+                        "conditions": [
+                            {
+                                "evaluator": {"params": [1], "type": "lt"},
+                                "operator": {"type": "and"},
+                                "query": {"params": ["C"]},
+                                "reducer": {"params": [], "type": "last"},
+                                "type": "query"
+                            }
+                        ],
+                        "datasource": {"type": "__expr__", "uid": "__expr__"},
+                        "expression": "B",
+                        "intervalMs": 1000,
+                        "maxDataPoints": 43200,
+                        "refId": "C",
+                        "type": "threshold"
+                    }
+                }
+            ],
+            "noDataState": "Alerting",  # Alert when no data is received
+            "execErrState": "Alerting",
+            "for": eval_for,
+            "annotations": {
+                "description": f"Host {{{{ $labels.host }}}} has not sent disk monitoring data in the last {max_staleness_minutes} minutes (data points: {{{{ printf \"%.0f\" $values.B.Value }}}}). Telegraf may have stopped or there may be a connectivity issue.",
+                "summary": "Host {{ $labels.host }} stopped sending monitoring data"
+            },
+            "labels": {
+                "severity": "critical",
+                "team": "infrastructure",
+                "alert_type": "data_staleness"
+            },
+            "intervalSeconds": interval_seconds
+        }
+        
+        # Create or update the alert rule
+        if existing_rule:
+            # Update existing rule
+            alert_rule['uid'] = existing_rule['uid']
+            url = f"{self.grafana_url}/api/v1/provisioning/alert-rules/{existing_rule['uid']}"
+            response = requests.put(url, json=alert_rule, headers=self.headers)
+            action = "updated"
+        else:
+            # Create new rule
+            url = f"{self.grafana_url}/api/v1/provisioning/alert-rules"
+            response = requests.post(url, json=alert_rule, headers=self.headers)
+            action = "created"
+        
+        if response.status_code in [200, 201]:
+            result = response.json()
+            print(f"✅ Data staleness alert rule {action} successfully!")
+            return result.get('uid', existing_rule['uid'] if existing_rule else '')
+        else:
+            print(f"❌ Failed to {action[:-1]} data staleness alert rule: {response.status_code}")
+            print(f"   Response: {response.text}")
+            return None
+
+    def create_notification_policy(self, alert_rule_uid, staleness_alert_uid=None):
         """Create notification policy to route alerts to Pushover."""
         # First, get existing notification policies
         url = f"{self.grafana_url}/api/v1/provisioning/policies"
@@ -548,36 +706,56 @@ class GrafanaDashboardCreator:
             
         existing_policy = response.json()
         
-        # Remove any existing "Disk Usage Alert" policies to avoid duplicates
+        # Remove any existing disk monitoring policies to avoid duplicates
         if "routes" in existing_policy:
             existing_policy["routes"] = [
                 route for route in existing_policy["routes"] 
                 if not (route.get("object_matchers") and 
-                       any(matcher[0] == "alertname" and matcher[2] == "Disk Usage Alert" 
+                       any(matcher[0] == "alertname" and matcher[2] in ["Disk Usage Alert", "Host Data Staleness Alert"]
                            for matcher in route.get("object_matchers", [])))
             ]
         
-        # Add our disk monitoring policy as a nested policy
-        disk_policy = {
-            "receiver": "disk-monitoring-pushover",
-            "object_matchers": [
-                [
-                    "alertname",
-                    "=",
-                    "Disk Usage Alert"
-                ]
-            ],
-            "continue": False,
-            "group_by": ["host", "path"],
-            "group_wait": "5s",
-            "group_interval": "5m",
-            "repeat_interval": "1h"
-        }
+        # Add our disk monitoring policies as nested policies
+        disk_policies = [
+            {
+                "receiver": "disk-monitoring-pushover",
+                "object_matchers": [
+                    [
+                        "alertname",
+                        "=",
+                        "Disk Usage Alert"
+                    ]
+                ],
+                "continue": False,
+                "group_by": ["host", "path"],
+                "group_wait": "5s",
+                "group_interval": "5m",
+                "repeat_interval": "1h"
+            }
+        ]
+        
+        # Add staleness alert policy if we created one
+        if staleness_alert_uid:
+            disk_policies.append({
+                "receiver": "disk-monitoring-pushover",
+                "object_matchers": [
+                    [
+                        "alertname",
+                        "=",
+                        "Host Data Staleness Alert"
+                    ]
+                ],
+                "continue": False,
+                "group_by": ["host"],
+                "group_wait": "10s",
+                "group_interval": "10m",
+                "repeat_interval": "2h"
+            })
         
         # Add to existing nested policies or create new list
         if "routes" not in existing_policy:
             existing_policy["routes"] = []
-        existing_policy["routes"].append(disk_policy)
+        existing_policy["routes"].extend(disk_policies)
         
         # Update the notification policy
         response = requests.put(url, json=existing_policy, headers=self.headers)
@@ -776,15 +954,20 @@ class GrafanaDashboardCreator:
             print("Updating contact point to use custom template...")
             self.update_contact_point_template(template_name)
         
-        print("Creating alert rule...")
+        print("Creating disk usage alert rule...")
         alert_rule_uid = self.create_alert_rule()
         if alert_rule_uid is None:
-            print("❌ Alert creation failed due to permissions.")
+            print("❌ Disk usage alert creation failed due to permissions.")
             print("🔄 Falling back to export mode...")
             return self.export_alert_config()
+        
+        print("Creating data staleness alert rule...")
+        staleness_alert_uid = self.create_data_freshness_alert_rule()
+        if staleness_alert_uid is None:
+            print("⚠️  Data staleness alert creation failed, continuing with disk usage alert only...")
             
         print("Updating notification policy...")
-        return self.create_notification_policy(alert_rule_uid)
+        return self.create_notification_policy(alert_rule_uid, staleness_alert_uid)
 
 def main():
     parser = argparse.ArgumentParser(description='Create Grafana dashboard for disk monitoring')
