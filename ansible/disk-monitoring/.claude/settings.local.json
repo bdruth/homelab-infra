@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(git add:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "WebFetch(domain:docs.drone.io)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": []
   }
