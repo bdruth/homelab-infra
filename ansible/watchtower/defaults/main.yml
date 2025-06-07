@@ -1,0 +1,29 @@
+---
+# Watchtower default configuration
+
+# Main feature toggle
+install_watchtower: false
+
+# Installation directory
+watchtower_install_dir: "/opt/watchtower"
+
+# Container image version
+watchtower_version: "latest"
+
+# Core configuration
+watchtower_debug: false
+watchtower_cleanup: true
+watchtower_include_stopped: false
+watchtower_rolling_restart: true
+
+# Schedule options (use one or the other)
+watchtower_schedule: "0 0 4 * * *"  # Cron format: daily at 4 AM
+watchtower_poll_interval: "86400"   # Alternative: seconds between checks
+
+# Container exclusions (list of container names to exclude from updates)
+watchtower_exclude_containers: []
+
+# Notification settings
+watchtower_notifications_enabled: false
+watchtower_pushover_app_token: ""
+watchtower_pushover_user_key: ""

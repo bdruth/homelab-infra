@@ -47,10 +47,6 @@
       ansible.builtin.import_tasks: tasks/shared_models.yml
       when: install_shared_models | bool
       
-    - name: Import Watchtower tasks
-      ansible.builtin.import_tasks: tasks/watchtower.yml
-      when: install_watchtower | bool
-      
     - name: Import GPT Researcher tasks
       ansible.builtin.import_tasks: tasks/gpt_researcher.yml
       when: install_gpt_researcher | bool
