@@ -1,0 +1,9 @@
+---
+# NVIDIA GPU-only deployment playbook for testing/development
+
+- name: Deploy NVIDIA GPU configuration
+  hosts: all
+  become: true
+  roles:
+    - nvidia-gpu
+  when: "'nvidia-gpu' in host_roles | default(['nvidia-gpu'])"

@@ -2,6 +2,7 @@
 *.tfbackend filter=git-crypt diff=git-crypt
 *.tfvars filter=git-crypt diff=git-crypt
 *.example.* !filter !diff
-*-inventory.yml filter=git-crypt diff=git-crypt
+*inventory.yml filter=git-crypt diff=git-crypt
 **/group_vars/*.yml  filter=git-crypt diff=git-crypt
 **/host_vars/*.yml filter=git-crypt diff=git-crypt
+ansible/**/defaults/*.yml filter=git-crypt diff=git-crypt

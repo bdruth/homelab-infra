@@ -1,0 +1,43 @@
+---
+# Example inventory for infrastructure services
+# Copy to inventory.yml and customize for your environment
+
+all:
+  hosts:
+    # GPU server with UPS monitoring and container updates
+    gpu-server.example.com:
+      ansible_host: 192.168.1.100
+      host_roles: [nut, watchtower, nvidia-gpu]
+      # NUT configuration
+      nut_mode: netclient
+      nut_system: ups@ups-server.example.com
+      shutdown_priority: primary
+      # Watchtower configuration  
+      watchtower_exclude_containers: [postgres]
+      watchtower_schedule: "0 0 3 * * *"
+
+    # Dedicated UPS server
+    ups-server.example.com:
+      ansible_host: 192.168.1.101
+      host_roles: [nut]
+      # NUT configuration
+      nut_mode: netserver
+      
+    # Web server with container updates only
+    web-server.example.com:
+      ansible_host: 192.168.1.102
+      host_roles: [watchtower]
+      # Watchtower configuration
+      watchtower_exclude_containers: [nginx, postgres]
+      watchtower_cleanup: false
+
+    # API server with UPS monitoring and container updates
+    api-server.example.com:
+      ansible_host: 192.168.1.103
+      host_roles: [nut, watchtower]
+      # NUT configuration
+      nut_mode: netclient
+      nut_system: ups@ups-server.example.com
+      shutdown_priority: secondary
+      # Watchtower configuration
+      watchtower_notifications_enabled: true

@@ -7,7 +7,8 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: always
-    command: --disable-memory-swappiness{% if watchtower_exclude_containers | length > 0 %}{% for container in watchtower_exclude_containers %} --exclude {{ container }}{% endfor %}{% endif %}
+    command: --disable-memory-swappiness{% if watchtower_exclude_containers | default([]) | length > 0 %} --disable-containers {% for container in watchtower_exclude_containers %}{{ container }}{% if not loop.last %},{% endif %}{% endfor %}{% endif %}
+
     environment:
       # Build environment variables list to ensure consistent formatting
 {% set env_vars = [] %}

@@ -10,7 +10,12 @@
       "WebFetchTool(domain:github.com)",
       "Bash(chmod:*)",
       "Bash(ls:*)",
-      "Bash(uv:*)"
+      "Bash(uv:*)",
+      "Bash(mv:*)",
+      "Bash(cp:*)",
+      "Bash(ansible-playbook:*)",
+      "Bash(ssh:*)",
+      "Bash(grep:*)"
     ],
     "deny": []
   }

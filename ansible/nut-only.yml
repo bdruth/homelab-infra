@@ -1,0 +1,9 @@
+---
+# NUT-only deployment playbook for testing/development
+
+- name: Deploy NUT UPS monitoring
+  hosts: all
+  become: true
+  roles:
+    - nut
+  when: "'nut' in host_roles | default(['nut'])"
