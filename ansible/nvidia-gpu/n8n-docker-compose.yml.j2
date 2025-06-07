@@ -8,8 +8,6 @@ services:
     container_name: n8n
     image: docker.n8n.io/n8nio/n8n:latest
     restart: always
-    labels:
-      - com.centurylinklabs.watchtower.enable={{ watchtower_update_n8n | bool }}
     user: "1000:1000"  # Explicitly set user to match host directory permissions
     ports:
       - ${N8N_PORT}:5678
@@ -49,8 +47,6 @@ services:
     container_name: n8n-postgres
     image: postgres:16
     restart: always
-    labels:
-      - com.centurylinklabs.watchtower.enable={{ watchtower_update_postgres | bool }}
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -73,8 +69,6 @@ services:
     container_name: n8n-qdrant
     image: qdrant/qdrant
     restart: always
-    labels:
-      - com.centurylinklabs.watchtower.enable={{ watchtower_update_qdrant | bool }}
     volumes:
       - ${QDRANT_BASE_PATH}:/qdrant/storage
     profiles:

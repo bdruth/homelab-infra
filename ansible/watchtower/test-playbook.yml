@@ -1,0 +1,98 @@
+---
+# Test playbook for Watchtower configuration
+
+- name: Import Watchtower configuration playbook
+  hosts: all
+  become: true
+  roles:
+    - watchtower
+
+- name: Validate Watchtower configuration
+  hosts: all
+  become: true
+  tasks:
+    - name: Check if docker-compose is installed
+      ansible.builtin.command: docker compose version
+      register: docker_compose_result
+      changed_when: false
+      ignore_errors: true
+      when: install_watchtower | bool
+
+    - name: Display docker-compose status
+      ansible.builtin.debug:
+        msg: "docker-compose status: {{ 'OK' if docker_compose_result.rc == 0 else 'Not properly installed' }}"
+      when: install_watchtower | bool
+
+    - name: Wait for Watchtower container to start
+      ansible.builtin.shell: docker ps | grep watchtower
+      register: watchtower_result
+      changed_when: false
+      ignore_errors: true
+      retries: 15
+      delay: 4
+      until: watchtower_result.rc == 0
+      when: install_watchtower | bool
+
+    - name: Display Watchtower status
+      ansible.builtin.debug:
+        msg: "Watchtower status: {{ 'OK' if watchtower_result.rc == 0 else 'Not properly installed or not running' }}"
+      when: install_watchtower | bool
+
+    - name: Check Watchtower configuration
+      ansible.builtin.shell: >
+        docker inspect watchtower | grep -A 10 -i env
+      register: watchtower_config_result
+      changed_when: false
+      ignore_errors: true
+      when:
+        - install_watchtower | bool
+        - watchtower_result.rc == 0
+
+    - name: Check for excluded containers in command
+      ansible.builtin.shell: >
+        docker inspect watchtower | grep -i "exclude"
+      register: watchtower_exclude_result
+      changed_when: false
+      ignore_errors: true
+      when:
+        - install_watchtower | bool
+        - watchtower_exclude_containers | length > 0
+        - watchtower_result.rc == 0
+
+    - name: Display Watchtower configuration status
+      ansible.builtin.debug:
+        msg: "Watchtower configuration: {{ 'OK' if watchtower_config_result.rc == 0 else 'Could not retrieve configuration' }}"
+      when:
+        - install_watchtower | bool
+        - watchtower_result.rc == 0
+
+    - name: Display excluded containers status
+      ansible.builtin.debug:
+        msg: "Watchtower container exclusions: {{ 'Configured' if watchtower_exclude_result.rc == 0 else 'Not configured or not found' }}"
+      when:
+        - install_watchtower | bool
+        - watchtower_exclude_containers | length > 0
+        - watchtower_result.rc == 0
+
+    - name: Check docker-compose file exists
+      ansible.builtin.stat:
+        path: "{{ watchtower_install_dir }}/docker-compose.yml"
+      register: watchtower_compose_file
+      when: install_watchtower | bool
+
+    - name: Display Watchtower docker-compose file status
+      ansible.builtin.debug:
+        msg: "Watchtower docker-compose file: {{ 'OK' if watchtower_compose_file.stat.exists else 'Not found' }}"
+      when: install_watchtower | bool
+
+    - name: Check Watchtower systemd service status
+      ansible.builtin.systemd:
+        name: watchtower
+      register: watchtower_service_status
+      ignore_errors: true
+      when: install_watchtower | bool
+
+    - name: Display Watchtower service status
+      ansible.builtin.debug:
+        msg: "Watchtower service status: {{ 'OK - Active' if watchtower_service_status.status.ActiveState == 'active' else 'Failed - Not active' }}"
+      when: install_watchtower | bool

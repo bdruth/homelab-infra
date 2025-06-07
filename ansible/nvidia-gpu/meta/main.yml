@@ -16,3 +16,9 @@ galaxy_info:
     - ml
     - machine-learning
     - linux
+
+dependencies:
+  - role: watchtower
+    vars:
+      watchtower_exclude_containers: [postgres]
+    when: install_watchtower | default(false)

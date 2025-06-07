@@ -1,0 +1,32 @@
+---
+galaxy_info:
+  author: homelab-infra
+  description: Ansible role for managing Watchtower automatic container updates
+  company: N/A
+  
+  license: MIT
+  
+  min_ansible_version: "2.9"
+  
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+    - name: EL
+      versions:
+        - "8"
+        - "9"
+  
+  galaxy_tags:
+    - docker
+    - containers
+    - automation
+    - watchtower
+    - updates
+
+dependencies: []

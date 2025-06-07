@@ -1,11 +1,28 @@
 ---
 # Setup Watchtower for automatic container updates
 
-- name: Ensure docker-compose is installed
-  ansible.builtin.assert:
-    that: install_docker_compose | bool
-    fail_msg: "Watchtower requires docker-compose to be installed (set install_docker_compose: true)"
+- name: Install docker-compose plugin if needed
+  ansible.builtin.package:
+    name: docker-compose-plugin
+    state: present
+  when: 
+    - install_watchtower | bool
+    - ansible_facts['os_family'] == "Debian" or ansible_facts['os_family'] == "RedHat"
+  ignore_errors: true
+
+- name: Verify docker-compose is available
+  ansible.builtin.command: docker compose version
+  register: docker_compose_check
+  changed_when: false
+  ignore_errors: true
   when: install_watchtower | bool
+
+- name: Fail if docker-compose is not available
+  ansible.builtin.fail:
+    msg: "Docker compose is not available. Please ensure docker and docker-compose are properly installed."
+  when: 
+    - install_watchtower | bool
+    - docker_compose_check.rc != 0
     
 - name: Create watchtower directory
   ansible.builtin.file:
@@ -47,29 +64,6 @@
     daemon_reload: yes
   register: watchtower_service
   when: install_watchtower | bool
-
-- name: Check docker-compose command exists
-  ansible.builtin.stat:
-    path: /usr/bin/docker
-  register: docker_binary
-  when: install_watchtower | bool
-
-- name: Display docker binary path
-  ansible.builtin.debug:
-    msg: "Docker binary found at /usr/bin/docker: {{ docker_binary.stat.exists }}"
-  when: install_watchtower | bool
-
-- name: Check docker-compose command
-  ansible.builtin.command: docker compose version
-  register: docker_compose_cmd
-  changed_when: false
-  ignore_errors: true
-  when: install_watchtower | bool
-
-- name: Display docker-compose command result
-  ansible.builtin.debug:
-    msg: "Docker compose command result: {{ docker_compose_cmd.rc == 0 }}"
-  when: install_watchtower | bool and docker_compose_cmd is defined
 
 - name: Wait for watchtower container to start
   ansible.builtin.shell: docker ps | grep watchtower

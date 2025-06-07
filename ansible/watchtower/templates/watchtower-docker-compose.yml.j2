@@ -7,7 +7,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: always
-    command: --disable-memory-swappiness
+    command: --disable-memory-swappiness{% if watchtower_exclude_containers | length > 0 %}{% for container in watchtower_exclude_containers %} --exclude {{ container }}{% endfor %}{% endif %}
     environment:
       # Build environment variables list to ensure consistent formatting
 {% set env_vars = [] %}
@@ -29,13 +29,9 @@ services:
 {% if watchtower_poll_interval %}
 {% set env_vars = env_vars + ['WATCHTOWER_POLL_INTERVAL=' + watchtower_poll_interval] %}
 {% endif %}
-{% if watchtower_notifications_enabled | bool %}
+{% if watchtower_notifications_enabled | bool and watchtower_pushover_app_token and watchtower_pushover_user_key %}
 {% set env_vars = env_vars + ['WATCHTOWER_NOTIFICATIONS=shoutrrr', 'WATCHTOWER_NOTIFICATION_URL=pushover://shoutrrr:' + watchtower_pushover_app_token + '@' + watchtower_pushover_user_key] %}
 {% endif %}
 {% for var in env_vars %}
       - {{ var }}
 {% endfor %}
-{% if watchtower_monitor_only_enable | length > 0 %}
-    labels:
-      - com.centurylinklabs.watchtower.enable=true
-{% endif %}

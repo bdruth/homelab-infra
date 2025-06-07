@@ -14,8 +14,6 @@ services:
       - STRATEGIC_LLM={{ gpt_researcher_ollama_model }}
       - EMBEDDING={{ gpt_researcher_ollama_embed_model }}
       - PORT=8000
-    labels:
-      - com.centurylinklabs.watchtower.enable={{ watchtower_update_gpt_researcher | bool }}
     volumes:
       - {{ gpt_researcher_install_dir }}/data:/app/data
 {% if nvidia_install_gpu_drivers | bool %}
