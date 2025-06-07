@@ -1,0 +1,21 @@
+---
+# Example host-specific variables for GPU server
+# Rename to match your actual hostname
+
+# NUT configuration - this host monitors UPS
+nut_mode: netclient
+nut_system: ups@ups-server.example.com
+shutdown_priority: primary  # Primary system - shuts down first on power loss
+
+# Watchtower configuration - exclude database containers
+watchtower_exclude_containers: 
+  - postgres
+  - n8n-postgres
+  - redis
+watchtower_schedule: "0 0 3 * * *"  # Earlier schedule for important server
+
+# NVIDIA GPU specific settings
+nvidia_install_gpu_drivers: true
+nvidia_install_cuda_toolkit: true
+install_btop: true
+install_ollama: true

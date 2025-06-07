@@ -1,0 +1,13 @@
+---
+# Example host-specific variables for GPU server
+# Copy this file and rename to your actual hostname
+
+# Host-specific NVIDIA settings can be overridden here
+# nvidia_load_kmods: false  # Example override
+
+# Host-specific Whisper ASR settings
+# whisper_asr_port: "9000"       # You can override the default port
+# whisper_asr_model: "medium"    # You can select a smaller model for less powerful GPUs
+# whisper_asr_compute_type: "int8"  # Force CPU mode even with GPU available
+
+
