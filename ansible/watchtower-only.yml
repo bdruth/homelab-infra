@@ -5,5 +5,5 @@
   hosts: all
   become: true
   roles:
-    - watchtower
-  when: "'watchtower' in host_roles | default(['watchtower'])"
+    - role: watchtower
+      when: "'watchtower' in host_roles | default(['watchtower'])"
