@@ -2,12 +2,12 @@ version: "3.8"
 
 services:
   watchtower:
-    image: beatkind/watchtower:{{ watchtower_version }}
+    image: ghcr.io/nicholas-fedor/watchtower:{{ watchtower_version }}
     container_name: watchtower
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: always
-    mem_limit: 256m
+    command: --disable-memory-swappiness
     environment:
       # Build environment variables list to ensure consistent formatting
 {% set env_vars = [] %}
