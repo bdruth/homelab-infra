@@ -16,7 +16,9 @@
       "Bash(ansible-playbook:*)",
       "Bash(ssh:*)",
       "Bash(grep:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(gpg:*)",
+      "Bash(git config:*)"
     ],
     "deny": []
   }
