@@ -101,3 +101,4 @@ gpt_researcher_port: "7000" # Port for GPT Researcher web interface
 gpt_researcher_ollama_model: "llama3" # Ollama model to use for research
 gpt_researcher_ollama_embed_model: "nomic-embed-text" # Ollama model to use for embeddings
 
+
