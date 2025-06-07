@@ -7,3 +7,4 @@ ssh_public_keys = <<-EOT
 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJC+X4072kVGyFatAC8g/9r9T3ZNXy11blM5pm8v2PDQ ssh-user1
 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDK8S9n0izq3hXL8dbultzZFGjyZ+b8zaczT6ZltVYbb ssh-user2
 EOT
+

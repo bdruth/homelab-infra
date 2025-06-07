@@ -3,3 +3,4 @@ endpoints = {
   s3 = "https://minio.example-domain.com" 
 } 
 key = "example-infra/dns/example-ha.tfstate"
+

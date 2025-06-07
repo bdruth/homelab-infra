@@ -6,3 +6,4 @@ s3_bucket_tf_state = "example-tf-state"
 proxmox_api_url = "https://proxmox.example.com/api2/json"
 pihole_blue_remote_state_key = "path/to/pihole-blue.tfstate"
 pihole_green_remote_state_key = "path/to/pihole-green.tfstate"
+
