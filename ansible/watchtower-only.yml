@@ -1,0 +1,9 @@
+---
+# Watchtower-only deployment playbook for testing/development
+
+- name: Deploy Watchtower container updates
+  hosts: all
+  become: true
+  roles:
+    - watchtower
+  when: "'watchtower' in host_roles | default(['watchtower'])"

@@ -1,0 +1,28 @@
+---
+galaxy_info:
+  author: homelab-infra
+  description: Ansible role for Network UPS Tools (NUT) setup and configuration
+  company: N/A
+  
+  license: MIT
+  
+  min_ansible_version: "2.9"
+  
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+  
+  galaxy_tags:
+    - ups
+    - monitoring
+    - power
+    - nut
+    - network-ups-tools
+
+dependencies: []

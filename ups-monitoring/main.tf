@@ -7,7 +7,7 @@ module "ups_monitoring_lxc" {
   lxc_onboot = true
 }
 
-resource "null_resource" "install_dnsdist" {
+resource "null_resource" "install_nut_ansible" {
   triggers = {
     ansible_conf_hash = filesha256("${path.module}/../ansible/nut/main.yml")
     container_change = module.ups_monitoring_lxc.lxc_id

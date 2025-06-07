@@ -1,0 +1,93 @@
+---
+# Reusable NUT test tasks
+# Can be imported by other roles that depend on NUT
+
+- name: Check if NUT packages are installed
+  ansible.builtin.package_facts:
+    manager: auto
+  tags: [nut-test]
+
+- name: Verify NUT package installation
+  ansible.builtin.assert:
+    that:
+      - "'nut' in ansible_facts.packages"
+    fail_msg: "NUT package is not installed"
+    success_msg: "NUT package is properly installed"
+  tags: [nut-test]
+
+- name: Check NUT configuration file exists
+  ansible.builtin.stat:
+    path: "{{ nut_conf_path | default('/etc/nut/nut.conf') }}"
+  register: nut_conf_file
+  tags: [nut-test]
+
+- name: Verify NUT configuration file
+  ansible.builtin.assert:
+    that:
+      - nut_conf_file.stat.exists
+    fail_msg: "NUT configuration file not found"
+    success_msg: "NUT configuration file exists"
+  tags: [nut-test]
+
+- name: Check UPS monitor configuration (client mode)
+  ansible.builtin.stat:
+    path: "{{ upsmon_conf_path | default('/etc/nut/upsmon.conf') }}"
+  register: upsmon_conf_file
+  when: nut_mode | default('netclient') == 'netclient'
+  tags: [nut-test]
+
+- name: Verify UPS monitor configuration (client mode)
+  ansible.builtin.assert:
+    that:
+      - upsmon_conf_file.stat.exists
+    fail_msg: "UPS monitor configuration file not found"
+    success_msg: "UPS monitor configuration file exists"
+  when: nut_mode | default('netclient') == 'netclient'
+  tags: [nut-test]
+
+- name: Check notification command (client mode)
+  ansible.builtin.stat:
+    path: "/etc/nut/notifycmd"
+  register: notifycmd_file
+  when: nut_mode | default('netclient') == 'netclient'
+  tags: [nut-test]
+
+- name: Verify notification command (client mode)
+  ansible.builtin.assert:
+    that:
+      - notifycmd_file.stat.exists
+    fail_msg: "NUT notification command script not found"
+    success_msg: "NUT notification command script exists"
+  when: nut_mode | default('netclient') == 'netclient'
+  tags: [nut-test]
+
+- name: Check NUT service status
+  ansible.builtin.systemd:
+    name: "{{ (ansible_distribution == 'Debian')|ternary('nut.target', 'nut-monitor') }}"
+  register: nut_service_status
+  ignore_errors: true
+  tags: [nut-test]
+
+- name: Display NUT service status
+  ansible.builtin.debug:
+    msg: "NUT service status: {{ 'OK - Active' if nut_service_status.status.ActiveState == 'active' else 'Warning - Not active (' + nut_service_status.status.ActiveState|default('unknown') + ')' }}"
+  tags: [nut-test]
+
+- name: Test UPS connection (if configured)
+  ansible.builtin.command: upsc {{ nut_system.split('@')[0] }}
+  register: ups_connection_test
+  changed_when: false
+  ignore_errors: true
+  when: 
+    - nut_system is defined
+    - nut_mode | default('netclient') == 'netclient'
+  tags: [nut-test]
+
+- name: Display UPS connection status
+  ansible.builtin.debug:
+    msg: "UPS connection: {{ 'OK - Connected' if ups_connection_test.rc == 0 else 'Warning - Cannot connect to UPS' }}"
+  when:
+    - nut_system is defined  
+    - nut_mode | default('netclient') == 'netclient'
+    - ups_connection_test is defined
+  tags: [nut-test]

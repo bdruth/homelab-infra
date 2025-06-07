@@ -1,15 +1,6 @@
 ---
 # Setup Watchtower for automatic container updates
 
-- name: Install docker-compose plugin if needed
-  ansible.builtin.package:
-    name: docker-compose-plugin
-    state: present
-  when: 
-    - install_watchtower | bool
-    - ansible_facts['os_family'] == "Debian" or ansible_facts['os_family'] == "RedHat"
-  ignore_errors: true
-
 - name: Verify docker-compose is available
   ansible.builtin.command: docker compose version
   register: docker_compose_check

@@ -1,0 +1,12 @@
+---
+# Test playbook for NUT configuration
+
+- name: Import NUT configuration playbook
+  import_playbook: main.yml
+
+- name: Validate NUT configuration
+  hosts: all
+  become: true
+  tasks:
+    - name: Import NUT test tasks
+      ansible.builtin.import_tasks: tasks/test.yml
