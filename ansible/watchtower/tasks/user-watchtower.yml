@@ -1,0 +1,78 @@
+---
+# Setup user-space watchtower instance
+
+- name: "Verify user {{ item.username }} exists"
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ item.username }}"
+  register: user_check
+  ignore_errors: true
+
+- name: "Fail if user {{ item.username }} does not exist"
+  ansible.builtin.fail:
+    msg: "User {{ item.username }} does not exist on the system"
+  when: user_check is failed
+
+- name: "Ensure user {{ item.username }} has podman socket enabled"
+  ansible.builtin.systemd:
+    name: podman.socket
+    enabled: yes
+    state: started
+    scope: user
+  become: yes
+  become_user: "{{ item.username }}"
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ item.uid }}"
+
+- name: "Create watchtower directory for user {{ item.username }}"
+  ansible.builtin.file:
+    path: "{{ item.install_dir | default('/home/' + item.username + '/.local/share/watchtower') }}"
+    state: directory
+    owner: "{{ item.username }}"
+    group: "{{ item.username }}"
+    mode: "0755"
+
+- name: "Create user watchtower docker-compose.yml file for {{ item.username }}"
+  ansible.builtin.template:
+    src: watchtower-user-docker-compose.yml.j2
+    dest: "{{ item.install_dir | default('/home/' + item.username + '/.local/share/watchtower') }}/docker-compose.yml"
+    owner: "{{ item.username }}"
+    group: "{{ item.username }}"
+    mode: "0644"
+  register: user_watchtower_config_updated
+
+- name: "Create user watchtower service file for {{ item.username }}"
+  ansible.builtin.template:
+    src: watchtower-user.service.j2
+    dest: "/etc/systemd/system/watchtower-{{ item.username }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+  register: user_service_file_updated
+
+- name: "Force systemd reload for user watchtower"
+  ansible.builtin.systemd:
+    daemon_reload: yes
+  when: user_service_file_updated is changed
+
+- name: "Enable and start user watchtower service for {{ item.username }}"
+  ansible.builtin.systemd:
+    name: "watchtower-{{ item.username }}"
+    enabled: yes
+    state: "{{ 'restarted' if user_service_file_updated is changed or user_watchtower_config_updated is changed else 'started' }}"
+    daemon_reload: yes
+  register: user_watchtower_service
+
+- name: "Wait for user watchtower container to start for {{ item.username }}"
+  ansible.builtin.shell: |
+    export XDG_RUNTIME_DIR=/run/user/{{ item.uid }}
+    export DOCKER_HOST=unix:///run/user/{{ item.uid }}/podman/podman.sock
+    docker ps | grep watchtower-{{ item.username }}
+  register: user_watchtower_container
+  changed_when: false
+  ignore_errors: true
+  retries: 15
+  delay: 4
+  until: user_watchtower_container.rc == 0
+  become: yes
+  become_user: "{{ item.username }}"

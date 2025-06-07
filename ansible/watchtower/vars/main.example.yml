@@ -31,3 +31,34 @@ watchtower_exclude_containers:
 watchtower_notifications_enabled: true
 watchtower_pushover_app_token: "your-pushover-app-token"
 watchtower_pushover_user_key: "your-pushover-user-key"
+
+# User-space watchtower configuration
+install_watchtower_user: true
+watchtower_user_instances:
+  - username: myuser
+    uid: 1000
+    install_dir: "/home/myuser/.local/share/watchtower"
+    version: "latest"
+    debug: false
+    cleanup: true
+    include_stopped: false
+    rolling_restart: true
+    schedule: "0 0 4 * * *"
+    poll_interval: "86400"
+    exclude_containers:
+      - user-postgres
+      - user-redis
+    notifications_enabled: true
+    pushover_app_token: "your-pushover-app-token"
+    pushover_user_key: "your-pushover-user-key"
+  - username: developer
+    uid: 1001
+    install_dir: "/home/developer/.config/watchtower"
+    version: "latest"
+    debug: true
+    cleanup: true
+    include_stopped: true
+    rolling_restart: false
+    schedule: "0 0 2 * * *"
+    exclude_containers: []
+    notifications_enabled: false

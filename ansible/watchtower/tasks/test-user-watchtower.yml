@@ -1,0 +1,75 @@
+---
+# Test tasks for user-space watchtower instance
+
+- name: "Check if user {{ item.username }} watchtower container is running"
+  ansible.builtin.shell: |
+    export XDG_RUNTIME_DIR=/run/user/{{ item.uid }}
+    export DOCKER_HOST=unix:///run/user/{{ item.uid }}/podman/podman.sock
+    docker ps | grep watchtower-{{ item.username }}
+  register: user_watchtower_result
+  changed_when: false
+  ignore_errors: true
+  retries: 15
+  delay: 4
+  until: user_watchtower_result.rc == 0
+  become: yes
+  become_user: "{{ item.username }}"
+  tags: [user-watchtower-test]
+
+- name: "Display user watchtower status for {{ item.username }}"
+  ansible.builtin.debug:
+    msg: "User watchtower status ({{ item.username }}): {{ 'OK' if user_watchtower_result.rc == 0 else 'Not properly installed or not running' }}"
+  tags: [user-watchtower-test]
+
+- name: "Check user watchtower configuration for {{ item.username }}"
+  ansible.builtin.shell: |
+    export XDG_RUNTIME_DIR=/run/user/{{ item.uid }}
+    export DOCKER_HOST=unix:///run/user/{{ item.uid }}/podman/podman.sock
+    docker inspect watchtower-{{ item.username }} | grep -A 10 -i env
+  register: user_watchtower_config_result
+  changed_when: false
+  ignore_errors: true
+  become: yes
+  become_user: "{{ item.username }}"
+  when: user_watchtower_result.rc == 0
+  tags: [user-watchtower-test]
+
+- name: "Display user watchtower configuration status for {{ item.username }}"
+  ansible.builtin.debug:
+    msg: "User watchtower configuration ({{ item.username }}): {{ 'OK' if user_watchtower_config_result.rc == 0 else 'Could not retrieve configuration' }}"
+  when: user_watchtower_result.rc == 0
+  tags: [user-watchtower-test]
+
+- name: "Check user watchtower docker-compose file exists for {{ item.username }}"
+  ansible.builtin.stat:
+    path: "{{ item.install_dir | default('/home/' + item.username + '/.local/share/watchtower') }}/docker-compose.yml"
+  register: user_watchtower_compose_file
+  tags: [user-watchtower-test]
+
+- name: "Display user watchtower docker-compose file status for {{ item.username }}"
+  ansible.builtin.debug:
+    msg: "User watchtower docker-compose file ({{ item.username }}): {{ 'OK' if user_watchtower_compose_file.stat.exists else 'Not found' }}"
+  tags: [user-watchtower-test]
+
+- name: "Check user watchtower systemd service status for {{ item.username }}"
+  ansible.builtin.systemd:
+    name: "watchtower-{{ item.username }}"
+  register: user_watchtower_service_status
+  ignore_errors: true
+  tags: [user-watchtower-test]
+
+- name: "Display user watchtower service status for {{ item.username }}"
+  ansible.builtin.debug:
+    msg: "User watchtower service status ({{ item.username }}): {{ 'OK - Active' if user_watchtower_service_status.status.ActiveState == 'active' else 'Failed - Not active' }}"
+  tags: [user-watchtower-test]
+
+- name: "Check podman socket status for user {{ item.username }}"
+  ansible.builtin.stat:
+    path: "/run/user/{{ item.uid }}/podman/podman.sock"
+  register: user_podman_socket
+  tags: [user-watchtower-test]
+
+- name: "Display podman socket status for {{ item.username }}"
+  ansible.builtin.debug:
+    msg: "Podman socket ({{ item.username }}): {{ 'OK' if user_podman_socket.stat.exists else 'Not found - may need to enable podman.socket --user' }}"
+  tags: [user-watchtower-test]
