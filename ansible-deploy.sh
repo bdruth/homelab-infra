@@ -49,4 +49,17 @@ ls -la "$PLAYBOOK" || echo "Playbook file not found!"
 cd "${SCRIPT_DIR}" || exit
 echo "Working from directory: $(pwd)"
 
-ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i "$INVENTORY" "$PLAYBOOK" "$EXTRA_ARGS"
+# Debug ansible command
+CMD="ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i \"$INVENTORY\" \"$PLAYBOOK\""
+if [[ -n "$EXTRA_ARGS" ]]; then
+  CMD="$CMD $EXTRA_ARGS"
+fi
+echo "Running command: $CMD"
+
+# Execute ansible command - removing quotes around EXTRA_ARGS to allow proper expansion
+if [[ -z "$EXTRA_ARGS" ]]; then
+  ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i "$INVENTORY" "$PLAYBOOK"
+else
+  # shellcheck disable=SC2086
+  ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i "$INVENTORY" "$PLAYBOOK" $EXTRA_ARGS
+fi
