@@ -41,4 +41,12 @@ done
 
 # Run Ansible playbook
 echo "Running Ansible deployment with playbook: $PLAYBOOK"
+echo "Current directory: $(pwd)"
+echo "Checking if playbook exists: ls -la $PLAYBOOK"
+ls -la "$PLAYBOOK" || echo "Playbook file not found!"
+
+# Ensure we're running from the repo root
+cd "${SCRIPT_DIR}" || exit
+echo "Working from directory: $(pwd)"
+
 ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i "$INVENTORY" "$PLAYBOOK" "$EXTRA_ARGS"
