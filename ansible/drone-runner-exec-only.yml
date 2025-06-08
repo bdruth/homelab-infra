@@ -1,0 +1,7 @@
+---
+# Playbook for applying just the Drone Runner Exec role to hosts
+
+- name: Import Drone Runner Exec configuration playbook
+  import_playbook: drone-runner-exec/main.yml
+  vars:
+    target_hosts: "{{ groups['all'] | select('extract', hostvars, 'host_roles') | selectattr('host_roles', 'contains', 'drone-runner-exec') | list }}"
