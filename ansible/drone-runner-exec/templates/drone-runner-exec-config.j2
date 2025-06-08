@@ -1,0 +1,20 @@
+# Drone Runner Exec Configuration File
+
+# Server connection settings
+DRONE_RPC_PROTO={{ drone_rpc_proto }}
+DRONE_RPC_HOST={{ drone_rpc_host }}
+DRONE_RPC_SECRET={{ drone_rpc_secret }}
+
+# Runner settings
+DRONE_RUNNER_NAME={{ drone_runner_exec_name }}
+DRONE_RUNNER_CAPACITY={{ drone_runner_limit }}
+
+# Runner directories
+DRONE_RUNNER_ROOT=/tmp/drone-runner-exec
+
+{% if drone_runner_exec_environment | length > 0 %}
+# Additional environment variables
+{% for key, value in drone_runner_exec_environment.items() %}
+{{ key }}={{ value }}
+{% endfor %}
+{% endif %}

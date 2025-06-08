@@ -1,0 +1,73 @@
+---
+# Setup Drone Runner Exec for executing Drone CI jobs
+
+- name: Create Drone Runner Exec config directory
+  ansible.builtin.file:
+    path: "{{ drone_runner_exec_config_dir }}"
+    state: directory
+    mode: "0755"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+  when: install_drone_runner_exec | bool
+
+- name: Check if Drone Runner Exec binary already exists
+  ansible.builtin.stat:
+    path: "{{ drone_runner_exec_binary_path }}"
+  register: drone_runner_exec_binary
+  when: install_drone_runner_exec | bool
+
+- name: Download Drone Runner Exec binary
+  ansible.builtin.get_url:
+    url: "https://github.com/drone-runners/drone-runner-exec/releases/latest/download/drone-runner-exec_linux_amd64"
+    dest: "{{ drone_runner_exec_binary_path }}"
+    mode: "0755"
+    owner: root
+    group: root
+  when:
+    - install_drone_runner_exec | bool
+    - not drone_runner_exec_binary.stat.exists
+  register: download_runner
+
+- name: Create Drone Runner Exec config file
+  ansible.builtin.template:
+    src: drone-runner-exec-config.j2
+    dest: "{{ drone_runner_exec_config_dir }}/config"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0600"
+  register: runner_config_updated
+  when: install_drone_runner_exec | bool
+
+- name: Create Drone Runner Exec service file
+  ansible.builtin.template:
+    src: drone-runner-exec.service.j2
+    dest: /etc/systemd/system/drone-runner-exec.service
+    owner: root
+    group: root
+    mode: "0644"
+  register: service_file_updated
+  when: install_drone_runner_exec | bool
+
+- name: Force systemd reload
+  ansible.builtin.systemd:
+    daemon_reload: yes
+  when: install_drone_runner_exec | bool and service_file_updated is changed
+
+- name: Enable and start Drone Runner Exec service
+  ansible.builtin.systemd:
+    name: drone-runner-exec
+    enabled: yes
+    state: "{{ 'restarted' if service_file_updated is changed or runner_config_updated is changed or download_runner is changed else 'started' }}"
+    daemon_reload: yes
+  register: runner_service
+  when: install_drone_runner_exec | bool
+
+- name: Wait for Drone Runner Exec service to start
+  ansible.builtin.systemd:
+    name: drone-runner-exec
+  register: service_status
+  changed_when: false
+  until: service_status.status.ActiveState == 'active'
+  retries: 10
+  delay: 3
+  when: install_drone_runner_exec | bool

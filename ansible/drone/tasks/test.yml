@@ -1,0 +1,74 @@
+---
+# Test tasks for Drone CI
+
+- name: Verify docker-compose file exists
+  ansible.builtin.stat:
+    path: "{{ drone_install_dir }}/docker-compose.yml"
+  register: docker_compose_file
+  when: install_drone | bool
+
+- name: Check if docker-compose file exists
+  ansible.builtin.assert:
+    that:
+      - docker_compose_file.stat.exists
+    fail_msg: "Drone docker-compose.yml file does not exist"
+    success_msg: "Drone docker-compose.yml file exists"
+  when: install_drone | bool
+
+- name: Verify systemd service file exists
+  ansible.builtin.stat:
+    path: "/etc/systemd/system/drone.service"
+  register: service_file
+  when: install_drone | bool
+
+- name: Check if systemd service file exists
+  ansible.builtin.assert:
+    that:
+      - service_file.stat.exists
+    fail_msg: "Drone systemd service file does not exist"
+    success_msg: "Drone systemd service file exists"
+  when: install_drone | bool
+
+- name: Check if Drone service is running
+  ansible.builtin.systemd:
+    name: drone
+  register: drone_service_status
+  when: install_drone | bool
+
+- name: Verify Drone service is active
+  ansible.builtin.assert:
+    that:
+      - drone_service_status.status.ActiveState == 'active'
+    fail_msg: "Drone service is not active"
+    success_msg: "Drone service is active"
+  when: install_drone | bool
+
+- name: Check if Drone containers are running
+  ansible.builtin.shell: docker ps | grep -E '(drone|runner)'
+  register: container_status
+  changed_when: false
+  when: install_drone | bool
+
+- name: Verify Drone containers are running
+  ansible.builtin.assert:
+    that:
+      - container_status.rc == 0
+    fail_msg: "Drone containers are not running"
+    success_msg: "Drone containers are running"
+  when: install_drone | bool
+
+- name: Verify Drone server is responding
+  ansible.builtin.uri:
+    url: "http://localhost:80/"
+    follow_redirects: none
+    status_code: 200, 301, 302
+  register: drone_http_status
+  failed_when: false
+  retries: 3
+  delay: 5
+  when: install_drone | bool
+
+- name: Report Drone server status
+  ansible.builtin.debug:
+    msg: "Drone server HTTP status: {{ drone_http_status.status if drone_http_status.status is defined else 'No response' }}"
+  when: install_drone | bool

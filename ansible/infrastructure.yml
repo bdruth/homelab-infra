@@ -1,5 +1,5 @@
 ---
-# Main infrastructure playbook  
+# Main infrastructure playbook
 # Applies roles to hosts based on host_roles inventory variable
 
 - name: Configure infrastructure services
@@ -11,21 +11,25 @@
         _run_nut: "{{ 'nut' in host_roles | default([]) }}"
         _run_watchtower: "{{ 'watchtower' in host_roles | default([]) }}"
         _run_nvidia_gpu: "{{ 'nvidia-gpu' in host_roles | default([]) }}"
+        _run_drone: "{{ 'drone' in host_roles | default([]) }}"
         install_watchtower: "{{ 'watchtower' in host_roles | default([]) or 'nvidia-gpu' in host_roles | default([]) }}"
 
     - name: Debug role facts
       ansible.builtin.debug:
-        msg: 
+        msg:
           - "host_roles: {{ host_roles | default([]) }}"
           - "_run_nut: {{ _run_nut }}"
           - "_run_watchtower: {{ _run_watchtower }}"
           - "_run_nvidia_gpu: {{ _run_nvidia_gpu }}"
+          - "_run_drone: {{ _run_drone }}"
           - "install_watchtower: {{ install_watchtower }}"
 
   roles:
     - role: nut
       when: _run_nut | bool
-    - role: watchtower  
+    - role: watchtower
       when: _run_watchtower | bool and not _run_nvidia_gpu | bool
     - role: nvidia-gpu
       when: _run_nvidia_gpu | bool
+    - role: drone
+      when: _run_drone | bool

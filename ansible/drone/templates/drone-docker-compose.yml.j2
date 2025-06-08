@@ -1,0 +1,58 @@
+version: "3.9"
+
+networks:
+  drone:
+    external: false
+    enable_ipv6: true
+
+services:
+  drone:
+    image: drone/drone:2
+    volumes:
+      - {{ drone_server_data_path }}:/data
+    environment:
+      - DRONE_GITEA_SERVER={{ drone_gitea_server }}
+      - DRONE_GITEA_CLIENT_ID={{ drone_gitea_client_id }}
+      - DRONE_GITEA_CLIENT_SECRET={{ drone_gitea_client_secret }}
+      - DRONE_RPC_SECRET={{ drone_rpc_secret }}
+      - DRONE_SERVER_HOST={{ drone_server_host }}
+      - DRONE_SERVER_PROTO={{ drone_server_proto }}
+{% if drone_create_admin and drone_admin_username | length > 0 %}
+      - DRONE_USER_CREATE=username:{{ drone_admin_username }},admin:true
+{% endif %}
+    ports:
+{% for port in drone_server_ports %}
+      - {{ port }}
+{% endfor %}
+    restart: always
+    container_name: drone
+
+{% if install_docker_runner %}
+  runner:
+    image: drone/drone-runner-docker:1
+    volumes:
+      - /var/run/podman/podman.sock:/var/run/docker.sock
+    environment:
+      - DRONE_RPC_PROTO={{ drone_server_proto }}
+      - DRONE_RPC_HOST={{ drone_server_host }}
+      - DRONE_RPC_SECRET={{ drone_rpc_secret }}
+      - DRONE_RUNNER_NAME={{ drone_docker_runner_name }}
+    networks:
+      - drone
+    restart: always
+    container_name: runner
+{% endif %}
+
+{% if install_ssh_runner %}
+  ssh-runner:
+    image: drone/drone-runner-ssh
+    volumes:
+      - /var/run/podman/podman.sock:/var/run/docker.sock
+    environment:
+      - DRONE_RPC_PROTO={{ drone_server_proto }}
+      - DRONE_RPC_HOST={{ drone_server_host }}
+      - DRONE_RPC_SECRET={{ drone_rpc_secret }}
+      - DRONE_RUNNER_NAME={{ drone_ssh_runner_name }}
+    restart: always
+    container_name: ssh-runner
+{% endif %}

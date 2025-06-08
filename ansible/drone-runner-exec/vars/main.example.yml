@@ -1,0 +1,18 @@
+---
+# Example variables for Drone Runner Exec role - copy to main.yml and adjust values
+
+# RPC settings for connecting to Drone server
+drone_rpc_proto: "https"
+drone_rpc_host: "drone.example.com"
+
+# RPC secret - must match the drone server's secret
+drone_rpc_secret: "generate-random-secret"
+
+# Runner settings
+drone_runner_exec_name: "runner-name"
+drone_runner_limit: 2
+
+# Environment options - additional variables needed by your builds
+drone_runner_exec_environment:
+  GOPATH: "/home/user/go"
+  # Add any other environment variables needed for your builds

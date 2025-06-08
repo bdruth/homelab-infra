@@ -1,0 +1,74 @@
+---
+# Setup Drone CI server with Docker and SSH runners
+
+- name: Verify docker compose is available
+  ansible.builtin.command: "docker compose version"
+  register: docker_compose_check
+  changed_when: false
+  ignore_errors: true
+  when: install_drone | bool
+
+- name: Fail if docker compose is not available
+  ansible.builtin.fail:
+    msg: "docker compose is not available. Please ensure podman and podman-docker compatibility are properly installed."
+  when:
+    - install_drone | bool
+    - docker_compose_check.rc != 0
+
+- name: Create Drone directory
+  ansible.builtin.file:
+    path: "{{ drone_install_dir }}"
+    state: directory
+    mode: "0755"
+  when: install_drone | bool
+
+- name: Create Drone data directory
+  ansible.builtin.file:
+    path: "{{ drone_server_data_path }}"
+    state: directory
+    mode: "0755"
+  when: install_drone | bool
+
+- name: Create Drone docker-compose.yml file
+  ansible.builtin.template:
+    src: drone-docker-compose.yml.j2
+    dest: "{{ drone_install_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  register: drone_config_updated
+  when: install_drone | bool
+
+- name: Create drone service file
+  ansible.builtin.template:
+    src: drone.service.j2
+    dest: /etc/systemd/system/drone.service
+    owner: root
+    group: root
+    mode: "0644"
+  register: service_file_updated
+  when: install_drone | bool
+
+- name: Force systemd reload
+  ansible.builtin.systemd:
+    daemon_reload: yes
+  when: install_drone | bool and service_file_updated is changed
+
+- name: Enable and start drone service
+  ansible.builtin.systemd:
+    name: drone
+    enabled: yes
+    state: "{{ 'restarted' if service_file_updated is changed or drone_config_updated is changed else 'started' }}"
+    daemon_reload: yes
+  register: drone_service
+  when: install_drone | bool
+
+- name: Wait for drone containers to start
+  ansible.builtin.shell: "docker ps | grep -E '(drone|runner)'"
+  register: drone_containers
+  changed_when: false
+  ignore_errors: true
+  retries: 15
+  delay: 4
+  until: drone_containers.rc == 0
+  when: install_drone | bool

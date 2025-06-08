@@ -1,0 +1,14 @@
+[Unit]
+Description=Drone Exec Runner
+ConditionFileIsExecutable={{ drone_runner_exec_binary_path }}
+
+[Service]
+StartLimitInterval=5
+StartLimitBurst=10
+ExecStart={{ drone_runner_exec_binary_path }} "service" "run" "--config" "{{ drone_runner_exec_config_dir }}/config"
+
+Restart=always
+RestartSec=120
+
+[Install]
+WantedBy=multi-user.target

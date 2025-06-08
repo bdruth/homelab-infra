@@ -1,0 +1,71 @@
+---
+# Test tasks for Drone Runner Exec
+
+- name: Verify Drone Runner Exec binary exists
+  ansible.builtin.stat:
+    path: "{{ drone_runner_exec_binary_path }}"
+  register: binary_file
+  when: install_drone_runner_exec | bool
+
+- name: Check if Drone Runner Exec binary exists
+  ansible.builtin.assert:
+    that:
+      - binary_file.stat.exists
+      - binary_file.stat.mode == "0755"
+    fail_msg: "Drone Runner Exec binary does not exist or has incorrect permissions"
+    success_msg: "Drone Runner Exec binary exists with correct permissions"
+  when: install_drone_runner_exec | bool
+
+- name: Verify Drone Runner Exec config exists
+  ansible.builtin.stat:
+    path: "{{ drone_runner_exec_config_dir }}/config"
+  register: config_file
+  when: install_drone_runner_exec | bool
+
+- name: Check if Drone Runner Exec config exists
+  ansible.builtin.assert:
+    that:
+      - config_file.stat.exists
+    fail_msg: "Drone Runner Exec config file does not exist"
+    success_msg: "Drone Runner Exec config file exists"
+  when: install_drone_runner_exec | bool
+
+- name: Verify systemd service file exists
+  ansible.builtin.stat:
+    path: "/etc/systemd/system/drone-runner-exec.service"
+  register: service_file
+  when: install_drone_runner_exec | bool
+
+- name: Check if systemd service file exists
+  ansible.builtin.assert:
+    that:
+      - service_file.stat.exists
+    fail_msg: "Drone Runner Exec systemd service file does not exist"
+    success_msg: "Drone Runner Exec systemd service file exists"
+  when: install_drone_runner_exec | bool
+
+- name: Check if Drone Runner Exec service is running
+  ansible.builtin.systemd:
+    name: drone-runner-exec
+  register: service_status
+  when: install_drone_runner_exec | bool
+
+- name: Verify Drone Runner Exec service is active
+  ansible.builtin.assert:
+    that:
+      - service_status.status.ActiveState == 'active'
+    fail_msg: "Drone Runner Exec service is not active"
+    success_msg: "Drone Runner Exec service is active"
+  when: install_drone_runner_exec | bool
+
+- name: Check Drone Runner Exec process
+  ansible.builtin.shell: ps aux | grep drone-runner-exec | grep -v grep
+  register: process_status
+  changed_when: false
+  failed_when: false
+  when: install_drone_runner_exec | bool
+
+- name: Report Drone Runner Exec process status
+  ansible.builtin.debug:
+    msg: "{{ 'Drone Runner Exec process is running' if process_status.rc == 0 else 'Drone Runner Exec process is not running' }}"
+  when: install_drone_runner_exec | bool
