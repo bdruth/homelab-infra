@@ -309,11 +309,20 @@ steps:
         chmod -R 700 ~/.ssh
         chmod 600 ~/.ssh/id_rsa
 
-        # Read the first line of the deployment file to check if this is a full deployment
-        if [ -f .deploy_playbooks ] && [ "$(head -n 1 .deploy_playbooks)" == "FULL_DEPLOYMENT" ]; then
-          echo "Running full infrastructure deployment..."
-          ./ansible-pkgx-deploy.sh --playbook=ansible/infrastructure.yml
-          exit 0
+        # Check if we need to do a full deployment - add debugging
+        if [ -f .deploy_playbooks ]; then
+          echo "Content of .deploy_playbooks file:"
+          cat .deploy_playbooks
+          
+          FIRST_LINE=$(head -n 1 .deploy_playbooks)
+          echo "First line: '$FIRST_LINE'"
+          
+          if [ "$FIRST_LINE" = "FULL_DEPLOYMENT" ]; then
+            echo "Running full infrastructure deployment..."
+            # Explicitly specify the infrastructure playbook
+            ./ansible-pkgx-deploy.sh --playbook=ansible/infrastructure.yml
+            exit 0
+          fi
         fi
 
         # If it's not a full deployment, read the playbooks from the file
