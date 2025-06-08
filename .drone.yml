@@ -1,0 +1,13 @@
+kind: pipeline
+type: docker
+name: main
+
+steps:
+  - name: test-external-pipelines
+    image: drone/cli:latest
+    commands:
+      - echo "Testing external pipeline execution"
+      - ls -la .drone/
+      - cat .drone/build-example.yml
+      - echo "Attempting to run external pipeline:"
+      - drone exec --pipeline build-example .drone/build-example.yml || echo "Failed to run external pipeline"
