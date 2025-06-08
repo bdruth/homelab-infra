@@ -1,0 +1,21 @@
+---
+galaxy_info:
+  author: Brian Ruth
+  description: Ansible role for deploying Drone Runner Exec for CI jobs
+  license: MIT
+  min_ansible_version: "2.9"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - all
+    - name: Debian
+      versions:
+        - all
+
+  galaxy_tags:
+    - drone
+    - ci
+    - exec
+    - runner
+
+dependencies: []

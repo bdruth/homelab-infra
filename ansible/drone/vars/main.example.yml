@@ -1,0 +1,18 @@
+---
+# Example variables for Drone CI role - copy to main.yml and adjust values
+
+# Server configuration
+drone_server_host: "drone.example.com"
+drone_server_proto: "https"
+
+# Gitea integration
+drone_gitea_server: "https://gitea.example.com"
+drone_gitea_client_id: "client-id-from-gitea"
+drone_gitea_client_secret: "client-secret-from-gitea"
+
+# Admin user
+drone_create_admin: true
+drone_admin_username: "admin-username"
+
+# RPC secret - generate with: openssl rand -hex 16
+drone_rpc_secret: "generate-random-secret"

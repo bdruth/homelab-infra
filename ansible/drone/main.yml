@@ -1,0 +1,10 @@
+---
+# Drone CI Ansible Role Main Playbook
+
+- name: Setup Drone CI server
+  hosts: "{{ target_hosts | default('all') }}"
+  become: true
+  tasks:
+    - name: Include drone tasks
+      ansible.builtin.include_tasks: tasks/main.yml
+      when: "'drone' in host_roles"

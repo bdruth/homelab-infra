@@ -1,0 +1,15 @@
+---
+# Test playbook for Drone Runner Exec configuration
+
+- name: Import Drone Runner Exec configuration playbook
+  hosts: all
+  become: true
+  roles:
+    - drone-runner-exec
+
+- name: Validate Drone Runner Exec configuration
+  hosts: all
+  become: true
+  tasks:
+    - name: Import Drone Runner Exec test tasks
+      ansible.builtin.import_tasks: tasks/test.yml

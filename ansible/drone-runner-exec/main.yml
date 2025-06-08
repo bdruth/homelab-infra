@@ -1,0 +1,10 @@
+---
+# Drone Runner Exec Ansible Role Main Playbook
+
+- name: Setup Drone Runner Exec
+  hosts: "{{ target_hosts | default('all') }}"
+  become: true
+  tasks:
+    - name: Include drone-runner-exec tasks
+      ansible.builtin.include_tasks: tasks/main.yml
+      when: "'drone-runner-exec' in host_roles"
