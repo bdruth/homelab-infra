@@ -1,0 +1,11 @@
+---
+kind: pipeline
+type: docker
+name: imported-pipeline
+
+steps:
+  - name: imported-step
+    image: alpine:latest
+    commands:
+      - echo "This is a pipeline imported from .drone/imported-pipeline.yml"
+      - echo "If you see this in your CI logs, the import feature works!"
