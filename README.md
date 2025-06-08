@@ -20,6 +20,16 @@ Run `tofu [init|plan|apply]` as you would `terraform` commands. The `pihole` fol
 
 See [deploy.sh](deploy.sh) for more information on how to deploy.
 
+## Ansible Deployment
+
+For Ansible deployments:
+
+1. Run `./ansible-pkgx-deploy.sh` to deploy with the default playbook (`ansible/infrastructure.yml`)
+2. For specific playbooks, use `./ansible-pkgx-deploy.sh playbook-name` (e.g. `./ansible-pkgx-deploy.sh drone-only`)
+3. Or use options: `./ansible-pkgx-deploy.sh --playbook=ansible/specific-playbook.yml --inventory=ansible/custom-inventory.yml`
+
+The deployment is also automated in CI/CD through Drone. When changes are made to Ansible files, the `ansible-deploy` pipeline will automatically run the appropriate Ansible playbooks.
+
 ### Configurations
 
 Each state has a `.tfbackend` file that contains the backend configuration for that state's terraform. For `pihole`, there's a blue and a green variant of this configuration. Each state also has a `terraform.tfvars` file with variables that are specific to each state. Once again, `pihole` has a blue and a green variant of this configuration, common configuration is still in a `terraform.tfvars` file.

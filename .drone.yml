@@ -228,6 +228,91 @@ volumes:
 ---
 kind: pipeline
 type: docker
+name: ansible-deploy
+
+steps:
+  - name: check-changes
+    image: alpine/git
+    commands:
+      - |
+        echo "Checking for relevant file changes..."
+        if git diff --name-only HEAD~1 | grep -E "^(ansible/|setup-ansible\.sh|ansible-deploy\.sh|ansible-pkgx-deploy\.sh|\.drone\.yml)"; then
+          echo "✅ Ansible files changed, proceeding with deployment"
+          exit 0
+        else
+          echo "ℹ️ No relevant Ansible files changed, skipping deployment"
+          exit 78
+        fi
+  - name: restore-cache
+    image: meltwater/drone-cache
+    environment:
+      AWS_ACCESS_KEY_ID:
+        from_secret: AWS_ACCESS_KEY_ID
+      AWS_SECRET_ACCESS_KEY:
+        from_secret: AWS_SECRET_ACCESS_KEY
+      AWS_PLUGIN_PATH_STYLE: true
+    settings:
+      debug: true
+      restore: true
+      endpoint: https://minio.cusack-ruth.name
+      bucket: drone-cache-bucket
+      region: main
+      path-style: true
+      archive-format: gzip
+      mount:
+        - "/root/.cache"
+    volumes:
+      - name: cache
+        path: /root/.cache
+  - name: unlock-secrets
+    image: betalabs/drone-git-crypt
+    pull: always
+    environment:
+      GIT_CRYPT_KEY:
+        from_secret: git-crypt-key
+  - name: deploy-ansible
+    image: pkgxdev/pkgx@sha256:610bbc17475cb174c5e6a8a9e3cdf39decb93c552fa073542b6f593255e1cb0c
+    commands:
+      - apt-get update && apt-get install -y dnsutils netcat-traditional
+      - mkdir -p ~/.ssh
+      - echo "$drone_ssh_priv_key" > ~/.ssh/id_rsa
+      - chmod -R 700 ~/.ssh
+      - chmod 600 ~/.ssh/id_rsa
+      - ./ansible-pkgx-deploy.sh
+    volumes:
+      - name: cache
+        path: /root/.cache
+    environment:
+      drone_ssh_priv_key:
+        from_secret: drone_ssh_priv_key
+  - name: rebuild-cache
+    image: meltwater/drone-cache
+    environment:
+      AWS_ACCESS_KEY_ID:
+        from_secret: AWS_ACCESS_KEY_ID
+      AWS_SECRET_ACCESS_KEY:
+        from_secret: AWS_SECRET_ACCESS_KEY
+      AWS_PLUGIN_PATH_STYLE: true
+    settings:
+      debug: true
+      rebuild: true
+      endpoint: https://minio.cusack-ruth.name
+      bucket: drone-cache-bucket
+      region: main
+      path-style: true
+      archive-format: gzip
+      mount:
+        - "/root/.cache"
+    volumes:
+      - name: cache
+        path: /root/.cache
+
+volumes:
+  - name: cache
+    temp: {}
+---
+kind: pipeline
+type: docker
 name: notify-on-fail
 
 steps:
@@ -250,3 +335,4 @@ trigger:
 
 depends_on:
   - build
+  - ansible-deploy
