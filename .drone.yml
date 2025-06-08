@@ -253,11 +253,10 @@ steps:
           fi
           
           # Check for each role directory and add to deploy list if changed
-          git diff --name-only HEAD~6 \
+          git diff --name-only HEAD~1 \
             | grep -E "^ansible/(watchtower|nvidia-gpu|nut|drone|drone-runner-exec)" \
-            | sed -E 's#^(ansible/(watchtower|nvidia-gpu|nut|drone|drone-runner-exec)).*#\1#' \
-            | sort -u \
-            | xargs -I {} echo "{}-only.yml" > .deploy_playbooks
+            | sed -E 's#^ansible/(watchtower|nvidia-gpu|nut|drone|drone-runner-exec).*#ansible/\1-only.yml#' \
+            | sort -u > .deploy_playbooks
          
           # Count how many playbooks will be deployed
           PLAYBOOK_COUNT=$(wc -l < .deploy_playbooks)
@@ -313,7 +312,7 @@ steps:
         # Read the first line of the deployment file to check if this is a full deployment
         if [ -f .deploy_playbooks ] && [ "$(head -n 1 .deploy_playbooks)" == "FULL_DEPLOYMENT" ]; then
           echo "Running full infrastructure deployment..."
-          ./ansible-pkgx-deploy.sh
+          ./ansible-pkgx-deploy.sh --playbook=ansible/infrastructure.yml
           exit 0
         fi
 
