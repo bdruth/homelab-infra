@@ -311,12 +311,7 @@ steps:
 
         # Check if we need to do a full deployment - add debugging
         if [ -f .deploy_playbooks ]; then
-          echo "Content of .deploy_playbooks file:"
-          cat .deploy_playbooks
-          
           FIRST_LINE=$(head -n 1 .deploy_playbooks)
-          echo "First line: '$FIRST_LINE'"
-          
           if [ "$FIRST_LINE" = "FULL_DEPLOYMENT" ]; then
             echo "Running full infrastructure deployment..."
             # Explicitly specify the infrastructure playbook
