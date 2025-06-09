@@ -1,0 +1,16 @@
+---
+# Test playbook for Gitea role
+
+- name: Test Gitea role
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  tasks:
+    - name: Include Gitea tasks
+      include_tasks: tasks/main.yml
+      vars:
+        gitea_container_name: "gitea-test"
+        gitea_data_dir: "/tmp/gitea-test"
+        gitea_http_port: "13000"
+        gitea_ssh_port: "2222"

@@ -1,0 +1,27 @@
+---
+# Example variables for Gitea Ansible role
+
+# Container and image configuration
+gitea_version: "latest"
+gitea_container_name: "gitea"
+
+# User configuration
+gitea_user_uid: "1026"
+gitea_user_gid: "100"
+
+# Directory configuration
+gitea_data_dir: "/volume1/docker/gitea"
+
+# Port configuration
+gitea_http_port: "3000"
+gitea_ssh_port: "222"
+# Optional: Additional environment variables
+# gitea_extra_env:
+#   GITEA_CUSTOM: "/data/gitea"
+#   DOMAIN: "git.example.com"
+#   SSH_DOMAIN: "git.example.com"
+
+# Optional: Override default container labels
+# gitea_labels:
+#   com.centurylinklabs.watchtower.enable: "true"
+#   custom.label: "value"

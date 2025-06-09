@@ -1,0 +1,25 @@
+---
+# Tasks for managing Gitea on Synology DSM
+
+- name: Ensure directories exist
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "/volume1/docker/compose/gitea"
+    - "{{ gitea_data_dir }}"
+
+- name: Template docker-compose.yml
+  template:
+    src: gitea-docker-compose.yml.j2
+    dest: "/volume1/docker/compose/gitea/docker-compose.yml"
+    mode: "0644"
+  register: compose_template
+
+- name: Start Gitea using docker compose
+  command: "{{ docker_cmd }} compose up -d --pull always"
+  args:
+    chdir: "/volume1/docker/compose/gitea"
+  register: result
+  changed_when: "'Creating' in result.stdout or 'Recreating' in result.stdout or 'Starting' in result.stdout"
