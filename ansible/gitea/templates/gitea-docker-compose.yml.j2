@@ -12,6 +12,9 @@ services:
     environment:
       - USER_UID={{ gitea_user_uid | default('1026') }}
       - USER_GID={{ gitea_user_gid | default('100') }}
+      - ACTIONS_ENABLED={{ gitea_actions_enabled | default('true') }}
+      - DOMAIN={{ gitea_domain | default('gitea.cusack-ruth.name') }}
+      - ROOT_URL={{ gitea_root_url | default('https://gitea.cusack-ruth.name') }}
 {% if gitea_extra_env is defined %}
 {% for key, value in gitea_extra_env.items() %}
       - {{ key }}={{ value }}
