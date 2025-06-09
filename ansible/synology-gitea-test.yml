@@ -1,0 +1,47 @@
+---
+# Test playbook for running Gitea role against Synology NAS
+
+- name: Deploy Gitea on Synology NAS
+  hosts: synology1
+  gather_facts: yes
+  vars:
+    synology_docker_path: "/usr/local/bin/docker"
+    docker_cmd: "{{ synology_docker_path }}"
+
+  pre_tasks:
+    - name: Check if Synology host is reachable
+      ping:
+      register: ping_result
+
+    - name: Display successful connection
+      debug:
+        msg: "Successfully connected to Synology NAS at {{ ansible_host }}"
+      when: ping_result is succeeded
+
+    - name: Check for Synology DSM
+      stat:
+        path: /etc/synoinfo.conf
+      register: synoinfo
+
+    - name: Set fact that this is a Synology device
+      set_fact:
+        is_synology: "{{ synoinfo.stat.exists | default(false) }}"
+
+    - name: Verify Docker is available on Synology
+      stat:
+        path: "{{ synology_docker_path }}"
+      register: synology_docker_binary
+      when: is_synology
+
+    - name: Set proper Docker command path
+      set_fact:
+        docker_cmd: "{{ synology_docker_path }}"
+      when: is_synology and synology_docker_binary.stat.exists
+
+    - name: Debug docker command path
+      debug:
+        msg: "Using Docker command: {{ docker_cmd }}"
+
+  tasks:
+    - name: Include Gitea tasks
+      include_tasks: gitea/tasks/main.yml

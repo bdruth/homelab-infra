@@ -1,0 +1,38 @@
+version: "3"
+
+networks:
+  gitea:
+    external: false
+    enable_ipv6: true
+
+services:
+  server:
+    image: gitea/gitea:{{ gitea_version | default('latest') }}
+    container_name: {{ gitea_container_name | default('gitea') }}
+    environment:
+      - USER_UID={{ gitea_user_uid | default('1026') }}
+      - USER_GID={{ gitea_user_gid | default('100') }}
+{% if gitea_extra_env is defined %}
+{% for key, value in gitea_extra_env.items() %}
+      - {{ key }}={{ value }}
+{% endfor %}
+{% endif %}
+    restart: always
+    networks:
+      - gitea
+    volumes:
+      - {{ gitea_data_dir }}:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "{{ gitea_http_port | default('3000') }}:3000"
+      - "{{ gitea_ssh_port | default('222') }}:22"
+{% if gitea_labels is defined %}
+    labels:
+{% for label_key, label_value in gitea_labels.items() %}
+      - "{{ label_key }}={{ label_value }}"
+{% endfor %}
+{% else %}
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+{% endif %}
