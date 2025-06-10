@@ -1,0 +1,33 @@
+name: Cache Test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ansible/**"
+      - "deploy.sh"
+      - "pkgx-deploy.sh"
+      - ".gitea/workflows/**"
+
+jobs:
+  test-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cache dependencies
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache
+          key: ${{ runner.os }}-deps-${{ hashFiles('**/requirements.txt', '**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-deps-
+
+      - name: Install dependencies
+        run: |
+          echo "Cache hit: ${{ steps.cache.outputs.cache-hit }}"
+          sudo apt-get update
+          sudo apt-get install -y dnsutils netcat-traditional
+          # Additional commands that would use the cache
