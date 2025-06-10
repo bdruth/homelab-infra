@@ -1,0 +1,10 @@
+---
+# Playbook for deploying Gitea Act Runner only
+
+- name: Deploy Gitea Act Runner
+  hosts: all
+  gather_facts: yes
+
+  roles:
+    - role: gitea-act-runner
+      when: "'gitea-act-runner' in host_roles | default([])"

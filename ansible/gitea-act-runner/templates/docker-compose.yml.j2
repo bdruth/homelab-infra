@@ -1,0 +1,21 @@
+version: "3.8"
+
+services:
+  gitea-act-runner:
+    image: gitea/act_runner:{{ gitea_act_runner_version | default('latest') }}
+    container_name: gitea-act-runner
+    restart: always
+    environment:
+      - TZ={{ gitea_act_runner_timezone | default('UTC') }}
+      - GITEA_INSTANCE_URL={{ gitea_act_runner_instance_url }}
+      - GITEA_RUNNER_REGISTRATION_TOKEN={{ gitea_act_runner_registration_token }}
+      - GITEA_RUNNER_NAME={{ gitea_act_runner_name | default(inventory_hostname) }}
+      - GITEA_RUNNER_LABELS={{ gitea_act_runner_labels | default('ubuntu-latest:docker://node:20-bookworm') }}
+    volumes:
+      - {{ gitea_act_runner_dir }}/data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+{% if gitea_act_runner_privileged is defined and gitea_act_runner_privileged %}
+    privileged: true
+{% endif %}

@@ -1,0 +1,35 @@
+---
+# Test playbook for Gitea Act Runner role
+
+- name: Import Gitea Act Runner configuration playbook
+  hosts: all
+  become: true
+  tasks:
+    - name: Include gitea-act-runner default variables
+      ansible.builtin.include_vars:
+        file: defaults/main.yml
+
+    - name: Include host-specific variables if they exist
+      ansible.builtin.include_vars:
+        file: vars/main.yml
+      ignore_errors: true
+
+    - name: Include gitea-act-runner tasks
+      ansible.builtin.include_tasks: tasks/main.yml
+
+- name: Validate Gitea Act Runner CI configuration
+  hosts: all
+  become: true
+  tasks:
+    - name: Include gitea-act-runner default variables for validation
+      ansible.builtin.include_vars:
+        file: defaults/main.yml
+
+    - name: Include host-specific variables for validation if they exist
+      ansible.builtin.include_vars:
+        file: vars/main.yml
+      ignore_errors: true
+
+    # TODO: Write test tasks for Gitea Act Runner configuration validation
+    # - name: Import Gitea Act Runner test tasks
+    #   ansible.builtin.import_tasks: tasks/test.yml
