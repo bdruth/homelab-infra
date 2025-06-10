@@ -1,0 +1,10 @@
+---
+# Example variables for Gitea Act Runner role
+# Copy this to main.yml and update the values
+
+# Registration token for the Gitea Act Runner
+# This is available from your Gitea instance under Settings > Actions > Runners
+gitea_act_runner_registration_token: "your-registration-token-here"
+
+# URL of the Gitea instance where the runner will register
+gitea_act_runner_instance_url: "https://gitea.example.com/"
