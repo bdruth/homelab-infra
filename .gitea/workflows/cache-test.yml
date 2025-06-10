@@ -28,6 +28,6 @@ jobs:
       - name: Install dependencies
         run: |
           echo "Cache hit: ${{ steps.cache.outputs.cache-hit }}"
-          sudo apt-get update
-          sudo apt-get install -y dnsutils netcat-traditional
+          apt-get update
+          apt-get install -y dnsutils netcat-traditional
           # Additional commands that would use the cache
