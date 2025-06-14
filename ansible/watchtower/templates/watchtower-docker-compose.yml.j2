@@ -1,4 +1,11 @@
-version: "3.8"
+---
+
+{% if ansible_all_ipv6_addresses | default([]) | length > 0 %}
+networks:
+  net:
+    driver: bridge
+    enable_ipv6: true
+{% endif %}
 
 services:
   watchtower:
@@ -8,6 +15,10 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: always
     command: --disable-memory-swappiness{% if watchtower_exclude_containers | default([]) | length > 0 %} --disable-containers {% for container in watchtower_exclude_containers %}{{ container }}{% if not loop.last %},{% endif %}{% endfor %}{% endif %}
+{% if ansible_all_ipv6_addresses | default([]) | length > 0 %}
+    networks:
+      - net
+{% endif %}
 
     environment:
       # Build environment variables list to ensure consistent formatting
