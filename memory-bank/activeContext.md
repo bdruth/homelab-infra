@@ -14,6 +14,15 @@ Key areas of active development:
 
 ## Recent Changes
 
+### CI/CD Migration: Drone to Gitea Actions
+
+- Converted the DNS infrastructure deployment from Drone CI to Gitea Actions
+- Created a descriptive workflow name "DNS Infrastructure Deployment" to replace generic "build"
+- Leveraged Gitea Actions path-based filtering to simplify the workflow
+- Ensured consistent notification patterns with existing workflows
+- Updated system documentation to reflect the CI/CD architecture changes
+- Removed redundant Drone configuration (`.drone.yml`)
+
 ### Documentation Improvement: CLAUDE.md Integration
 
 - Incorporated CLAUDE.md guidance into the memory bank system
@@ -43,9 +52,12 @@ Key areas of active development:
 
 ### CI/CD Improvements
 
-- Updated Drone CI configuration (`.drone.yml`)
-- Added Gitea workflow testing (`.gitea/workflows/cache-test.yml`)
-- Integrated with existing Drone runners
+- Complete migration to Gitea Actions workflows
+- Specialized workflows for different deployment types:
+  - `.gitea/workflows/ansible-deploy.yml` for Ansible roles
+  - `.gitea/workflows/dns-infrastructure-deploy.yml` for DNS infrastructure
+- Leveraging path-based filtering for targeted workflow execution
+- Consistent notification patterns across workflows
 
 ### Watchtower Configuration
 

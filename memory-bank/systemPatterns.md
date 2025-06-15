@@ -17,8 +17,8 @@ graph TD
     end
 
     subgraph "Service Layer"
-        Git[Gitea] --> |triggers| CI[Drone CI]
-        CI --> |deploys to| Services
+        Git[Gitea] --> |triggers| GiteaActions[Gitea Actions]
+        GiteaActions --> |deploys to| Services
         DNS_Services[DNS Services] --> |resolves| Network[Network Services]
         Monitoring --> |alerts| Notification[Notification Systems]
     end
@@ -79,16 +79,19 @@ graph TD
 **Pattern**: Self-hosted Git + CI/CD
 
 - Gitea for Git repository hosting
-- Drone CI for pipeline execution
+- Gitea Actions for pipeline execution
 - Multiple runner types for different workload requirements
 - Gitea Act runners for GitHub Actions compatibility
+- Workflow files for different deployment types
 
 **Implementation**:
 
 - Gitea deployment: `/ansible/gitea/`
-- Drone server: `/ansible/drone/`
-- Drone runners: `/ansible/drone-runner-exec/`
+- Workflow files: `.gitea/workflows/*.yml`
 - Gitea Act runners: `/ansible/gitea-act-runner/`
+- Specialized workflows for:
+  - Ansible deployments: `.gitea/workflows/ansible-deploy.yml`
+  - DNS infrastructure: `.gitea/workflows/dns-infrastructure-deploy.yml`
 
 ### 5. Monitoring Solutions
 
@@ -116,9 +119,8 @@ graph TD
     end
 
     subgraph "CI/CD"
-        Gitea --> |triggers| Drone[Drone CI]
-        Drone --> |executes on| DroneExec[Drone Runner Exec]
-        Gitea --> |triggers| ActRunner[Gitea Act Runner]
+        Gitea --> |triggers| GiteaActions[Gitea Actions]
+        GiteaActions --> |executes on| ActRunner[Gitea Act Runner]
     end
 
     subgraph "DNS Management"
@@ -136,8 +138,7 @@ graph TD
         Watchtower --> |updates| Containers
     end
 
-    Drone --> |deploys| Infrastructure
-    ActRunner --> |deploys| Infrastructure
+    GiteaActions --> |deploys| Infrastructure
 ```
 
 ## Critical Implementation Paths
@@ -183,17 +184,18 @@ graph TD
 1. **Code Change**
 
    - Push to Gitea repository
-   - Webhook triggers Drone CI or Gitea Act Runner
+   - Webhook triggers Gitea Actions workflows
 
 2. **Pipeline Execution**
 
-   - Runner executes defined pipeline steps
+   - Gitea Act Runner executes defined workflow steps
+   - Path-based filtering ensures only relevant workflows run
    - Tests run against changes
    - Artifacts built if required
 
 3. **Deployment**
-   - Successful pipeline triggers deployment
-   - Ansible playbooks apply changes to infrastructure
+   - Successful workflow triggers deployment
+   - Ansible playbooks or deployment scripts apply changes to infrastructure
    - Verification steps confirm successful deployment
 
 ## Development Standards
