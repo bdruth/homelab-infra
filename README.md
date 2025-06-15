@@ -1,64 +1,127 @@
-# README
+# Homelab Infrastructure
 
-Use NIX via Docker to manage
+A comprehensive Infrastructure as Code (IaC) solution for managing homelab services using Ansible, Terraform/OpenTofu, and other automation tools.
 
-```
-docker run -it -v $(pwd):/workdir -w /workdir nixos/nix
-# nix-shell
-```
+```mermaid
+graph TD
+    subgraph "Infrastructure Provisioning"
+        TF[Terraform/OpenTofu] --> |provisions| DNS[DNS Infrastructure]
+    end
 
-`opentofu`, `ansible`, and `netcat-traditional` will be installed automatically by nixOS, via the `shell.nix` configuration.
+    subgraph "Configuration Management"
+        Ansible --> |configures| Services
+        Ansible --> |configures| Monitoring
+    end
 
-_*NOTE*_: ci/cd uses [pkgx](https://pkgx.sh) instead of `nix` currently.
-
-## IaC states
-
-1. `dns/dns-ha`
-2. `dns/pihole`
-
-Run `tofu [init|plan|apply]` as you would `terraform` commands. The `pihole` folder has a `tofu-ns.sh` script that supports applying the `blue` or `green` state, just run `./tofu-ns.sh [blue|green] <tofu commands>` instead of a straight `tofu` command.
-
-See [deploy.sh](deploy.sh) for more information on how to deploy.
-
-## Ansible Deployment
-
-For Ansible deployments:
-
-1. Run `./ansible-pkgx-deploy.sh` to deploy with the default playbook (`ansible/infrastructure.yml`)
-2. For specific playbooks, use `./ansible-pkgx-deploy.sh playbook-name` (e.g. `./ansible-pkgx-deploy.sh drone-only`)
-3. Or use options: `./ansible-pkgx-deploy.sh --playbook=ansible/specific-playbook.yml --inventory=ansible/custom-inventory.yml`
-
-The deployment is also automated in CI/CD through Drone. When changes are made to Ansible files, the `ansible-deploy` pipeline will automatically run the appropriate Ansible playbooks.
-
-### Configurations
-
-Each state has a `.tfbackend` file that contains the backend configuration for that state's terraform. For `pihole`, there's a blue and a green variant of this configuration. Each state also has a `terraform.tfvars` file with variables that are specific to each state. Once again, `pihole` has a blue and a green variant of this configuration, common configuration is still in a `terraform.tfvars` file.
-
-Example `config.s3.tfbackend`
-
-```
-bucket = "<your-bucket-name>" # Name of the S3 bucket
-endpoints = {
-  s3 = "http://<your-url-to-alt-s3-api-endpoint>:9000" # Minio endpoint
-}
-key = "<unique-name-of-your-state-file>.tfstate" # Name of the tfstate file
+    subgraph "Services"
+        Git[Gitea] --> |triggers| CI[Gitea Actions]
+        DNS_Services[DNS Services] --> |resolves| Network
+        Monitoring --> |alerts| Notification
+        CI --> |deploys to| Infrastructure
+    end
 ```
 
-- See [dns/dns-ha/README.md](dns/dns-ha/README.md) for an example `.tfvars` file.
-- See [dns/pihole/README.md](dns/pihole/README.md) for an example `.tfvars` file.
+## Core Components
 
-#### Ansible configuration
+- **Self-hosted Git** (Gitea with Gitea Act Runners)
+- **DNS Management** (Pi-hole, dnsdist)
+- **Monitoring** (Disk monitoring, UPS monitoring)
+- **Container Management** (Watchtower)
+- **Special Purpose** (NVIDIA GPU support, Network UPS Tools)
 
-Configuration of the pihole is done via restoring a teleporter backup (from a pre-existing pihole). This backup file is pulled from an S3 bucket as well and requires some configuration in `ansible/pihole/vars/main.yml`
+## Getting Started
 
-Example:
+This project uses [pkgx](https://pkgx.sh) to manage tool dependencies:
 
+```bash
+# Install pkgx if you haven't already
+curl -fsS https://pkgx.sh | sh
+
+# Use pkgx to automatically install required tools
+./pkgx-deploy.sh
 ```
----
-s3_api_host_ip: <ip-addr-of-s3-api-host>
-s3_api_host_name: <fqdn-of-s3-api-host>
-s3_api_endpoint_url: "http://{{ s3_api_host_name }}:9000"
-s3_teleporter_bucket_name: <bucket-name-containing-teleporter-backup-file>
-s3_teleporter_object_name: <teleporter-backup-file-name>
 
+## Deployment Options
+
+### Ansible Deployment
+
+For deploying services with Ansible:
+
+```bash
+# Deploy with default playbook (infrastructure.yml)
+./ansible-pkgx-deploy.sh
+
+# Deploy specific service (this runs ansible/[service-name].yml)
+./ansible-pkgx-deploy.sh drone-only
+
+# Use custom options
+./ansible-pkgx-deploy.sh --playbook=ansible/specific-playbook.yml --inventory=ansible/custom-inventory.yml
 ```
+
+### Infrastructure Deployment
+
+For managing DNS infrastructure:
+
+```bash
+# Deploy DNS infrastructure
+./deploy.sh
+
+# For blue/green DNS deployments
+cd dns/pihole
+./tofu-ns.sh [blue|green] <tofu commands>
+```
+
+## Configuration
+
+Each component requires specific configuration files. Example configurations are provided with `.example` extensions.
+
+### Secrets Management
+
+The project uses [git-crypt](https://github.com/AGWA/git-crypt) to securely store sensitive configuration files in the repository:
+
+- Sensitive files are encrypted using git-crypt
+- `.gitattributes` defines which files should be encrypted
+- Users need to be added to the git-crypt keyring to access encrypted files
+- Example configurations are provided unencrypted with `.example` extensions
+
+### Example Configurations
+
+For Terraform/OpenTofu:
+
+- Backend config: `config.s3.example.tfbackend`
+- Variables: `terraform.example.tfvars`
+
+For Ansible:
+
+- Group variables: `group_vars/all.example.yml`
+- Host variables: `host_vars/example.com.yml`
+- Role variables: `ansible/{service}/vars/main.example.yml`
+
+## Available Playbooks
+
+The project includes dedicated playbooks for various services:
+
+- `infrastructure.yml`: Complete infrastructure deployment
+- Service-specific playbooks:
+  - `drone-only.yml`
+  - `drone-runner-exec-only.yml`
+  - `gitea-only.yml`
+  - `gitea-act-runner-only.yml`
+  - `disk-monitoring-only.yml`
+  - `nut-only.yml`
+  - `nvidia-gpu-only.yml`
+  - `watchtower-only.yml`
+
+> **Note:** The DNS-related components (Pi-hole and dnsdist) are integrated with Terraform/OpenTofu IaC for Proxmox and don't have standalone playbooks.
+
+## CI/CD
+
+Changes to this repository are automatically deployed through Gitea Actions workflows that run the appropriate deployment scripts based on which files have changed.
+
+## Documentation
+
+For more detailed documentation on specific components:
+
+- DNS: See `dns/dns-ha/README.md` and `dns/pihole/README.md`
+- Ansible: See `ansible/README.md`
+- Individual services: See README files in specific role directories
