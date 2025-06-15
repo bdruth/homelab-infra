@@ -2,7 +2,7 @@
 
 ## Current Work Focus
 
-The current focus of the homelab infrastructure project is on enhancing the CI/CD capabilities with Gitea Act Runners and improving networking support in containerized services. This provides GitHub Actions compatibility to the self-hosted Gitea instance and better network connectivity options, allowing for more powerful workflow automation and improved container networking.
+The current focus of the homelab infrastructure project is on enhancing the CI/CD capabilities with Gitea Act Runners, improving networking support in containerized services, and standardizing the monitoring infrastructure. This provides GitHub Actions compatibility to the self-hosted Gitea instance, better network connectivity options, and more consistent monitoring capabilities.
 
 Key areas of active development:
 
@@ -10,8 +10,19 @@ Key areas of active development:
 2. **Watchtower Integration**: Ensuring container-based services remain up-to-date with automated updates
 3. **CI/CD Pipeline Improvements**: Enhancing existing Drone CI pipelines and integrating with the new Act runners
 4. **IPv6 Support**: Adding conditional IPv6 support for containerized services based on host capabilities
+5. **Monitoring Infrastructure Standardization**: Refactoring monitoring components to follow consistent patterns
 
 ## Recent Changes
+
+### Monitoring Infrastructure Refactoring
+
+- Integrated disk-monitoring into the main ansible infrastructure
+- Converted standalone disk-monitoring setup to a proper ansible role
+- Created disk-monitoring-only.yml for standalone deployment
+- Moved Grafana dashboard creation tools to ansible/tools/grafana
+- Added weewx-pi4 weather station to disk monitoring hosts
+- Fixed Telegraf configuration issues with mount point monitoring
+- Updated CI/CD workflow to include disk-monitoring role changes
 
 ### Gitea Act Runner Implementation
 
@@ -34,25 +45,31 @@ Key areas of active development:
 
 ## Next Steps
 
-1. **Complete Gitea Act Runner Testing**:
+1. **Validate Disk Monitoring Configuration**:
+
+   - Confirm Telegraf configuration works on all host types
+   - Verify metrics are properly collected in InfluxDB
+   - Test Grafana dashboard creation tools
+
+2. **Complete Gitea Act Runner Testing**:
 
    - Validate the runner registration with Gitea
    - Test workflow execution
    - Document configuration options
 
-2. **Enhance Monitoring**:
+3. **Enhance Monitoring**:
 
    - Add monitoring for the new CI/CD components
    - Create alerts for CI/CD pipeline failures
    - Implement dashboard for build status
 
-3. **Documentation Updates**:
+4. **Documentation Updates**:
 
    - Update project documentation with new CI/CD capabilities
    - Create user guides for GitHub Actions compatibility
    - Document configuration patterns for pipelines
 
-4. **Integration Testing**:
+5. **Integration Testing**:
    - Test the complete CI/CD flow from code commit to deployment
    - Verify compatibility with existing workflows
    - Benchmark performance under various loads

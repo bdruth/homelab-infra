@@ -12,6 +12,10 @@
 ### Monitoring
 
 - ✅ **Disk Monitoring**: Working Telegraf + Grafana setup for disk status monitoring
+  - Integrated into main ansible infrastructure as a proper role
+  - Standardized with other roles in role-based architecture
+  - Supports all hosts with configurable monitoring parameters
+  - Includes separate Grafana dashboard creation tools
 - ✅ **UPS Monitoring**: Power supply monitoring implementation
 
 ### Deployment Tools
@@ -22,6 +26,14 @@
   - `setup-ansible.sh`: Ansible environment setup
 
 ## In Progress
+
+### Monitoring Refinements
+
+- 🔄 **Disk Monitoring Configuration Validation**: Ensuring configuration works across different hosts
+  - Fixed Telegraf configuration issues with mount point monitoring
+  - Updated variable naming for consistency
+  - Added weewx-pi4 weather station to monitoring hosts
+  - Made Grafana dashboard creation more maintainable
 
 ### CI/CD Enhancements
 
@@ -69,18 +81,31 @@
 
 ## Current Status
 
-| Component              | Status         | Priority | Notes                                     |
-| ---------------------- | -------------- | -------- | ----------------------------------------- |
-| **Gitea Act Runners**  | 🔄 In Progress | High     | Implementing GitHub Actions compatibility |
-| **Watchtower**         | 🔄 In Progress | Medium   | Automating container updates              |
-| **Disk Monitoring**    | ✅ Complete    | N/A      | Working as expected                       |
-| **UPS Monitoring**     | ✅ Complete    | N/A      | Working as expected                       |
-| **DNS Infrastructure** | ✅ Complete    | N/A      | Working with high availability            |
-| **Drone CI**           | ✅ Complete    | N/A      | Working with exec runners                 |
-| **CI/CD Monitoring**   | 📋 Not Started | Medium   | Needed for better visibility              |
-| **Service Backups**    | 📋 Not Started | High     | Critical for disaster recovery            |
+| Component              | Status         | Priority | Notes                                       |
+| ---------------------- | -------------- | -------- | ------------------------------------------- |
+| **Gitea Act Runners**  | 🔄 In Progress | High     | Implementing GitHub Actions compatibility   |
+| **Watchtower**         | 🔄 In Progress | Medium   | Automating container updates                |
+| **Disk Monitoring**    | ✅ Complete    | N/A      | Integrated into main ansible infrastructure |
+| **UPS Monitoring**     | ✅ Complete    | N/A      | Working as expected                         |
+| **DNS Infrastructure** | ✅ Complete    | N/A      | Working with high availability              |
+| **Drone CI**           | ✅ Complete    | N/A      | Working with exec runners                   |
+| **CI/CD Monitoring**   | 📋 Not Started | Medium   | Needed for better visibility                |
+| **Service Backups**    | 📋 Not Started | High     | Critical for disaster recovery              |
 
 ## Known Issues
+
+### Disk Monitoring
+
+1. **Issue**: Variable naming inconsistency between configuration files
+
+   - **Status**: Resolved
+   - **Impact**: Confusion during configuration and potential errors
+   - **Solution**: Standardized variable names across templates and defaults
+
+2. **Issue**: Incompatible Telegraf parameters for mount points
+   - **Status**: Resolved
+   - **Impact**: Telegraf service errors when restarting
+   - **Solution**: Updated configuration to use compatible parameters for the installed Telegraf version
 
 ### Watchtower
 
@@ -134,7 +159,14 @@
 
 - **Initial Approach**: Ad-hoc Ansible playbooks
 - **Current Approach**: Standardized roles with both standalone and combined playbooks
+- **Latest Refinement**: Integration of previously standalone components into the role-based structure (disk-monitoring)
 - **Rationale**: Improved modularity, reusability, and consistency
+
+### Monitoring Architecture
+
+- **Initial Approach**: Separate, standalone monitoring implementations
+- **Current Approach**: Integrated monitoring roles with standardized structure
+- **Rationale**: Better maintainability, consistent deployment patterns, and simplified configuration
 
 ### Monitoring
 

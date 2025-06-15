@@ -24,11 +24,12 @@
 
 ### Monitoring & Observability
 
-| Tool               | Purpose                 | Components                             |
-| ------------------ | ----------------------- | -------------------------------------- |
-| **Telegraf**       | Metrics collection      | Used for disk monitoring               |
-| **Grafana**        | Metrics visualization   | Creates dashboards for monitoring data |
-| **UPS Monitoring** | Power supply monitoring | Custom implementation                  |
+| Tool               | Purpose                 | Components                                |
+| ------------------ | ----------------------- | ----------------------------------------- |
+| **Telegraf**       | Metrics collection      | Used for disk monitoring                  |
+| **Grafana**        | Metrics visualization   | Creates dashboards for monitoring data    |
+| **UPS Monitoring** | Power supply monitoring | Custom implementation                     |
+| **Grafana Tools**  | Dashboard management    | Creates and updates monitoring dashboards |
 
 ## Development Environment
 
@@ -47,7 +48,9 @@ homelab-infra/
 ├── ansible/                   # Ansible playbooks and roles
 │   ├── {service-name}/        # Service-specific roles
 │   ├── {service-name}-only.yml # Standalone service playbooks
-│   └── infrastructure.yml     # Combined infrastructure playbook
+│   ├── infrastructure.yml     # Combined infrastructure playbook
+│   └── tools/                 # Shared tools used across roles
+│       └── grafana/           # Grafana dashboard creation tools
 ├── dns/                       # DNS configuration
 │   ├── dns-ha/                # High-availability DNS configs
 │   └── pihole/                # Pi-hole specific configs

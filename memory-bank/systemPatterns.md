@@ -98,11 +98,14 @@ graph TD
 - Metrics collection via Telegraf
 - Visualization via Grafana dashboards
 - Integration with notification systems
+- Role-based architecture with standardized structure
+- Separation of monitoring configuration and dashboard creation tools
 
 **Implementation**:
 
-- Disk monitoring: `/ansible/disk-monitoring/`
+- Disk monitoring: `/ansible/disk-monitoring/` (role-based architecture)
 - UPS monitoring: `/ups-monitoring/`
+- Dashboard tools: `/ansible/tools/grafana/` (for creating and maintaining dashboards)
 
 ## Component Relationships
 
