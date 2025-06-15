@@ -40,6 +40,7 @@
   - Base configuration established
   - Test playbooks created
   - Integration with existing services in progress
+  - Implemented conditional IPv6 networking support
 
 ### Documentation
 
@@ -81,6 +82,19 @@
 
 ## Known Issues
 
+### Watchtower
+
+1. **Issue**: Update timing may disrupt service availability
+
+   - **Status**: Investigating
+   - **Impact**: Brief service interruptions
+   - **Workaround**: Scheduling updates during low-usage periods
+
+2. **Issue**: IPv6 networking in Docker requires host support
+   - **Status**: Resolved
+   - **Impact**: Services might lack IPv6 connectivity on certain hosts
+   - **Solution**: Implemented conditional IPv6 network configuration based on host capabilities using `ansible_all_ipv6_addresses`
+
 ### Gitea Act Runner
 
 1. **Issue**: Registration token handling needs improvement
@@ -100,13 +114,6 @@
    - **Impact**: Failed workflow executions
    - **Solution**: Remove `sudo` from commands as they already run as root in the Ubuntu runner environment
    - **Note**: Affects commands like `apt update`, `apt-get install`, etc. which should be run directly
-
-### Watchtower
-
-1. **Issue**: Update timing may disrupt service availability
-   - **Status**: Investigating
-   - **Impact**: Brief service interruptions
-   - **Workaround**: Scheduling updates during low-usage periods
 
 ### General Infrastructure
 

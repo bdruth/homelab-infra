@@ -2,13 +2,14 @@
 
 ## Current Work Focus
 
-The current focus of the homelab infrastructure project is on enhancing the CI/CD capabilities with Gitea Act Runners. This provides GitHub Actions compatibility to the self-hosted Gitea instance, allowing for more powerful workflow automation.
+The current focus of the homelab infrastructure project is on enhancing the CI/CD capabilities with Gitea Act Runners and improving networking support in containerized services. This provides GitHub Actions compatibility to the self-hosted Gitea instance and better network connectivity options, allowing for more powerful workflow automation and improved container networking.
 
 Key areas of active development:
 
 1. **Gitea Act Runner Implementation**: Configuring and deploying Act runners for Gitea to enable GitHub Actions workflow compatibility
 2. **Watchtower Integration**: Ensuring container-based services remain up-to-date with automated updates
 3. **CI/CD Pipeline Improvements**: Enhancing existing Drone CI pipelines and integrating with the new Act runners
+4. **IPv6 Support**: Adding conditional IPv6 support for containerized services based on host capabilities
 
 ## Recent Changes
 
@@ -29,6 +30,7 @@ Key areas of active development:
 
 - Set up Watchtower for automated Docker container updates
 - Created test playbooks for validation
+- Added conditional IPv6 network support based on host capabilities
 
 ## Next Steps
 

@@ -203,3 +203,42 @@ graph TD
 6. **Monitoring by Default** - All services integrate with monitoring systems
 7. **Container-Based Services** - Services isolated in containers where appropriate
 8. **Automated Updates** - Watchtower manages container updates automatically
+9. **Adaptive Configuration** - Services configure themselves based on host capabilities (e.g., IPv6 support)
+
+## Network Configuration Patterns
+
+### IPv6 Support
+
+**Pattern**: Conditional IPv6 Network Configuration
+
+- Docker networks conditionally enable IPv6 based on host capabilities
+- Templates use Ansible facts to detect IPv6 support on the host
+- Network configuration is only applied when supported
+- Services attach to IPv6-enabled networks when available
+
+**Implementation**:
+
+```yaml
+# Example from watchtower-docker-compose.yml.j2
+{% if ansible_all_ipv6_addresses | default([]) | length > 0 %}
+networks:
+  net:
+    driver: bridge
+    enable_ipv6: true
+{% endif %}
+
+services:
+  service_name:
+    # service configuration
+    {% if ansible_all_ipv6_addresses | default([]) | length > 0 %}
+    networks:
+      - net
+    {% endif %}
+```
+
+This pattern ensures that:
+
+1. IPv6 is only enabled when the host has IPv6 addresses configured
+2. No configuration changes are needed for existing deployments
+3. Services fall back to standard Docker networking on hosts without IPv6
+4. The same template works in both IPv6 and IPv4-only environments

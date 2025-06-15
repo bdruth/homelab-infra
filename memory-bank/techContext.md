@@ -189,3 +189,15 @@ tofu apply -var-file=terraform.tfvars
 - Compose files used for multi-container services
 - Watchtower handles automatic updates
 - Service-specific compose files in templates directories
+- Conditional IPv6 networking based on host capabilities
+- Network configuration through docker-compose templates
+
+### Network Management
+
+#### IPv4 and IPv6 Support
+
+- Services support both IPv4 and IPv6 where possible
+- IPv6 configuration in Docker is conditional based on host support
+- Ansible facts (`ansible_all_ipv6_addresses`) used to detect IPv6 capability
+- Templates automatically adapt to host networking capabilities
+- Default fallback to IPv4-only when IPv6 is unavailable
