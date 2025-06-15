@@ -108,7 +108,7 @@ jobs:
 
       - name: pushover-actions
         uses: umahmood/pushover-actions@main
-        if: failure()
+        if: always()
         env:
           PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
           PUSHOVER_USER: ${{ secrets.PUSHOVER_USER }}
