@@ -1,0 +1,53 @@
+name: Cache Test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ansible/**"
+      - "setup-ansible.sh"
+      - "ansible-deploy.sh"
+      - "ansible-pkgx-deploy.sh"
+      - ".gitea/workflows/ansible-deploy.yml"
+
+jobs:
+  test-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cache dependencies
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache
+          key: ${{ runner.os }}-deps-${{ hashFiles('**/ansible-pkgx-deploy.sh', '**/setup-ansible.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-deps-
+
+      - name: Unlock git-crypt
+        uses: sliteteam/github-action-git-crypt-unlock@v1.3.0
+        env:
+          GIT_CRYPT_KEY: ${{ secrets.GIT_CRYPT_KEY }}
+
+      - name: setup-pkgx
+        uses: pkgxdev/setup@v4
+
+      - name: deploy-roles
+        run: |
+          # Setup the environment first, as we'll need it regardless of deployment type
+          apt-get update && apt-get install -y dnsutils netcat-traditional
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod -R 700 ~/.ssh
+          chmod 600 ~/.ssh/id_rsa
+
+          ./ansible-pkgx-deploy.sh --playbook=ansible/infrastructure.yml
+
+      - name: Install dependencies
+        run: |
+          echo "Cache hit: ${{ steps.cache.outputs.cache-hit }}"
+          apt-get update
+          apt-get install -y dnsutils netcat-traditional
+          # Additional commands that would use the cache
