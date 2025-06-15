@@ -1,9 +1,0 @@
----
-# Example host-specific variables for UPS server
-# Rename to match your actual hostname
-
-# NUT configuration - this host is the UPS server
-nut_mode: netserver
-
-# This server typically doesn't need watchtower
-# since it's a dedicated UPS monitoring appliance
