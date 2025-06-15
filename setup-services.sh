@@ -1,5 +1,5 @@
 #!/bin/bash
-shellcheck disable=SC2154
+# shellcheck disable=SC2154
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
