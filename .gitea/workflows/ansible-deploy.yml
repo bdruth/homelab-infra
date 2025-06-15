@@ -44,7 +44,7 @@ jobs:
         run: |
           echo "Cache hit: ${{ steps.cache.outputs.cache-hit }}"
           apt-get update
-          apt-get install -y dnsutils netcat-traditional
+          apt-get install -y dnsutils netcat-traditional git-crypt
 
       - name: check-changes
         id: check_changes
