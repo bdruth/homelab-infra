@@ -45,7 +45,7 @@ jobs:
           echo '${{ secrets.SSH_PRIVATE_KEY }}' > id_rsa.tmp
           chmod 600 id_rsa.tmp
 
-          ./ansible-pkgx-deploy.sh --playbook=ansible/infrastructure.yml --key-file id_rsa.tmp
+          ./ansible-pkgx-deploy.sh --playbook=ansible/infrastructure.yml --private-key id_rsa.tmp
 
       - name: Install dependencies
         run: |
