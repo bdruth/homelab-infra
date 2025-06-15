@@ -8,7 +8,7 @@ on:
       - "setup-services.sh"
       - "services-deploy.sh"
       - "services-pkgx-deploy.sh"
-      - ".gitea/workflows/ansible-deploy.yml"
+      - ".gitea/workflows/services-deploy.yml"
 
 jobs:
   services-deploy:
@@ -50,7 +50,7 @@ jobs:
         id: check_changes
         run: |
           echo "Checking for relevant file changes..."
-          if git diff --name-only HEAD~1 | grep -E "^(services/|setup-services\.sh|services-deploy\.sh|services-pkgx-deploy\.sh|ansible-deploy\.yml)"; then
+          if git diff --name-only HEAD~1 | grep -E "^(services/|setup-services\.sh|services-deploy\.sh|services-pkgx-deploy\.sh|services-deploy\.yml)"; then
             echo "✅ Services files changed, proceeding with deployment"
             
             # Create a file to track which playbooks should be deployed
