@@ -15,3 +15,4 @@
 .cache
 .git-crypt-key
 .pkgx
+megalinter-reports/
