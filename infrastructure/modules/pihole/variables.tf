@@ -11,7 +11,6 @@ variable "ip_addr" {
 variable "gw_addr" {
   description = "pihole gateway address"
   type        = string
-  default     = "192.168.7.1"
 }
 
 variable "ssh_public_keys" {

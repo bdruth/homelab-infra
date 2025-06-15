@@ -2,7 +2,7 @@ module "pihole_lxc" {
   source = "../lxc"
   lxc_hostname = "pihole-${var.pihole_suffix}"
   lxc_ip_addr = var.ip_addr
-  lxc_gw_addr = "192.168.7.1"
+  lxc_gw_addr = var.gw_addr
   ssh_public_keys = var.ssh_public_keys
   lxc_onboot = true
   lxc_rootfs_size = "8G"
