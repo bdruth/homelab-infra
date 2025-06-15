@@ -32,8 +32,9 @@
 {% if ignored_filesystems | default([]) | length > 0 %}
   ignore_fs = [{% for fs in ignored_filesystems %}"{{ fs }}"{% if not loop.last %}, {% endif %}{% endfor %}]
 {% endif %}
-{% if ignored_mount_points | default([]) | length > 0 %}
-  ignore_mount_points = [{% for mp in ignored_mount_points %}"{{ mp }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+{% if monitor_mount_points | default([]) | length > 0 %}
+  # Only monitor specific mount points
+  mount_points = [{% for mp in monitor_mount_points %}"{{ mp }}"{% if not loop.last %}, {% endif %}{% endfor %}]
 {% endif %}
 
 # Disk I/O monitoring
