@@ -196,6 +196,91 @@ graph TD
    - Ansible playbooks apply changes to infrastructure
    - Verification steps confirm successful deployment
 
+## Development Standards
+
+### Code Style Guidelines
+
+1. **Infrastructure-as-Code Best Practices**:
+
+   - Follow established IaC patterns and practices
+   - Maintain consistent structure across similar resources
+   - Use descriptive variable names (e.g., `nvidia_driver_version`, `install_btop`)
+
+2. **Feature Management**:
+
+   - Use consistent feature toggles with boolean variables
+   - Implement conditional execution based on these variables
+
+3. **Documentation and Readability**:
+
+   - Include task comments describing purpose
+   - Maintain consistent indentation in YAML files (2 spaces)
+   - Document complex logic and decision points
+
+4. **Error Handling**:
+
+   - Handle errors with retries and proper ignore_errors handling
+   - Register command outputs for validation and debugging
+
+5. **Modularity**:
+
+   - Organize tasks into modular files with clear responsibilities
+   - Use templates (.j2 files) for configuration generation
+   - Break complex tasks into smaller, focused tasks
+
+6. **Template Generation**:
+
+   - When creating templates for YAML files (especially docker-compose.yml), use list building in Jinja2 to ensure proper indentation and avoid whitespace issues:
+
+   ```jinja
+   environment:
+     # Build environment variables list to ensure consistent formatting
+   {% set env_vars = [] %}
+   {% if some_condition %}
+   {% set env_vars = env_vars + ['SOME_ENV_VAR=value'] %}
+   {% endif %}
+   {% for var in env_vars %}
+         - {{ var }}
+   {% endfor %}
+   ```
+
+7. **Configuration Management**:
+
+   - When adding new variables to example files (e.g., `main.example.yml`), always update the corresponding actual configuration files (e.g., `main.yml`) to maintain consistency
+   - When adding new features or tasks, always add corresponding tests in the test playbook (e.g., `test-playbook.yml`) to verify the installation and functionality
+
+8. **Service Management**:
+
+   - When updating configuration files for services, ensure the service is restarted to apply the new configuration:
+
+   ```yaml
+   - name: Update service configuration
+     ansible.builtin.template:
+       src: config-template.j2
+       dest: /path/to/config
+     register: config_updated
+
+   - name: Restart service if configuration changed
+     ansible.builtin.systemd:
+       name: service-name
+       state: restarted
+     when: config_updated is changed
+   ```
+
+9. **Service Validation**:
+   - For services that may take time to start (e.g., Docker containers), use Ansible's retry and until mechanisms instead of fixed delays:
+   ```yaml
+   - name: Wait for service to start
+     ansible.builtin.shell: docker ps | grep service-name
+     register: service_result
+     changed_when: false
+     ignore_errors: true
+     retries: 15 # Number of attempts
+     delay: 4 # Seconds between retries
+     until: service_result.rc == 0
+     when: install_service | bool
+   ```
+
 ## Application of Design Patterns
 
 1. **Infrastructure as Code** - Everything defined as code in version-controlled repositories
@@ -245,3 +330,40 @@ This pattern ensures that:
 2. No configuration changes are needed for existing deployments
 3. Services fall back to standard Docker networking on hosts without IPv6
 4. The same template works in both IPv6 and IPv4-only environments
+
+## API Integration Patterns
+
+### Grafana Alerting API Guidelines
+
+**Pattern**: Standardized Grafana Alert Management
+
+- **Permissions Handling**: Grafana OSS requires Admin role for alert management (no granular RBAC like Enterprise)
+- **Required Fields Structure**: Alert rules MUST have:
+  - `folderUID` (cannot be empty)
+  - Proper `condition` reference
+  - Correct datasource UIDs
+
+**Implementation**:
+
+1. **API Structure**:
+
+   - Use `/api/v1/provisioning/alert-rules` for creation
+   - Follow proper InfluxDB + Expression query format
+
+2. **Notification Policies**:
+
+   - Use `object_matchers` format (not old `matcher` format)
+   - Use PUT method for updates to `/api/v1/provisioning/policies`
+
+3. **Error Handling**:
+
+   - Always include fallback to export JSON files when API permissions fail
+
+4. **Query Formatting**:
+
+   - Use visual query builder format in alert rules, not raw SQL format
+   - Use `__expr__` UID for threshold conditions with `type: "threshold"`
+
+5. **Integration Approach**:
+   - Route alerts to existing contact points like `autogen-contact-point-default` using object_matchers
+   - Test API permissions before attempting rule creation to provide better user experience

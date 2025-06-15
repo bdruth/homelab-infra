@@ -1,90 +1,70 @@
-# CLAUDE.md
+# CLAUDE.md - Instructions for Claude Code
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## IMPORTANT: FIRST READ THE MEMORY BANK
 
-## Build & Deploy Commands
-- Deploy DNS infrastructure: `./deploy.sh` or `./nix-deploy.sh` or `./pkgx-deploy.sh`
-- Run Ansible playbook: `ansible-playbook -i [inventory] [playbook].yml`
-- Run NVIDIA GPU test: `cd ansible/nvidia-gpu && ansible-playbook -i test-inventory.yml test-playbook.yml`
-- Run Pihole test: `cd ansible/pihole && ansible-playbook -i test-inventory.yml test-playbook.yml`
-- Verify installation: `nvidia-smi`, `nvcc --version`, `ollama --version`, `btop --version`, `uv --version`
+When working with this repository, Claude Code should ALWAYS start by reading all files in the `memory-bank/` directory using this specific hierarchy:
 
-## Terraform/OpenTofu
-- Apply changes: `cd dns/[component] && terraform apply`
-- Plan changes: `cd dns/[component] && terraform plan`
-- Validate: `cd dns/[component] && terraform validate`
+1. Start with `memory-bank/projectbrief.md` - Provides the foundation and core goals
+2. Read `memory-bank/productContext.md` - Explains why this project exists and how it should work
+3. Read `memory-bank/systemPatterns.md` - Details the system architecture and key technical decisions
+4. Read `memory-bank/techContext.md` - Lists technologies used and detailed implementation guidance
+5. Read `memory-bank/activeContext.md` - Shows what's currently being worked on and recent changes
+6. Finish with `memory-bank/progress.md` - Provides current status and project evolution
 
-## Ansible
-- Run playbook: `ansible-playbook -i [inventory] [playbook].yml`
-- Check syntax: `ansible-playbook --syntax-check [playbook].yml`
-- Dry run: `ansible-playbook -i [inventory] [playbook].yml --check`
+## Using the Memory Bank Effectively
 
-## Container Management
-- We use podman with podman-docker compatibility layer
-- Always use Docker CLI commands (not podman commands) for consistency
-- Examples: `docker ps`, `docker compose up -d`, `docker build`
-- The underlying implementation uses podman but we use docker CLI syntax
-- IMPORTANT: For GPU access, avoid using docker/podman compose and use direct `docker run` commands with systemd services instead
-- When GPU access is needed, use `--device nvidia.com/gpu=all --security-opt=label=disable` flags in `docker run` commands
+- The memory bank is the PRIMARY source of truth for all project standards and information
+- All project documentation, patterns, commands, and standards have been incorporated into the memory bank
+- Always reference memory bank files over this CLAUDE.md file when working on code
+- Ensure your changes follow the patterns and standards documented in the memory bank
+- If you need to modify standards, update the memory bank files, not this file
 
-## Code Style Guidelines
-- Follow infrastructure-as-code best practices
-- Use descriptive variable names (e.g., `nvidia_driver_version`, `install_btop`)
-- Use consistent feature toggles with boolean variables
-- Include task comments describing purpose
-- Maintain consistent indentation in YAML files (2 spaces)
-- Handle errors with retries and proper ignore_errors handling
-- Organize tasks into modular files with clear responsibilities
-- Use templates (.j2 files) for configuration generation
-- When creating templates for YAML files (especially docker-compose.yml), use list building in Jinja2 to ensure proper indentation and avoid whitespace issues:
-  ```jinja
-  environment:
-    # Build environment variables list to ensure consistent formatting
-  {% set env_vars = [] %}
-  {% if some_condition %}
-  {% set env_vars = env_vars + ['SOME_ENV_VAR=value'] %}
-  {% endif %}
-  {% for var in env_vars %}
-        - {{ var }}
-  {% endfor %}
-  ```
-- Register command outputs for validation and debugging
-- IMPORTANT: When adding new variables to example files (e.g., `main.example.yml`), always update the corresponding actual configuration files (e.g., `main.yml`) to maintain consistency
-- IMPORTANT: When adding new features or tasks, always add corresponding tests in the test playbook (e.g., `test-playbook.yml`) to verify the installation and functionality
-- IMPORTANT: When updating configuration files for services (e.g., docker-compose.yml templates), always ensure the service is restarted to apply the new configuration. Use the `register` directive to track when files change, and conditionally restart services:
-  ```yaml
-  - name: Update service configuration
-    ansible.builtin.template:
-      src: config-template.j2
-      dest: /path/to/config
-    register: config_updated
-    
-  - name: Restart service if configuration changed
-    ansible.builtin.systemd:
-      name: service-name
-      state: restarted
-    when: config_updated is changed
-  ```
-- For services that may take time to start (e.g., Docker containers), use Ansible's retry and until mechanisms instead of fixed delays to ensure reliable testing:
-  ```yaml
-  - name: Wait for service to start
-    ansible.builtin.shell: docker ps | grep service-name
-    register: service_result
-    changed_when: false
-    ignore_errors: true
-    retries: 15      # Number of attempts
-    delay: 4         # Seconds between retries
-    until: service_result.rc == 0
-    when: install_service | bool
-  ```
+## Key Technical Concepts
 
-## Grafana Alerting API Guidelines
-- **Permissions**: Grafana OSS requires Admin role for alert management (no granular RBAC like Enterprise)
-- **Required Fields**: Alert rules MUST have `folderUID` (cannot be empty), proper `condition` reference, and correct datasource UIDs
-- **API Structure**: Use `/api/v1/provisioning/alert-rules` for creation with proper InfluxDB + Expression query format
-- **Notification Policies**: Use `object_matchers` format (not old `matcher` format) and PUT method for updates to `/api/v1/provisioning/policies`
-- **Error Handling**: Always include fallback to export JSON files when API permissions fail
-- **InfluxDB Queries**: Use visual query builder format in alert rules, not raw SQL format
-- **Expression Datasource**: Use `__expr__` UID for threshold conditions with `type: "threshold"`
-- **Integration**: Route alerts to existing contact points like `autogen-contact-point-default` using object_matchers
-- **Testing**: Test API permissions before attempting rule creation to provide better user experience
+This is just a brief overview pointing to the relevant memory bank files for details:
+
+1. **Infrastructure as Code** - All changes are defined in Ansible and Terraform/OpenTofu
+2. **Deployment Commands** - See `memory-bank/techContext.md` for all commands and usage
+3. **Container Management** - We use podman with docker CLI syntax; see `memory-bank/techContext.md` for details
+4. **Code Style** - Follow patterns in `memory-bank/systemPatterns.md` Development Standards section
+5. **Monitoring** - See `memory-bank/systemPatterns.md` API Integration Patterns and Monitoring Solutions
+6. **Network Configuration** - IPv4/IPv6 support details in `memory-bank/techContext.md`
+
+## Current Project Priorities
+
+See `memory-bank/activeContext.md` and `memory-bank/progress.md` for:
+
+- Current work focus
+- Recent changes
+- Next steps
+- Known issues
+- Current status of components
+
+## Updating the Memory Bank
+
+When the user types **update memory bank**, this is a specific command that requires you to:
+
+1. Review ALL memory bank files, even if some don't require updates
+2. Focus particularly on `activeContext.md` and `progress.md` which track current state
+3. Document the following in appropriate files:
+   - Current state of the project
+   - New project patterns discovered
+   - Implementation changes made
+   - Next steps and priorities
+   - Any insights or learnings
+
+The memory bank update process follows this sequence:
+
+1. Review ALL Files
+2. Document Current State
+3. Clarify Next Steps
+4. Document Insights & Patterns
+
+Memory bank updates should occur when:
+
+1. Discovering new project patterns
+2. After implementing significant changes
+3. When the user explicitly requests with **update memory bank**
+4. When context needs clarification
+
+Remember that after every memory reset, Claude Code begins completely fresh. The Memory Bank is the only link to previous work, so it must be maintained with precision and clarity.

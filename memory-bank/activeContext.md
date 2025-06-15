@@ -14,6 +14,16 @@ Key areas of active development:
 
 ## Recent Changes
 
+### Documentation Improvement: CLAUDE.md Integration
+
+- Incorporated CLAUDE.md guidance into the memory bank system
+- Added build & deployment commands to techContext.md
+- Added container management details to techContext.md
+- Created Development Standards section in systemPatterns.md with code style guidelines
+- Added Grafana Alerting API Guidelines to systemPatterns.md under new API Integration Patterns section
+- Enhanced technical documentation for consistent code and deployment practices
+- Preserved important guidelines for GPU access via Docker
+
 ### Monitoring Infrastructure Refactoring
 
 - Integrated disk-monitoring into the main ansible infrastructure

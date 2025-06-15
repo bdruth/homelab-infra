@@ -161,10 +161,15 @@ Service-specific test playbooks:
 
 ## Tool Usage Patterns
 
-### Ansible Usage
+### Build & Deploy Commands
 
 ```bash
-# Run playbook with inventory
+# Deploy DNS infrastructure options
+./deploy.sh
+./nix-deploy.sh
+./pkgx-deploy.sh
+
+# Run Ansible playbook with inventory
 ansible-playbook -i ansible/inventory.yml ansible/playbook.yml
 
 # Run with specific tags
@@ -172,6 +177,19 @@ ansible-playbook -i ansible/inventory.yml ansible/playbook.yml --tags=tag1,tag2
 
 # Limit to specific hosts
 ansible-playbook -i ansible/inventory.yml ansible/playbook.yml --limit=host1
+
+# Run NVIDIA GPU test
+cd ansible/nvidia-gpu && ansible-playbook -i test-inventory.yml test-playbook.yml
+
+# Run Pihole test
+cd ansible/pihole && ansible-playbook -i test-inventory.yml test-playbook.yml
+
+# Verify installations
+nvidia-smi       # Check NVIDIA driver installation
+nvcc --version   # Check CUDA compiler version
+ollama --version # Check Ollama version
+btop --version   # Check btop system monitor version
+uv --version     # Check uv package manager version
 ```
 
 ### Terraform/OpenTofu Usage
@@ -185,15 +203,29 @@ tofu plan -var-file=terraform.tfvars
 
 # Apply changes
 tofu apply -var-file=terraform.tfvars
+
+# Validate configuration
+cd dns/[component] && terraform validate
 ```
 
-### Docker Management
+### Container Management
 
+- We use podman with podman-docker compatibility layer
+- Always use Docker CLI commands (not podman commands) for consistency
+  ```bash
+  # Examples of preferred commands
+  docker ps
+  docker compose up -d
+  docker build
+  ```
+- The underlying implementation uses podman but we use docker CLI syntax
 - Compose files used for multi-container services
 - Watchtower handles automatic updates
 - Service-specific compose files in templates directories
 - Conditional IPv6 networking based on host capabilities
 - Network configuration through docker-compose templates
+- For GPU access, avoid using docker/podman compose and use direct `docker run` commands with systemd services instead
+- When GPU access is needed, use `--device nvidia.com/gpu=all --security-opt=label=disable` flags in `docker run` commands
 
 ### Network Management
 
