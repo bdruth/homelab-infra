@@ -206,7 +206,17 @@ tofu apply -var-file=terraform.tfvars
 
 # Validate configuration
 cd dns/[component] && terraform validate
+
+# Format terraform files
+tofu fmt -recursive infrastructure/
 ```
+
+### Code Quality Tools
+
+- **pre-commit**: Used for automated checks before commits
+  - Automatically runs `tofu fmt` on `.tf` files to ensure consistent formatting
+  - Configured in the repository root via `.pre-commit-config.yaml`
+  - Other hooks can be added as needed for additional checks
 
 ### Container Management
 

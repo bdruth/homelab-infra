@@ -283,6 +283,23 @@ graph TD
      when: install_service | bool
    ```
 
+## Code Quality Tools
+
+### Pre-commit Hooks
+
+**Pattern**: Automated Quality Checks on Commit
+
+- Pre-commit hooks run automatically when committing changes
+- Different hooks perform specific checks based on file types
+- Prevents committing code that doesn't meet quality standards
+- Provides immediate feedback to developers
+
+**Implementation**:
+
+- Repository-level configuration in `.pre-commit-config.yaml`
+- OpenTofu/Terraform formatting with `tofu fmt` on `.tf` files
+- Hooks can be added or modified as project requirements evolve
+
 ## Application of Design Patterns
 
 1. **Infrastructure as Code** - Everything defined as code in version-controlled repositories
@@ -294,6 +311,7 @@ graph TD
 7. **Container-Based Services** - Services isolated in containers where appropriate
 8. **Automated Updates** - Watchtower manages container updates automatically
 9. **Adaptive Configuration** - Services configure themselves based on host capabilities (e.g., IPv6 support)
+10. **Code Quality Automation** - Tools like pre-commit ensure consistent code formatting and quality
 
 ## Network Configuration Patterns
 

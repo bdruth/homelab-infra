@@ -14,6 +14,13 @@ Key areas of active development:
 
 ## Recent Changes
 
+### Code Quality Tooling: pre-commit with tofu fmt
+
+- Added pre-commit configuration to automate Terraform/OpenTofu code formatting
+- Set up a local hook to run `tofu fmt` on all `.tf` files during commit
+- Applied consistent formatting to all existing Terraform files using `tofu fmt -recursive`
+- Added documentation on the code quality tools to the memory bank
+
 ### CI/CD Migration: Drone to Gitea Actions
 
 - Converted the DNS infrastructure deployment from Drone CI to Gitea Actions

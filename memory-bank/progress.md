@@ -93,6 +93,7 @@
 | ------------------------- | -------------- | -------- | ------------------------------------------- |
 | **Gitea Act Runners**     | 🔄 In Progress | High     | Implementing GitHub Actions compatibility   |
 | **Watchtower**            | 🔄 In Progress | Medium   | Automating container updates                |
+| **Pre-commit hooks**      | ✅ Complete    | N/A      | Set up for Terraform/OpenTofu formatting    |
 | **CLAUDE.md Integration** | ✅ Complete    | N/A      | Integrated guidance into memory bank        |
 | **Disk Monitoring**       | ✅ Complete    | N/A      | Integrated into main ansible infrastructure |
 | **UPS Monitoring**        | ✅ Complete    | N/A      | Working as expected                         |
