@@ -18,7 +18,7 @@
 
 # InfluxDB output
 [[outputs.influxdb]]
-  urls = ["{{ influxdb_url | default('http://localhost:8086') }}"]
+  urls = ["http://{{ influxdb_host | default('localhost') }}:{{ influxdb_port | default(8086) }}"]
   database = "{{ influxdb_database | default('telegraf') }}"
   skip_database_creation = false
   timeout = "5s"
@@ -29,8 +29,8 @@
 
 # Disk usage monitoring
 [[inputs.disk]]
-{% if ignored_filesystems | default([]) | length > 0 %}
-  ignore_fs = [{% for fs in ignored_filesystems %}"{{ fs }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+{% if ignore_fs_types | default([]) | length > 0 %}
+  ignore_fs = [{% for fs in ignore_fs_types %}"{{ fs }}"{% if not loop.last %}, {% endif %}{% endfor %}]
 {% endif %}
 {% if monitor_mount_points | default([]) | length > 0 %}
   # Only monitor specific mount points
