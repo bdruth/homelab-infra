@@ -1,20 +1,18 @@
-name: DNS Infrastructure Deployment
+name: Infrastructure Deployment Workflow
 
 on:
   push:
     branches: [main]
     paths:
-      - "ansible/dnsdist/**"
-      - "ansible/pihole/**"
-      - "dns/**"
-      - "modules/**"
+      - "infrastructure/**"
       - "deploy.sh"
       - "pkgx-deploy.sh"
-      - "setup-ansible.sh"
-      - ".gitea/workflows/dns-infrastructure-deploy.yml"
+      - "infra-deploy.sh"
+      - "setup-services.sh"
+      - ".gitea/workflows/infrastructure-deploy.yml"
 
 jobs:
-  dns-infrastructure-deploy:
+  infrastructure-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -30,19 +28,34 @@ jobs:
       - name: setup-pkgx
         uses: pkgxdev/setup@v4
         with:
-          +: ssh
+          +: tofu
+            ssh
+            python
 
       - name: Install dependencies
         run: |
           apt-get update
-          apt-get install -y dnsutils netcat-traditional
+          apt-get install -y dnsutils netcat-traditional git-crypt
 
-      - name: Deploy DNS infrastructure
+      - name: Install OpenTofu via tofuenv
+        run: |
+          git clone --depth=1 https://github.com/tofuutils/tofuenv.git ~/.tofuenv
+          export PATH="$HOME/.tofuenv/bin:$PATH"
+          tofuenv install latest
+          tofuenv use latest
+          tofu --version
+
+      - name: Deploy infrastructure
         run: |
           mkdir -p ~/.ssh
           echo -n '${{ secrets.SSH_PRIVATE_KEY }}' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
+          # Full deployment still uses the deploy.sh script which deploys DNS components
           ./pkgx-deploy.sh
+
+          # Individual infrastructure components can be planned
+          ./infra-deploy.sh dns-ha plan
+          ./infra-deploy.sh ups plan
         env:
           PM_API_TOKEN_SECRET: ${{ secrets.PM_API_TOKEN_SECRET }}
           PM_API_TOKEN_ID: ${{ secrets.PM_API_TOKEN_ID }}
@@ -59,5 +72,5 @@ jobs:
           PUSHOVER_USER: ${{ secrets.PUSHOVER_USER }}
         with:
           status: ${{ job.status }}
-          title: "DNS Infrastructure Deployment"
+          title: "Infrastructure Deployment"
           message: "${{ job.status }} - ${{ github.actor }} - ${{ github.event.head_commit.message }}"
