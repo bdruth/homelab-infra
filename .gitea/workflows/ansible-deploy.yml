@@ -43,7 +43,7 @@ jobs:
           # Setup the environment first, as we'll need it regardless of deployment type
           apt-get update && apt-get install -y dnsutils netcat-traditional
 
-          pkgx ./ansible-deploy.sh --playbook=ansible/infrastructure.yml --private-key <(echo -n '${{ secrets.SSH_PRIVATE_KEY }}')
+          ./ansible-pkgx-deploy.sh --playbook=ansible/infrastructure.yml --private-key <(echo -n '${{ secrets.SSH_PRIVATE_KEY }}')
 
       - name: Install dependencies
         run: |
