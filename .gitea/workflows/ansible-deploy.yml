@@ -1,4 +1,4 @@
-name: Cache Test
+name: Ansible Deployment Workflow
 
 on:
   push:
@@ -11,7 +11,7 @@ on:
       - ".gitea/workflows/ansible-deploy.yml"
 
 jobs:
-  test-cache:
+  ansible-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
