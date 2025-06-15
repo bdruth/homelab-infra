@@ -12,6 +12,7 @@
         _run_watchtower: "{{ 'watchtower' in host_roles | default([]) }}"
         _run_nvidia_gpu: "{{ 'nvidia-gpu' in host_roles | default([]) }}"
         _run_drone: "{{ 'drone' in host_roles | default([]) }}"
+        _run_disk_monitoring: "{{ 'disk-monitoring' in host_roles | default([]) }}"
         install_watchtower: "{{ 'watchtower' in host_roles | default([]) or 'nvidia-gpu' in host_roles | default([]) }}"
 
     - name: Debug role facts
@@ -22,6 +23,7 @@
           - "_run_watchtower: {{ _run_watchtower }}"
           - "_run_nvidia_gpu: {{ _run_nvidia_gpu }}"
           - "_run_drone: {{ _run_drone }}"
+          - "_run_disk_monitoring: {{ _run_disk_monitoring }}"
           - "install_watchtower: {{ install_watchtower }}"
 
   roles:
@@ -33,3 +35,5 @@
       when: _run_nvidia_gpu | bool
     - role: drone
       when: _run_drone | bool
+    - role: disk-monitoring
+      when: _run_disk_monitoring | bool

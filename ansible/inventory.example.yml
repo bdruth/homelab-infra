@@ -4,17 +4,20 @@
 
 all:
   hosts:
-    # GPU server with UPS monitoring and container updates
+    # GPU server with UPS monitoring, container updates, and disk monitoring
     gpu-server.example.com:
       ansible_host: 192.168.1.100
-      host_roles: [nut, watchtower, nvidia-gpu]
+      host_roles: [nut, watchtower, nvidia-gpu, disk-monitoring]
       # NUT configuration
       nut_mode: netclient
       nut_system: ups@ups-server.example.com
       shutdown_priority: primary
-      # Watchtower configuration  
+      # Watchtower configuration
       watchtower_exclude_containers: [postgres]
       watchtower_schedule: "0 0 3 * * *"
+      # Disk monitoring configuration
+      influxdb_url: "http://influxdb.example.com:8086"
+      influxdb_database: "disk_monitoring"
 
     # Dedicated UPS server
     ups-server.example.com:
@@ -22,7 +25,7 @@ all:
       host_roles: [nut]
       # NUT configuration
       nut_mode: netserver
-      
+
     # Web server with container updates only
     web-server.example.com:
       ansible_host: 192.168.1.102

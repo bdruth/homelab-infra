@@ -1,0 +1,7 @@
+---
+# Handlers for disk-monitoring role
+
+- name: Restart telegraf
+  ansible.builtin.systemd:
+    name: telegraf
+    state: restarted

@@ -69,8 +69,8 @@ jobs:
             
             # Check for each role directory and add to deploy list if changed
             git diff --name-only HEAD~1 \
-              | grep -E "^ansible/(watchtower|nvidia-gpu|nut|drone|drone-runner-exec)" \
-              | sed -E 's#^ansible/(watchtower|nvidia-gpu|nut|drone|drone-runner-exec).*#ansible/\1-only.yml#' \
+              | grep -E "^ansible/(watchtower|nvidia-gpu|nut|drone|drone-runner-exec|disk-monitoring)" \
+              | sed -E 's#^ansible/(watchtower|nvidia-gpu|nut|drone|drone-runner-exec|disk-monitoring).*#ansible/\1-only.yml#' \
               | sort -u > .deploy_playbooks
 
             # Count how many playbooks will be deployed
