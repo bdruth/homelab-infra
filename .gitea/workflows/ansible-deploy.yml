@@ -105,3 +105,14 @@ jobs:
             echo "Deploying $playbook"
             ./ansible-pkgx-deploy.sh --playbook="$playbook" "--private-key id_rsa.tmp"
           done < .deploy_playbooks
+
+      - name: pushover-actions
+        uses: umahmood/pushover-actions@main
+        if: failure()
+        env:
+          PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
+          PUSHOVER_USER: ${{ secrets.PUSHOVER_USER }}
+        with:
+          status: ${{ job.status }}
+          title: "${{ github.workflow }} - ${{ github.event_name }} - ${{ github.ref }}"
+          message: "${{ job.status }} - ${{ github.actor }} - ${{ github.event.head_commit.message }}"
