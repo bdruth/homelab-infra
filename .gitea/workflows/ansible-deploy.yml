@@ -1,17 +1,17 @@
-name: Ansible Deployment Workflow
+name: Services Deployment Workflow
 
 on:
   push:
     branches: [main]
     paths:
-      - "ansible/**"
-      - "setup-ansible.sh"
-      - "ansible-deploy.sh"
-      - "ansible-pkgx-deploy.sh"
+      - "services/**"
+      - "setup-services.sh"
+      - "services-deploy.sh"
+      - "services-pkgx-deploy.sh"
       - ".gitea/workflows/ansible-deploy.yml"
 
 jobs:
-  ansible-deploy:
+  services-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -24,7 +24,7 @@ jobs:
       #   uses: actions/cache@v3
       #   with:
       #     path: ~/.cache
-      #     key: ${{ runner.os }}-deps-${{ hashFiles('**/ansible-pkgx-deploy.sh', '**/setup-ansible.sh') }}
+      #     key: ${{ runner.os }}-deps-${{ hashFiles('**/services-pkgx-deploy.sh', '**/setup-services.sh') }}
       #     restore-keys: |
       #       ${{ runner.os }}-deps-
 
@@ -50,8 +50,8 @@ jobs:
         id: check_changes
         run: |
           echo "Checking for relevant file changes..."
-          if git diff --name-only HEAD~1 | grep -E "^(ansible/|setup-ansible\.sh|ansible-deploy\.sh|ansible-pkgx-deploy\.sh|ansible-deploy\.yml)"; then
-            echo "✅ Ansible files changed, proceeding with deployment"
+          if git diff --name-only HEAD~1 | grep -E "^(services/|setup-services\.sh|services-deploy\.sh|services-pkgx-deploy\.sh|ansible-deploy\.yml)"; then
+            echo "✅ Services files changed, proceeding with deployment"
             
             # Create a file to track which playbooks should be deployed
             rm -f .deploy_playbooks 2>/dev/null || true
@@ -60,8 +60,8 @@ jobs:
             echo "Detecting which roles were changed..."
 
             # Check for changes in common files that should trigger full deployment
-            if git diff --name-only HEAD~1 | grep -E "^(ansible/inventory\.yml|ansible/infrastructure\.yml|ansible/ansible\.cfg|setup-ansible\.sh|ansible-deploy\.sh|ansible-pkgx-deploy\.sh)"; then
-              echo "✅ Common Ansible files changed, will run full deployment"
+            if git diff --name-only HEAD~1 | grep -E "^(services/inventory\.yml|services/infrastructure\.yml|services/ansible\.cfg|setup-services\.sh|services-deploy\.sh|services-pkgx-deploy\.sh)"; then
+              echo "✅ Common services files changed, will run full deployment"
               echo "FULL_DEPLOYMENT" > .deploy_playbooks
               echo "::set-output name=deploy_full::yes"
               exit 0
@@ -69,8 +69,8 @@ jobs:
             
             # Check for each role directory and add to deploy list if changed
             git diff --name-only HEAD~1 \
-              | grep -E "^ansible/(disk-monitoring|drone|gitea|nut|nvidia-gpu|watchtower)" \
-              | sed -E 's#^ansible/(disk-monitoring|drone-runner-exec|drone|gitea-act-runner|gitea|nut|nvidia-gpu|watchtower).*#ansible/\1-only.yml#' \
+              | grep -E "^services/(disk-monitoring|drone|gitea|nut|nvidia-gpu|watchtower)" \
+              | sed -E 's#^services/(disk-monitoring|drone-runner-exec|drone|gitea-act-runner|gitea|nut|nvidia-gpu|watchtower).*#services/\1-only.yml#' \
               | sort -u > .deploy_playbooks
 
             # Count how many playbooks will be deployed
@@ -93,7 +93,7 @@ jobs:
           echo -n '${{ secrets.SSH_PRIVATE_KEY }}' > id_rsa.tmp
           chmod 600 id_rsa.tmp
 
-          ./ansible-pkgx-deploy.sh --playbook=ansible/infrastructure.yml "--private-key id_rsa.tmp"
+          ./services-pkgx-deploy.sh --playbook=services/infrastructure.yml "--private-key id_rsa.tmp"
 
       - name: deploy-changed-roles
         if: steps.check_changes.outputs.deploy_partial == 'yes'
@@ -103,7 +103,7 @@ jobs:
 
           while IFS= read -r playbook; do
             echo "Deploying $playbook"
-            ./ansible-pkgx-deploy.sh --playbook="$playbook" "--private-key id_rsa.tmp"
+            ./services-pkgx-deploy.sh --playbook="$playbook" "--private-key id_rsa.tmp"
           done < .deploy_playbooks
 
       - name: pushover-actions
