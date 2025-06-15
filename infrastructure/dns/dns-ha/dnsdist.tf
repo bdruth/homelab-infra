@@ -17,7 +17,7 @@ locals {
 
 resource "null_resource" "install_dnsdist" {
   triggers = {
-    ansible_changes = sha1(join("", [for f in sort(fileset("${path.module}/../../ansible/dnsdist", "**")): filesha1("${path.module}/../../ansible/dnsdist/${f}")]))
+    ansible_changes = sha1(join("", [for f in sort(fileset("${path.module}/../../services/dnsdist", "**")): filesha1("${path.module}/../../services/dnsdist/${f}")]))
     container_change = module.dns_ha_lxc.lxc_id
     dns_ip_addrs = jsonencode(local.dns_ip_addrs)
   }
@@ -27,7 +27,7 @@ resource "null_resource" "install_dnsdist" {
     working_dir = path.module
   }
   provisioner "local-exec" {
-    command     = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${module.dns_ha_lxc.lxc_ip_addr},' -u root --private-key ${var.ssh_priv_key_path} ../../ansible/dnsdist/main.yml -e '{\"dns_ip_addrs\":${jsonencode(local.dns_ip_addrs)}}'"
+    command     = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${module.dns_ha_lxc.lxc_ip_addr},' -u root --private-key ${var.ssh_priv_key_path} ../../services/dnsdist/main.yml -e '{\"dns_ip_addrs\":${jsonencode(local.dns_ip_addrs)}}'"
     working_dir = path.module
   }
 }
