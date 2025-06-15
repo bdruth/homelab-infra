@@ -45,6 +45,8 @@ steps:
         from_secret: PIHOLE_WEB_PASSWORD_HASH
       DNSDIST_CONSOLE_KEY:
         from_secret: DNSDIST_CONSOLE_KEY
+      drone_ssh_priv_key:
+        from_secret: drone_ssh_priv_key
 
 ---
 kind: pipeline
