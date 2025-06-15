@@ -33,18 +33,18 @@ variable "ssh_public_keys" {
 
 variable "lxc_storage_pool" {
   description = "LXC storage pool to use for containers"
-  type         = string
-  default      = "local"
+  type        = string
+  default     = "local"
 }
 
 variable "lxc_onboot" {
   description = "LXC containers starts on boot of proxmox, true or false"
-  type          = bool
-  default       = false
+  type        = bool
+  default     = false
 }
 
 variable "lxc_rootfs_size" {
   description = "Size of the rootfs in GB for LXC containers. Default is 4GB."
-  type       = string
-  default    = "4G"
+  type        = string
+  default     = "4G"
 }

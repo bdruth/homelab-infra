@@ -1,16 +1,16 @@
 module "ups_monitoring_lxc" {
-source = "../modules/lxc"
+  source       = "../modules/lxc"
   lxc_hostname = "ups"
-  lxc_ip_addr = var.ups_monitoring_ip_addr
-  lxc_gw_addr = var.gw_addr
-  lxc_memory = "512"
-  lxc_onboot = true
+  lxc_ip_addr  = var.ups_monitoring_ip_addr
+  lxc_gw_addr  = var.gw_addr
+  lxc_memory   = "512"
+  lxc_onboot   = true
 }
 
 resource "null_resource" "install_nut_ansible" {
   triggers = {
     ansible_conf_hash = filesha256("${path.module}/../../../services/nut/main.yml")
-    container_change = module.ups_monitoring_lxc.lxc_id
+    container_change  = module.ups_monitoring_lxc.lxc_id
   }
 
   provisioner "local-exec" {

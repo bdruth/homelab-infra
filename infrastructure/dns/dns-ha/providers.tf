@@ -36,11 +36,11 @@ provider "aws" {
 
 locals {
   remote_state_config_defaults = {
-    region = "main"
+    region                      = "main"
     skip_credentials_validation = true
     skip_metadata_api_check     = true
     skip_requesting_account_id  = true
-    use_path_style           = true
+    use_path_style              = true
     skip_region_validation      = true
     endpoints = {
       s3 = var.s3_backend_endpoint
@@ -53,7 +53,7 @@ data "terraform_remote_state" "pihole_blue" {
 
   config = merge(local.remote_state_config_defaults, {
     bucket = var.s3_bucket_tf_state
-    key = var.pihole_blue_remote_state_key
+    key    = var.pihole_blue_remote_state_key
   })
 }
 
@@ -62,6 +62,6 @@ data "terraform_remote_state" "pihole_green" {
 
   config = merge(local.remote_state_config_defaults, {
     bucket = var.s3_bucket_tf_state
-    key = var.pihole_green_remote_state_key
+    key    = var.pihole_green_remote_state_key
   })
 }

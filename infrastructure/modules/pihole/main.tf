@@ -1,12 +1,12 @@
 module "pihole_lxc" {
-  source = "../lxc"
-  lxc_hostname = "pihole-${var.pihole_suffix}"
-  lxc_ip_addr = var.ip_addr
-  lxc_gw_addr = var.gw_addr
+  source          = "../lxc"
+  lxc_hostname    = "pihole-${var.pihole_suffix}"
+  lxc_ip_addr     = var.ip_addr
+  lxc_gw_addr     = var.gw_addr
   ssh_public_keys = var.ssh_public_keys
-  lxc_onboot = true
+  lxc_onboot      = true
   lxc_rootfs_size = "8G"
-  lxc_memory = "1024"
+  lxc_memory      = "1024"
 }
 
 data "http" "pihole_latest_release" {
@@ -20,16 +20,16 @@ data "aws_s3_object" "pihole_teleporter_backup" {
 
 locals {
   pihole_latest_release = jsondecode(data.http.pihole_latest_release.response_body).name
-  install_backup = var.install_backup_crontab ? "-e '{\"install_backup_crontab\": true}'" : ""
+  install_backup        = var.install_backup_crontab ? "-e '{\"install_backup_crontab\": true}'" : ""
 }
 
 resource "null_resource" "run_ansible_playbook" {
   triggers = {
-    pihole_version    = local.pihole_latest_release
+    pihole_version         = local.pihole_latest_release
     teleporter_backup_hash = data.aws_s3_object.pihole_teleporter_backup.etag
-    container_change = module.pihole_lxc.lxc_id
-    ansible_changes = sha1(join("", [for f in sort(fileset("${path.module}/../../../services/pihole", "**")): filesha1("${path.module}/../../../services/pihole/${f}")]))
-    install_backup = local.install_backup
+    container_change       = module.pihole_lxc.lxc_id
+    ansible_changes        = sha1(join("", [for f in sort(fileset("${path.module}/../../../services/pihole", "**")) : filesha1("${path.module}/../../../services/pihole/${f}")]))
+    install_backup         = local.install_backup
   }
 
   provisioner "local-exec" {
@@ -46,7 +46,7 @@ resource "null_resource" "run_ansible_maintenance_tag" {
   # triggers = {
   #   always_run = "${timestamp()}"
   # }
-  depends_on = [ null_resource.run_ansible_playbook ]
+  depends_on = [null_resource.run_ansible_playbook]
 
   provisioner "local-exec" {
     command     = "until nc -zv ${module.pihole_lxc.lxc_ip_addr} 22; do echo 'Waiting for SSH to be available...'; sleep 5; done"

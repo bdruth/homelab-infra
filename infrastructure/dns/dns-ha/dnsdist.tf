@@ -1,11 +1,11 @@
 module "dns_ha_lxc" {
-  source = "../../modules/lxc"
+  source       = "../../modules/lxc"
   lxc_hostname = "dns-ha"
-  lxc_ip_addr = var.dns_ip_addr
-  lxc_gw_addr = var.gw_addr
-  lxc_memory = "512"
-  lxc_onboot = true
-  lxc_hwaddr = "BC:24:11:27:F6:81"
+  lxc_ip_addr  = var.dns_ip_addr
+  lxc_gw_addr  = var.gw_addr
+  lxc_memory   = "512"
+  lxc_onboot   = true
+  lxc_hwaddr   = "BC:24:11:27:F6:81"
 }
 
 locals {
@@ -17,9 +17,9 @@ locals {
 
 resource "null_resource" "install_dnsdist" {
   triggers = {
-    ansible_changes = sha1(join("", [for f in sort(fileset("${path.module}/../../../services/dnsdist", "**")): filesha1("${path.module}/../../../services/dnsdist/${f}")]))
+    ansible_changes  = sha1(join("", [for f in sort(fileset("${path.module}/../../../services/dnsdist", "**")) : filesha1("${path.module}/../../../services/dnsdist/${f}")]))
     container_change = module.dns_ha_lxc.lxc_id
-    dns_ip_addrs = jsonencode(local.dns_ip_addrs)
+    dns_ip_addrs     = jsonencode(local.dns_ip_addrs)
   }
 
   provisioner "local-exec" {

@@ -20,7 +20,7 @@ variable "ssh_public_keys" {
 
 variable "ssh_priv_key_path" {
   description = "path to SSH private key"
-  type = string
+  type        = string
 }
 
 variable "install_backup_crontab" {

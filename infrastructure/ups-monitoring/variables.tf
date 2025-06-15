@@ -5,25 +5,25 @@ variable "gw_addr" {
 
 variable "ups_monitoring_ip_addr" {
   description = "IP addr for DNS HA node"
-  type = string
+  type        = string
 }
 
 variable "ssh_priv_key_path" {
   description = "path to SSH private key"
-  type = string
+  type        = string
 }
 
 variable "s3_backend_endpoint" {
   description = "endpoint URL to alternative s3 backend"
-  type = string
+  type        = string
 }
 
 variable "s3_bucket_tf_state" {
   description = "bucket for IaC state"
-  type = string
+  type        = string
 }
 
 variable "proxmox_api_url" {
   description = "API URL to manage proxmox LXC resources"
-  type = string
+  type        = string
 }

@@ -18,7 +18,7 @@ resource "proxmox_lxc" "container" {
     nesting = true
   }
   hostname = var.lxc_hostname
-  memory = var.lxc_memory
+  memory   = var.lxc_memory
 
   network {
     name   = "eth0"
