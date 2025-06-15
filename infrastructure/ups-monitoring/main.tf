@@ -9,7 +9,7 @@ source = "../modules/lxc"
 
 resource "null_resource" "install_nut_ansible" {
   triggers = {
-    ansible_conf_hash = filesha256("${path.module}/../../services/nut/main.yml")
+    ansible_conf_hash = filesha256("${path.module}/../../../services/nut/main.yml")
     container_change = module.ups_monitoring_lxc.lxc_id
   }
 
@@ -18,7 +18,7 @@ resource "null_resource" "install_nut_ansible" {
     working_dir = path.module
   }
   provisioner "local-exec" {
-    command     = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${module.ups_monitoring_lxc.lxc_ip_addr},' -u root --private-key ${var.ssh_priv_key_path} ../../services/nut/main.yml"
+    command     = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${module.ups_monitoring_lxc.lxc_ip_addr},' -u root --private-key ${var.ssh_priv_key_path} ../../../services/nut/main.yml"
     working_dir = path.module
   }
 }
