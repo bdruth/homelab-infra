@@ -9,7 +9,7 @@ on:
       - "infrastructure/dns/**"
       - "infrastructure/modules/**"
       - "deploy.sh"
-      - "infra-deploy.sh"
+      - "pkgx-deploy.sh"
       - "setup-services.sh"
       - ".gitea/workflows/infrastructure-deploy.yml"
 
@@ -42,8 +42,7 @@ jobs:
           mkdir -p ~/.ssh
           echo -n '${{ secrets.SSH_PRIVATE_KEY }}' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          # Full deployment still uses the deploy.sh script which deploys DNS components
-          ./infra-deploy.sh
+          ./pkgx-deploy.sh
         env:
           PM_API_TOKEN_SECRET: ${{ secrets.PM_API_TOKEN_SECRET }}
           PM_API_TOKEN_ID: ${{ secrets.PM_API_TOKEN_ID }}
