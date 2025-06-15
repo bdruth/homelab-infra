@@ -108,11 +108,11 @@ jobs:
 
       - name: pushover-actions
         uses: umahmood/pushover-actions@main
-        if: always()
+        if: failure()
         env:
           PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
           PUSHOVER_USER: ${{ secrets.PUSHOVER_USER }}
         with:
           status: ${{ job.status }}
-          title: "${{ github.workflow }} - ${{ github.event_name }} - ${{ github.ref }}"
+          title: "${{ github.workflow }}"
           message: "${{ job.status }} - ${{ github.actor }} - ${{ github.event.head_commit.message }}"
