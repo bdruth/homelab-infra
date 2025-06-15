@@ -49,7 +49,7 @@ This document captures the intricate rules and patterns for creating Grafana ale
 
 ### Data States
 
-- **`noDataState`**: 
+- **`noDataState`**:
   - `"NoData"`: Default, shows as "No Data"
   - `"Alerting"`: Triggers alert when no data received (useful for staleness detection)
   - `"OK"`: Treats no data as healthy state
