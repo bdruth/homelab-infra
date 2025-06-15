@@ -51,15 +51,15 @@
 
 - name: Force systemd reload
   ansible.builtin.systemd:
-    daemon_reload: yes
+    daemon_reload: true
   when: install_drone | bool and service_file_updated is changed
 
 - name: Enable and start drone service
   ansible.builtin.systemd:
     name: drone
-    enabled: yes
+    enabled: true
     state: "{{ 'restarted' if service_file_updated is changed or drone_config_updated is changed else 'started' }}"
-    daemon_reload: yes
+    daemon_reload: true
   register: drone_service
   when: install_drone | bool
 

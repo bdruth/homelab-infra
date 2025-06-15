@@ -1,7 +1,7 @@
 ---
 - name: Setup dnsdist
   hosts: all
-  become: yes
+  become: true
   vars_files:
     - vars/main.yml
   vars:
@@ -15,7 +15,7 @@
 
     - name: Update apt cache
       apt:
-        update_cache: yes
+        update_cache: true
 
     - name: Install APT packages
       apt:
@@ -36,7 +36,7 @@
         dest: "{{ dnsdist_conf_path }}"
         owner: root
         group: root
-        mode: '0644'
+        mode: "0644"
       register: dnsdist_conf
 
     - name: Make sure custom lua path dir exists
@@ -50,7 +50,7 @@
         dest: "{{ custom_lua_path }}/orderedwrandom.lua"
         owner: root
         group: root
-        mode: '0644'
+        mode: "0644"
       register: orderedwrandom_lua
 
     - name: restart dnsdist

@@ -5,7 +5,7 @@
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
-    mode: '0755'
+    mode: "0755"
     owner: root
     group: root
   loop:
@@ -18,7 +18,7 @@
     dest: "{{ whisper_asr_install_dir }}/config.yml"
     owner: root
     group: root
-    mode: '0644'
+    mode: "0644"
   register: whisper_config_file
 
 - name: Create systemd service for whisper ASR
@@ -27,18 +27,18 @@
     dest: /etc/systemd/system/whisper-asr.service
     owner: root
     group: root
-    mode: '0644'
+    mode: "0644"
   register: whisper_service_file
   notify: Reload systemd
 
 - name: Enable and start whisper ASR service
   ansible.builtin.systemd:
     name: whisper-asr
-    enabled: yes
+    enabled: true
     state: started
-    daemon_reload: yes
+    daemon_reload: true
   ignore_errors: "{{ ansible_check_mode }}"
-  
+
 - name: Restart whisper ASR service if configuration changed
   ansible.builtin.systemd:
     name: whisper-asr

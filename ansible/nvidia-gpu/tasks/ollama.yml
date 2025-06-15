@@ -44,9 +44,9 @@
 - name: Enable Ollama service
   ansible.builtin.systemd:
     name: ollama
-    enabled: yes
+    enabled: true
     state: started
-    daemon_reload: yes
+    daemon_reload: true
   when:
     - install_ollama | bool
     - ollama_version_check.rc == 0 or ollama_install is defined

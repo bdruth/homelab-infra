@@ -12,14 +12,14 @@
       template:
         src: pihole.toml.j2
         dest: /tmp/pihole.toml.test
-      check_mode: no
-      
+      check_mode: false
+
     - name: Display generated pihole.toml
       command: cat /tmp/pihole.toml.test
       register: pihole_toml_content
       changed_when: false
-      check_mode: no
-      
+      check_mode: false
+
     - name: Show pihole.toml content
       debug:
         var: pihole_toml_content.stdout_lines

@@ -12,7 +12,7 @@
   retries: 15
   delay: 4
   until: user_watchtower_result.rc == 0
-  become: yes
+  become: true
   become_user: "{{ item.username }}"
   tags: [user-watchtower-test]
 
@@ -29,7 +29,7 @@
   register: user_watchtower_config_result
   changed_when: false
   ignore_errors: true
-  become: yes
+  become: true
   become_user: "{{ item.username }}"
   when: user_watchtower_result.rc == 0
   tags: [user-watchtower-test]

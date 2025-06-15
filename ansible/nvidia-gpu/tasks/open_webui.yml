@@ -5,7 +5,7 @@
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
-    mode: '0755'
+    mode: "0755"
     owner: root
     group: root
   loop:
@@ -18,18 +18,18 @@
     dest: /etc/systemd/system/open-webui.service
     owner: root
     group: root
-    mode: '0644'
+    mode: "0644"
   register: open_webui_service_file
   notify: Reload systemd
 
 - name: Enable and start Open WebUI service
   ansible.builtin.systemd:
     name: open-webui
-    enabled: yes
+    enabled: true
     state: started
-    daemon_reload: yes
+    daemon_reload: true
   ignore_errors: "{{ ansible_check_mode }}"
-  
+
 - name: Restart Open WebUI service if service file changed
   ansible.builtin.systemd:
     name: open-webui

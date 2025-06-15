@@ -11,10 +11,10 @@
 - name: Fail if docker-compose is not available
   ansible.builtin.fail:
     msg: "Docker compose is not available. Please ensure docker and docker-compose are properly installed."
-  when: 
+  when:
     - install_watchtower | bool
     - docker_compose_check.rc != 0
-    
+
 - name: Create watchtower directory
   ansible.builtin.file:
     path: "{{ watchtower_install_dir }}"
@@ -44,15 +44,15 @@
 
 - name: Force systemd reload
   ansible.builtin.systemd:
-    daemon_reload: yes
+    daemon_reload: true
   when: install_watchtower | bool and service_file_updated is changed
 
 - name: Enable and start watchtower service
   ansible.builtin.systemd:
     name: watchtower
-    enabled: yes
+    enabled: true
     state: "{{ 'restarted' if service_file_updated is changed or watchtower_config_updated is changed else 'started' }}"
-    daemon_reload: yes
+    daemon_reload: true
   register: watchtower_service
   when: install_watchtower | bool
 
@@ -70,6 +70,6 @@
 - name: Setup user-space watchtower instances
   include_tasks: user-watchtower.yml
   loop: "{{ watchtower_user_instances }}"
-  when: 
+  when:
     - install_watchtower_user | bool
     - watchtower_user_instances | length > 0

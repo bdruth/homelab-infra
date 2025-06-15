@@ -3,9 +3,9 @@
 # This playbook maintains compatibility with terraform usage
 # while enabling role-based infrastructure composition
 
-- name: Setup nut UPS monitoring  
+- name: Setup nut UPS monitoring
   hosts: all
-  become: yes
+  become: true
   vars_files:
     - vars/main.yml
     - group_vars/all.yml

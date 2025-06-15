@@ -28,7 +28,7 @@
       ansible.builtin.unarchive:
         src: "{{ btop_temp_dir.path }}/btop.tbz"
         dest: "{{ btop_temp_dir.path }}"
-        remote_src: yes
+        remote_src: true
 
     - name: Install btop
       ansible.builtin.command:

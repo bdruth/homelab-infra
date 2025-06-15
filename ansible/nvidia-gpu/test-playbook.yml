@@ -147,7 +147,7 @@
         - nvidia_install_gpu_drivers is defined and nvidia_install_gpu_drivers | bool
         - whisper_asr_result.rc is defined and whisper_asr_result.rc == 0
         - whisper_http_check.status is defined and whisper_http_check.status == 200
-        
+
     - name: Wait for Open WebUI container to start
       ansible.builtin.shell: docker ps | grep open-webui
       register: open_webui_result
@@ -198,7 +198,7 @@
         - nvidia_install_gpu_drivers is defined and nvidia_install_gpu_drivers | bool
         - open_webui_result.rc is defined and open_webui_result.rc == 0
         - open_webui_http_check.status is defined and open_webui_http_check.status == 200
-        
+
     - name: Check Open WebUI Web RAG configuration
       ansible.builtin.shell: >
         docker inspect open-webui | grep -E "ENABLE_RAG_WEB_SEARCH|ENABLE_SEARCH_QUERY_GENERATION|RAG_WEB_SEARCH_ENGINE|RAG_WEB_LOADER_ENGINE"
@@ -209,7 +209,7 @@
         - install_open_webui is defined and install_open_webui | bool
         - open_webui_result.rc is defined and open_webui_result.rc == 0
         - open_webui_enable_rag_web_search is defined and open_webui_enable_rag_web_search | bool
-        
+
     - name: Display Open WebUI Web RAG configuration status
       ansible.builtin.debug:
         msg: "Open WebUI Web RAG configuration: {{ 'OK - Configured correctly' if open_webui_rag_config_result.rc is defined and open_webui_rag_config_result.rc == 0 else 'Not properly configured' }}"
@@ -217,7 +217,7 @@
         - install_open_webui is defined and install_open_webui | bool
         - open_webui_result.rc is defined and open_webui_result.rc == 0
         - open_webui_enable_rag_web_search is defined and open_webui_enable_rag_web_search | bool
-        
+
     - name: Check Open WebUI Image Generation configuration
       ansible.builtin.shell: >
         docker inspect open-webui | grep -E "COMFYUI_BASE_URL|ENABLE_IMAGE_GENERATION"
@@ -229,7 +229,7 @@
         - install_comfyui is defined and install_comfyui | bool
         - open_webui_result.rc is defined and open_webui_result.rc == 0
         - open_webui_enable_image_generation is defined and open_webui_enable_image_generation | bool
-        
+
     - name: Display Open WebUI Image Generation status
       ansible.builtin.debug:
         msg: "Open WebUI Image Generation: {{ 'OK - Configured correctly' if open_webui_image_gen_result.rc is defined and open_webui_image_gen_result.rc == 0 else 'Not properly configured' }}"
@@ -238,7 +238,7 @@
         - install_comfyui is defined and install_comfyui | bool
         - open_webui_result.rc is defined and open_webui_result.rc == 0
         - open_webui_enable_image_generation is defined and open_webui_enable_image_generation | bool
-        
+
     - name: Check GPT Researcher service status
       ansible.builtin.systemd:
         name: gpt-researcher
@@ -256,7 +256,7 @@
       register: gpt_researcher_journal
       changed_when: false
       ignore_errors: true
-      when: 
+      when:
         - install_gpt_researcher is defined and install_gpt_researcher | bool
         - gpt_researcher_service_status.status.ActiveState is defined and gpt_researcher_service_status.status.ActiveState != 'active'
 
@@ -286,14 +286,14 @@
       retries: 15
       delay: 4
       until: gpt_researcher_result.rc == 0
-      when: 
+      when:
         - install_gpt_researcher is defined and install_gpt_researcher | bool
         - gpt_researcher_service_status.status.ActiveState is defined and gpt_researcher_service_status.status.ActiveState == 'active'
 
     - name: Display GPT Researcher container status
       ansible.builtin.debug:
         msg: "GPT Researcher container status: {{ 'OK' if gpt_researcher_result.rc is defined and gpt_researcher_result.rc == 0 else 'Not running' }}"
-      when: 
+      when:
         - install_gpt_researcher is defined and install_gpt_researcher | bool
         - gpt_researcher_service_status.status.ActiveState is defined and gpt_researcher_service_status.status.ActiveState == 'active'
 
@@ -312,7 +312,7 @@
         - install_gpt_researcher is defined and install_gpt_researcher | bool
         - gpt_researcher_service_status.status.ActiveState is defined and gpt_researcher_service_status.status.ActiveState == 'active'
         - gpt_researcher_result.rc is defined and gpt_researcher_result.rc == 0
-        
+
     - name: Check if ComfyUI installation exists
       ansible.builtin.stat:
         path: "{{ comfyui_install_dir }}/main.py"
@@ -323,19 +323,19 @@
       ansible.builtin.debug:
         msg: "ComfyUI installation: {{ 'OK - Installed' if comfyui_install_check.stat.exists else 'Not properly installed' }}"
       when: install_comfyui is defined and install_comfyui | bool
-      
+
     - name: Check if Python virtual environment exists
       ansible.builtin.stat:
         path: "{{ comfyui_venv_path }}/bin/python"
       register: comfyui_venv_check
-      when: 
+      when:
         - install_comfyui is defined and install_comfyui | bool
         - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
 
     - name: Display Python venv status
       ansible.builtin.debug:
         msg: "ComfyUI Python venv: {{ 'OK - Environment setup' if comfyui_venv_check.stat.exists else 'Virtual environment missing' }}"
-      when: 
+      when:
         - install_comfyui is defined and install_comfyui | bool
         - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
 
@@ -345,7 +345,7 @@
       register: comfyui_cuda_result
       changed_when: false
       ignore_errors: true
-      become: yes
+      become: true
       become_user: "{{ comfyui_user }}"
       when:
         - install_comfyui is defined and install_comfyui | bool
@@ -369,7 +369,7 @@
         state: started
       register: comfyui_service_status
       ignore_errors: true
-      when: 
+      when:
         - install_comfyui is defined and install_comfyui | bool
         - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
         - comfyui_venv_check.stat.exists is defined and comfyui_venv_check.stat.exists
@@ -380,11 +380,11 @@
       register: comfyui_service_flags
       changed_when: false
       ignore_errors: true
-      when: 
+      when:
         - install_comfyui is defined and install_comfyui | bool
         - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
         - comfyui_service_status.status.ActiveState is defined and comfyui_service_status.status.ActiveState == 'active'
-    
+
     - name: Display ComfyUI service status
       ansible.builtin.debug:
         msg: >
@@ -392,11 +392,11 @@
           - Status: {{ 'OK - Service running' if comfyui_service_status.status.ActiveState == 'active' else 'Service not running' }}
           - Low VRAM mode: {{ 'Enabled' if comfyui_service_flags.stdout is defined and 'lowvram' in comfyui_service_flags.stdout else 'Disabled' }}
           - CPU VAE mode: {{ 'Enabled' if comfyui_service_flags.stdout is defined and 'cpu-vae' in comfyui_service_flags.stdout else 'Disabled' }}
-      when: 
+      when:
         - install_comfyui is defined and install_comfyui | bool
         - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
         - comfyui_venv_check.stat.exists is defined and comfyui_venv_check.stat.exists
-        
+
     # Check shared models base directory
     - name: Check if shared models directory exists
       ansible.builtin.stat:
@@ -459,7 +459,7 @@
         - install_shared_models is defined and install_shared_models | bool
         - comfyui_install_flux1 is defined and comfyui_install_flux1 | bool
         - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
-        
+
     - name: Check if SD v1.5 model is linked to ComfyUI checkpoints
       ansible.builtin.stat:
         path: "{{ comfyui_install_dir }}/models/checkpoints/{{ comfyui_sd_v15_filename }}"
@@ -469,7 +469,7 @@
         - install_shared_models is defined and install_shared_models | bool
         - comfyui_install_sd_v15 is defined and comfyui_install_sd_v15 | bool
         - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
-        
+
     - name: Check if SD v1.5 model is linked to ComfyUI unet directory
       ansible.builtin.stat:
         path: "{{ comfyui_install_dir }}/models/unet/{{ comfyui_sd_v15_filename }}"
@@ -479,7 +479,7 @@
         - install_shared_models is defined and install_shared_models | bool
         - comfyui_install_sd_v15 is defined and comfyui_install_sd_v15 | bool
         - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
-        
+
     - name: Display SD v1.5 model status in ComfyUI
       ansible.builtin.debug:
         msg: >
@@ -491,7 +491,7 @@
         - install_shared_models is defined and install_shared_models | bool
         - comfyui_install_sd_v15 is defined and comfyui_install_sd_v15 | bool
         - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
-        
+
     # Check Open WebUI model links
     - name: Check if FLUX.1 model is linked to Open WebUI diffusion models
       ansible.builtin.stat:
@@ -501,7 +501,7 @@
         - install_open_webui is defined and install_open_webui | bool
         - install_shared_models is defined and install_shared_models | bool
         - comfyui_install_flux1 is defined and comfyui_install_flux1 | bool
-        
+
     - name: Check if FLUX.1 model is linked to Open WebUI checkpoints
       ansible.builtin.stat:
         path: "{{ open_webui_install_dir }}/data/models/checkpoints/{{ comfyui_flux1_model_filename }}"
@@ -510,7 +510,7 @@
         - install_open_webui is defined and install_open_webui | bool
         - install_shared_models is defined and install_shared_models | bool
         - comfyui_install_flux1 is defined and comfyui_install_flux1 | bool
-        
+
     - name: Display FLUX.1 model status in Open WebUI
       ansible.builtin.debug:
         msg: >
@@ -521,7 +521,7 @@
         - install_open_webui is defined and install_open_webui | bool
         - install_shared_models is defined and install_shared_models | bool
         - comfyui_install_flux1 is defined and comfyui_install_flux1 | bool
-        
+
     - name: Check if SD v1.5 model is linked to Open WebUI diffusion models
       ansible.builtin.stat:
         path: "{{ open_webui_install_dir }}/data/models/diffusion_models/{{ comfyui_sd_v15_filename }}"
@@ -530,7 +530,7 @@
         - install_open_webui is defined and install_open_webui | bool
         - install_shared_models is defined and install_shared_models | bool
         - comfyui_install_sd_v15 is defined and comfyui_install_sd_v15 | bool
-        
+
     - name: Check if SD v1.5 model is linked to Open WebUI checkpoints
       ansible.builtin.stat:
         path: "{{ open_webui_install_dir }}/data/models/checkpoints/{{ comfyui_sd_v15_filename }}"
@@ -539,7 +539,7 @@
         - install_open_webui is defined and install_open_webui | bool
         - install_shared_models is defined and install_shared_models | bool
         - comfyui_install_sd_v15 is defined and comfyui_install_sd_v15 | bool
-        
+
     - name: Display SD v1.5 model status in Open WebUI
       ansible.builtin.debug:
         msg: >
@@ -567,7 +567,7 @@
         - comfyui_install_check.stat.exists is defined and comfyui_install_check.stat.exists
         - comfyui_venv_check.stat.exists is defined and comfyui_venv_check.stat.exists
         - comfyui_service_status.status.ActiveState is defined and comfyui_service_status.status.ActiveState == 'active'
-        
+
     - name: Test Watchtower integration
       ansible.builtin.import_tasks: ../watchtower/tasks/test.yml
       when: install_watchtower is defined and install_watchtower | bool

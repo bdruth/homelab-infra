@@ -3,7 +3,7 @@
 
 - name: Deploy Gitea Act Runner
   hosts: all
-  gather_facts: yes
+  gather_facts: true
 
   pre_tasks:
     - name: Check Docker version

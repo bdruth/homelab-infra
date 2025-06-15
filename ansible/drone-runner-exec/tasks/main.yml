@@ -50,15 +50,15 @@
 
 - name: Force systemd reload
   ansible.builtin.systemd:
-    daemon_reload: yes
+    daemon_reload: true
   when: install_drone_runner_exec | bool and service_file_updated is changed
 
 - name: Enable and start Drone Runner Exec service
   ansible.builtin.systemd:
     name: drone-runner-exec
-    enabled: yes
+    enabled: true
     state: "{{ 'restarted' if service_file_updated is changed or runner_config_updated is changed or download_runner is changed else 'started' }}"
-    daemon_reload: yes
+    daemon_reload: true
   register: runner_service
   when: install_drone_runner_exec | bool
 

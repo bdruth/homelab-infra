@@ -29,7 +29,7 @@
   ansible.builtin.apt_repository:
     repo: "deb https://repos.influxdata.com/{{ ansible_distribution | lower }} {{ 'jammy' if ansible_distribution_release in ['noble', 'mantic'] else ansible_distribution_release }} stable"
     state: present
-    update_cache: yes
+    update_cache: true
   when: ansible_os_family == "Debian"
 
 - name: Install Telegraf
@@ -50,10 +50,10 @@
     dest: /etc/telegraf/telegraf.d/disk.conf
     mode: "0644"
   register: telegraf_config_updated
-  notify: restart telegraf
+  notify: Restart telegraf
 
 - name: Start and enable Telegraf service
   ansible.builtin.systemd:
     name: telegraf
     state: started
-    enabled: yes
+    enabled: true

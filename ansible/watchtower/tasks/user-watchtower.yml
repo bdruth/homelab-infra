@@ -16,10 +16,10 @@
 - name: "Ensure user {{ item.username }} has podman socket enabled"
   ansible.builtin.systemd:
     name: podman.socket
-    enabled: yes
+    enabled: true
     state: started
     scope: user
-  become: yes
+  become: true
   become_user: "{{ item.username }}"
   environment:
     XDG_RUNTIME_DIR: "/run/user/{{ item.uid }}"
@@ -52,15 +52,15 @@
 
 - name: "Force systemd reload for user watchtower"
   ansible.builtin.systemd:
-    daemon_reload: yes
+    daemon_reload: true
   when: user_service_file_updated is changed
 
 - name: "Enable and start user watchtower service for {{ item.username }}"
   ansible.builtin.systemd:
     name: "watchtower-{{ item.username }}"
-    enabled: yes
+    enabled: true
     state: "{{ 'restarted' if user_service_file_updated is changed or user_watchtower_config_updated is changed else 'started' }}"
-    daemon_reload: yes
+    daemon_reload: true
   register: user_watchtower_service
 
 - name: "Wait for user watchtower container to start for {{ item.username }}"
@@ -74,5 +74,5 @@
   retries: 15
   delay: 4
   until: user_watchtower_container.rc == 0
-  become: yes
+  become: true
   become_user: "{{ item.username }}"

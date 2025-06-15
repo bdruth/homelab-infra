@@ -3,7 +3,7 @@
 
 - name: Deploy Gitea on Synology NAS
   hosts: synology1
-  gather_facts: yes
+  gather_facts: true
   vars:
     synology_docker_path: "/usr/local/bin/docker"
     docker_cmd: "{{ synology_docker_path }}"

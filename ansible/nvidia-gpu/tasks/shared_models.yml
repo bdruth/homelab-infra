@@ -12,7 +12,7 @@
   ansible.builtin.file:
     path: "/opt/shared-models"
     state: directory
-    mode: '0755'
+    mode: "0755"
     owner: root
     group: root
   when: install_shared_models | bool
@@ -21,7 +21,7 @@
   ansible.builtin.file:
     path: "/opt/shared-models/{{ item }}"
     state: directory
-    mode: '0755'
+    mode: "0755"
     owner: root
     group: root
   loop:
@@ -36,7 +36,7 @@
   ansible.builtin.stat:
     path: "/opt/shared-models/diffusion/{{ comfyui_flux1_model_filename }}"
   register: flux1_model_exists
-  when: 
+  when:
     - install_shared_models | bool
     - comfyui_install_flux1 | bool
 
@@ -45,9 +45,9 @@
     url: "{{ comfyui_flux1_model_url }}"
     dest: "/opt/shared-models/diffusion/{{ comfyui_flux1_model_filename }}"
     timeout: 3600
-    mode: '0644'
+    mode: "0644"
   register: model_download
-  when: 
+  when:
     - install_shared_models | bool
     - comfyui_install_flux1 | bool
     - not flux1_model_exists.stat.exists
@@ -58,7 +58,7 @@
   ansible.builtin.stat:
     path: "/opt/shared-models/diffusion/{{ comfyui_sd_v15_filename }}"
   register: sd_v15_model_exists
-  when: 
+  when:
     - install_shared_models | bool
     - comfyui_install_sd_v15 | bool
 
@@ -67,9 +67,9 @@
     url: "{{ comfyui_sd_v15_url }}"
     dest: "/opt/shared-models/diffusion/{{ comfyui_sd_v15_filename }}"
     timeout: 3600
-    mode: '0644'
+    mode: "0644"
   register: sd_v15_download
-  when: 
+  when:
     - install_shared_models | bool
     - comfyui_install_sd_v15 | bool
     - not sd_v15_model_exists.stat.exists
@@ -80,7 +80,7 @@
   ansible.builtin.stat:
     path: "/opt/shared-models/vae/ae.safetensors"
   register: vae_model_exists
-  when: 
+  when:
     - install_shared_models | bool
     - comfyui_install_flux1 | bool
 
@@ -89,7 +89,7 @@
     url: "{{ comfyui_vae_url }}"
     dest: "/opt/shared-models/vae/ae.safetensors"
     timeout: 600
-    mode: '0644'
+    mode: "0644"
   when:
     - install_shared_models | bool
     - comfyui_install_flux1 | bool
@@ -101,7 +101,7 @@
   ansible.builtin.stat:
     path: "/opt/shared-models/clip/clip_l.safetensors"
   register: clip_model_exists
-  when: 
+  when:
     - install_shared_models | bool
     - comfyui_install_flux1 | bool
 
@@ -110,7 +110,7 @@
     url: "{{ comfyui_clip_url }}"
     dest: "/opt/shared-models/clip/clip_l.safetensors"
     timeout: 600
-    mode: '0644'
+    mode: "0644"
   when:
     - install_shared_models | bool
     - comfyui_install_flux1 | bool
@@ -122,7 +122,7 @@
   ansible.builtin.stat:
     path: "/opt/shared-models/clip/{{ comfyui_t5xxl_filename }}"
   register: t5xxl_model_exists
-  when: 
+  when:
     - install_shared_models | bool
     - comfyui_install_flux1 | bool
 
@@ -131,7 +131,7 @@
     url: "{{ comfyui_t5xxl_url }}"
     dest: "/opt/shared-models/clip/{{ comfyui_t5xxl_filename }}"
     timeout: 3600
-    mode: '0644'
+    mode: "0644"
   when:
     - install_shared_models | bool
     - comfyui_install_flux1 | bool
@@ -167,7 +167,7 @@
   ansible.builtin.copy:
     src: "{{ item.item }}"
     dest: "{{ item.item }}.bak.{{ backup_timestamp }}"
-    remote_src: yes
+    remote_src: true
     mode: preserve
   loop: "{{ existing_comfyui_files.results }}"
   when:
@@ -199,13 +199,13 @@
     state: directory
     owner: "{{ comfyui_user }}"
     group: "{{ comfyui_group }}"
-    mode: '0755'
+    mode: "0755"
   loop:
     - checkpoints
     - unet
     - vae
     - clip
-  when: 
+  when:
     - install_shared_models | bool
     - install_comfyui | bool
 
@@ -216,7 +216,7 @@
     state: link
     owner: "{{ comfyui_user }}"
     group: "{{ comfyui_group }}"
-  when: 
+  when:
     - install_shared_models | bool
     - install_comfyui | bool
     - comfyui_install_flux1 | bool
@@ -229,7 +229,7 @@
     state: link
     owner: "{{ comfyui_user }}"
     group: "{{ comfyui_group }}"
-  when: 
+  when:
     - install_shared_models | bool
     - install_comfyui | bool
     - comfyui_install_flux1 | bool
@@ -242,7 +242,7 @@
     state: link
     owner: "{{ comfyui_user }}"
     group: "{{ comfyui_group }}"
-  when: 
+  when:
     - install_shared_models | bool
     - install_comfyui | bool
     - comfyui_install_sd_v15 | bool
@@ -255,7 +255,7 @@
     state: link
     owner: "{{ comfyui_user }}"
     group: "{{ comfyui_group }}"
-  when: 
+  when:
     - install_shared_models | bool
     - install_comfyui | bool
     - comfyui_install_sd_v15 | bool
@@ -268,7 +268,7 @@
     state: link
     owner: "{{ comfyui_user }}"
     group: "{{ comfyui_group }}"
-  when: 
+  when:
     - install_shared_models | bool
     - install_comfyui | bool
     - comfyui_install_flux1 | bool
@@ -281,7 +281,7 @@
     state: link
     owner: "{{ comfyui_user }}"
     group: "{{ comfyui_group }}"
-  when: 
+  when:
     - install_shared_models | bool
     - install_comfyui | bool
     - comfyui_install_flux1 | bool
@@ -294,7 +294,7 @@
     state: link
     owner: "{{ comfyui_user }}"
     group: "{{ comfyui_group }}"
-  when: 
+  when:
     - install_shared_models | bool
     - install_comfyui | bool
     - comfyui_install_flux1 | bool
@@ -321,7 +321,7 @@
   ansible.builtin.copy:
     src: "{{ item.item }}"
     dest: "{{ item.item }}.bak.{{ backup_timestamp }}"
-    remote_src: yes
+    remote_src: true
     mode: preserve
   loop: "{{ existing_openwebui_files.results }}"
   when:
@@ -351,13 +351,13 @@
   ansible.builtin.file:
     path: "{{ open_webui_install_dir }}/data/models/{{ item }}"
     state: directory
-    mode: '0755'
+    mode: "0755"
   loop:
     - diffusion_models
     - checkpoints
     - vae
     - clip
-  when: 
+  when:
     - install_shared_models | bool
     - install_open_webui | bool
 
@@ -366,7 +366,7 @@
     src: "/opt/shared-models/diffusion/{{ comfyui_flux1_model_filename }}"
     dest: "{{ open_webui_install_dir }}/data/models/diffusion_models/{{ comfyui_flux1_model_filename }}"
     state: link
-  when: 
+  when:
     - install_shared_models | bool
     - install_open_webui | bool
     - comfyui_install_flux1 | bool
@@ -377,7 +377,7 @@
     src: "/opt/shared-models/diffusion/{{ comfyui_flux1_model_filename }}"
     dest: "{{ open_webui_install_dir }}/data/models/checkpoints/{{ comfyui_flux1_model_filename }}"
     state: link
-  when: 
+  when:
     - install_shared_models | bool
     - install_open_webui | bool
     - comfyui_install_flux1 | bool
@@ -388,7 +388,7 @@
     src: "/opt/shared-models/diffusion/{{ comfyui_sd_v15_filename }}"
     dest: "{{ open_webui_install_dir }}/data/models/diffusion_models/{{ comfyui_sd_v15_filename }}"
     state: link
-  when: 
+  when:
     - install_shared_models | bool
     - install_open_webui | bool
     - comfyui_install_sd_v15 | bool
@@ -399,7 +399,7 @@
     src: "/opt/shared-models/diffusion/{{ comfyui_sd_v15_filename }}"
     dest: "{{ open_webui_install_dir }}/data/models/checkpoints/{{ comfyui_sd_v15_filename }}"
     state: link
-  when: 
+  when:
     - install_shared_models | bool
     - install_open_webui | bool
     - comfyui_install_sd_v15 | bool
@@ -410,7 +410,7 @@
     src: "/opt/shared-models/vae/ae.safetensors"
     dest: "{{ open_webui_install_dir }}/data/models/vae/ae.safetensors"
     state: link
-  when: 
+  when:
     - install_shared_models | bool
     - install_open_webui | bool
     - comfyui_install_flux1 | bool
@@ -421,7 +421,7 @@
     src: "/opt/shared-models/clip/clip_l.safetensors"
     dest: "{{ open_webui_install_dir }}/data/models/clip/clip_l.safetensors"
     state: link
-  when: 
+  when:
     - install_shared_models | bool
     - install_open_webui | bool
     - comfyui_install_flux1 | bool
@@ -432,7 +432,7 @@
     src: "/opt/shared-models/clip/{{ comfyui_t5xxl_filename }}"
     dest: "{{ open_webui_install_dir }}/data/models/clip/{{ comfyui_t5xxl_filename }}"
     state: link
-  when: 
+  when:
     - install_shared_models | bool
     - install_open_webui | bool
     - comfyui_install_flux1 | bool

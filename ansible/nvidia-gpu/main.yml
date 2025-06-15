@@ -26,27 +26,27 @@
     - name: Import UV package manager installation tasks
       ansible.builtin.import_tasks: tasks/uv_manager.yml
       when: install_uv | bool
-      
+
     - name: Import n8n AI workflow platform tasks
       ansible.builtin.import_tasks: tasks/n8n.yml
       when: install_n8n | bool
-      
+
     - name: Import Whisper ASR Webservice tasks
       ansible.builtin.import_tasks: tasks/whisper_asr.yml
       when: install_whisper_asr | bool
-      
+
     - name: Import Open WebUI tasks
       ansible.builtin.import_tasks: tasks/open_webui.yml
       when: install_open_webui | bool
-      
+
     - name: Import ComfyUI tasks
       ansible.builtin.import_tasks: tasks/comfyui.yml
       when: install_comfyui | bool
-      
+
     - name: Import shared models tasks
       ansible.builtin.import_tasks: tasks/shared_models.yml
       when: install_shared_models | bool
-      
+
     - name: Import GPT Researcher tasks
       ansible.builtin.import_tasks: tasks/gpt_researcher.yml
       when: install_gpt_researcher | bool
@@ -56,7 +56,7 @@
       ansible.builtin.command:
         cmd: update-initramfs -u
       changed_when: true
-      
+
     - name: Reload systemd
       ansible.builtin.systemd:
-        daemon_reload: yes
+        daemon_reload: true

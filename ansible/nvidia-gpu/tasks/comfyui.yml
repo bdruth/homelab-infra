@@ -9,19 +9,19 @@
       - python3-venv
       - git
     state: present
-    update_cache: yes
+    update_cache: true
 
 - name: Create ComfyUI group
   ansible.builtin.group:
     name: "{{ comfyui_group }}"
-    system: yes
+    system: true
     state: present
   when: comfyui_create_user | bool
 
 - name: Create ComfyUI user
   ansible.builtin.user:
     name: "{{ comfyui_user }}"
-    system: yes
+    system: true
     group: "{{ comfyui_group }}"
     shell: /bin/bash
     state: present
@@ -43,7 +43,7 @@
   ansible.builtin.file:
     path: "{{ comfyui_install_dir }}"
     state: directory
-    mode: '0755'
+    mode: "0755"
 
 - name: Clone ComfyUI repository
   ansible.builtin.git:
@@ -57,7 +57,7 @@
   ansible.builtin.file:
     path: "{{ comfyui_install_dir }}/{{ item }}"
     state: directory
-    mode: '0755'
+    mode: "0755"
   loop:
     - "models"
     - "models/checkpoints"
@@ -72,7 +72,7 @@
   ansible.builtin.file:
     path: "{{ comfyui_venv_path }}"
     state: directory
-    mode: '0755'
+    mode: "0755"
 
 - name: Create Python virtual environment
   ansible.builtin.command:
@@ -94,8 +94,8 @@
     state: directory
     owner: "{{ comfyui_user }}"
     group: "{{ comfyui_group }}"
-    recurse: yes
-    mode: '0755'
+    recurse: true
+    mode: "0755"
   when: comfyui_create_user | bool
 
 - name: Create systemd service for ComfyUI
@@ -104,18 +104,18 @@
     dest: /etc/systemd/system/comfyui.service
     owner: root
     group: root
-    mode: '0644'
+    mode: "0644"
   register: comfyui_service_file
   notify: Reload systemd
 
 - name: Enable and start ComfyUI service
   ansible.builtin.systemd:
     name: comfyui
-    enabled: yes
+    enabled: true
     state: started
-    daemon_reload: yes
+    daemon_reload: true
   ignore_errors: "{{ ansible_check_mode }}"
-  
+
 - name: Restart ComfyUI service if service file changed
   ansible.builtin.systemd:
     name: comfyui
