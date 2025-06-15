@@ -6,14 +6,15 @@ A comprehensive Infrastructure as Code (IaC) solution for managing homelab servi
 graph TD
     subgraph "Infrastructure Provisioning"
         TF[Terraform/OpenTofu] --> |provisions| DNS[DNS Infrastructure]
+        TF --> |provisions| UPS[UPS Monitoring]
     end
 
     subgraph "Configuration Management"
-        Ansible --> |configures| Services
-        Ansible --> |configures| Monitoring
+        Services[Services] --> |configures| ApplicationServices
+        Services --> |configures| Monitoring
     end
 
-    subgraph "Services"
+    subgraph "ApplicationServices"
         Git[Gitea] --> |triggers| CI[Gitea Actions]
         DNS_Services[DNS Services] --> |resolves| Network
         Monitoring --> |alerts| Notification
@@ -43,31 +44,36 @@ curl -fsS https://pkgx.sh | sh
 
 ## Deployment Options
 
-### Ansible Deployment
+### Services Deployment
 
-For deploying services with Ansible:
+For deploying services:
 
 ```bash
 # Deploy with default playbook (infrastructure.yml)
-./ansible-pkgx-deploy.sh
+./services-pkgx-deploy.sh
 
-# Deploy specific service (this runs ansible/[service-name].yml)
-./ansible-pkgx-deploy.sh drone-only
+# Deploy specific service (this runs services/[service-name].yml)
+./services-pkgx-deploy.sh drone-only
 
 # Use custom options
-./ansible-pkgx-deploy.sh --playbook=ansible/specific-playbook.yml --inventory=ansible/custom-inventory.yml
+./services-pkgx-deploy.sh --playbook=services/specific-playbook.yml --inventory=services/custom-inventory.yml
 ```
 
 ### Infrastructure Deployment
 
-For managing DNS infrastructure:
+For managing infrastructure resources:
 
 ```bash
-# Deploy DNS infrastructure
-./deploy.sh
+# Infrastructure component options
+./infra-deploy.sh
 
-# For blue/green DNS deployments
-cd dns/pihole
+# Examples:
+./infra-deploy.sh dns-ha plan     # Plan DNS high-availability changes
+./infra-deploy.sh pihole apply -- -var-file=blue.tfvars -backend-config=blue-config.s3.tfbackend
+./infra-deploy.sh ups plan        # Plan UPS monitoring changes
+
+# For blue/green DNS deployments (alternative method)
+cd infrastructure/dns/pihole
 ./tofu-ns.sh [blue|green] <tofu commands>
 ```
 
@@ -91,11 +97,11 @@ For Terraform/OpenTofu:
 - Backend config: `config.s3.example.tfbackend`
 - Variables: `terraform.example.tfvars`
 
-For Ansible:
+For Services:
 
-- Group variables: `group_vars/all.example.yml`
-- Host variables: `host_vars/example.com.yml`
-- Role variables: `ansible/{service}/vars/main.example.yml`
+- Group variables: `services/group_vars/all.example.yml`
+- Host variables: `services/host_vars/example.com.yml`
+- Role variables: `services/{service}/vars/main.example.yml`
 
 ## Available Playbooks
 
@@ -122,6 +128,6 @@ Changes to this repository are automatically deployed through Gitea Actions work
 
 For more detailed documentation on specific components:
 
-- DNS: See `dns/dns-ha/README.md` and `dns/pihole/README.md`
-- Ansible: See `ansible/README.md`
-- Individual services: See README files in specific role directories
+- DNS: See `infrastructure/dns/dns-ha/README.md` and `infrastructure/dns/pihole/README.md`
+- Services: See `services/README.md`
+- Individual services: See README files in specific service directories
