@@ -3,7 +3,7 @@
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-"${SCRIPT_DIR}"/setup-ansible.sh
+"${SCRIPT_DIR}"/setup-services.sh
 
 tofu --version
 
@@ -32,7 +32,7 @@ test_dns () {
 }
 
 set -e
-cd "${SCRIPT_DIR}/dns/pihole"
+cd "${SCRIPT_DIR}/infrastructure/dns/pihole"
 ./tofu-ns.sh blue apply --auto-approve
 pihole_blue_ip=$(./tofu-ns.sh blue output -raw pihole_ip | tail -n 1)
 test_dns "$pihole_blue_ip" "api.github.com"
@@ -40,7 +40,7 @@ test_dns "$pihole_blue_ip" "api.github.com"
 pihole_green_ip=$(./tofu-ns.sh green output -raw pihole_ip | tail -n 1)
 test_dns "$pihole_green_ip" "api.github.com"
 
-cd "${SCRIPT_DIR}/dns/dns-ha"
+cd "${SCRIPT_DIR}/infrastructure/dns/dns-ha"
 set -x
 tofu init -backend-config=config.s3.tfbackend -upgrade -reconfigure
 # tofu plan
