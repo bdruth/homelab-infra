@@ -19,14 +19,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Cache dependencies
-        id: cache
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache
-          key: ${{ runner.os }}-deps-${{ hashFiles('**/ansible-pkgx-deploy.sh', '**/setup-ansible.sh') }}
-          restore-keys: |
-            ${{ runner.os }}-deps-
+      # - name: Cache dependencies
+      #   id: cache
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: ~/.cache
+      #     key: ${{ runner.os }}-deps-${{ hashFiles('**/ansible-pkgx-deploy.sh', '**/setup-ansible.sh') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-deps-
 
       - name: Unlock git-crypt
         uses: sliteteam/github-action-git-crypt-unlock@1.3.0
