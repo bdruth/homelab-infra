@@ -5,7 +5,7 @@
 # NUT (UPS monitoring) global settings
 nut_upsmon_secondary_user: upsmons
 nut_upsmon_secondary_pass: changeme_secondary_password
-nut_upsmon_primary_user: upsmonp  
+nut_upsmon_primary_user: upsmonp
 nut_upsmon_primary_pass: changeme_primary_password
 
 # Pushover notifications (optional)
@@ -16,7 +16,7 @@ pushover_userId: your_pushover_user_key
 watchtower_debug: false
 watchtower_cleanup: true
 watchtower_rolling_restart: true
-watchtower_schedule: "0 0 4 * * *"  # 4 AM daily
+watchtower_schedule: "0 0 4 * * *" # 4 AM daily
 
 # Enable/disable services globally
 install_watchtower: true

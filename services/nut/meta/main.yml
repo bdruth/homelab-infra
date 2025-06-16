@@ -3,11 +3,11 @@ galaxy_info:
   author: homelab-infra
   description: Ansible role for Network UPS Tools (NUT) setup and configuration
   company: N/A
-  
+
   license: MIT
-  
+
   min_ansible_version: "2.9"
-  
+
   platforms:
     - name: Ubuntu
       versions:
@@ -17,7 +17,7 @@ galaxy_info:
       versions:
         - bullseye
         - bookworm
-  
+
   galaxy_tags:
     - ups
     - monitoring

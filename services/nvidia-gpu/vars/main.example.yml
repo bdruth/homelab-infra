@@ -94,11 +94,8 @@ comfyui_t5xxl_filename: "{% if comfyui_t5xxl_use_fp8 %}t5xxl_fp8_e4m3fn.safetens
 comfyui_sd_v15_url: "https://huggingface.co/runwayml/stable-diffusion-v1-5/resolve/main/v1-5-pruned-emaonly.safetensors" # URL to the SD v1.5 model
 comfyui_sd_v15_filename: "v1-5-pruned-emaonly.safetensors" # Filename for the SD v1.5 model
 
-
 # GPT Researcher configuration
 gpt_researcher_install_dir: "/opt/gpt-researcher" # Installation directory
 gpt_researcher_port: "7000" # Port for GPT Researcher web interface
 gpt_researcher_ollama_model: "llama3" # Ollama model to use for research
 gpt_researcher_ollama_embed_model: "nomic-embed-text" # Ollama model to use for embeddings
-
-

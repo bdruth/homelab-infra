@@ -31,4 +31,3 @@ cname_records:
     cnames:
       - cname3.example.com
       - cname4.example.com
-

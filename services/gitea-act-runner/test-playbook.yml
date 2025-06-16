@@ -29,7 +29,6 @@
       ansible.builtin.include_vars:
         file: vars/main.yml
       ignore_errors: true
-
-    # TODO: Write test tasks for Gitea Act Runner configuration validation
-    # - name: Import Gitea Act Runner test tasks
-    #   ansible.builtin.import_tasks: tasks/test.yml
+# TODO: Write test tasks for Gitea Act Runner configuration validation
+# - name: Import Gitea Act Runner test tasks
+#   ansible.builtin.import_tasks: tasks/test.yml

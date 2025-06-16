@@ -1,8 +1,9 @@
+---
 name: DNS Infrastructure Deployment
 
 on:
   push:
-    branches: [main]
+    branches: ["main"]
     paths:
       - "services/dnsdist/**"
       - "services/pihole/**"

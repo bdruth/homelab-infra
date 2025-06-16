@@ -7,7 +7,7 @@
     state: directory
     owner: "{{ comfyui_user }}"
     group: "{{ comfyui_group }}"
-    mode: '0755'
+    mode: "0755"
   loop:
     - checkpoints
     - unet
@@ -28,9 +28,9 @@
     timeout: 3600
     owner: "{{ comfyui_user }}"
     group: "{{ comfyui_group }}"
-    mode: '0644'
+    mode: "0644"
   register: model_download
-  when: 
+  when:
     - comfyui_install_flux1 | bool
     - not flux1_model_exists.stat.exists
     - not comfyui_skip_model_downloads | bool
@@ -48,7 +48,7 @@
     state: link
     owner: "{{ comfyui_user }}"
     group: "{{ comfyui_group }}"
-  when: 
+  when:
     - comfyui_install_flux1 | bool
     - flux1_model_exists.stat.exists
     - not unet_model_exists.stat.exists
@@ -66,8 +66,8 @@
     timeout: 600
     owner: "{{ comfyui_user }}"
     group: "{{ comfyui_group }}"
-    mode: '0644'
-  when: 
+    mode: "0644"
+  when:
     - comfyui_install_flux1 | bool
     - not vae_model_exists.stat.exists
     - not comfyui_skip_model_downloads | bool
@@ -85,8 +85,8 @@
     timeout: 600
     owner: "{{ comfyui_user }}"
     group: "{{ comfyui_group }}"
-    mode: '0644'
-  when: 
+    mode: "0644"
+  when:
     - comfyui_install_flux1 | bool
     - not clip_model_exists.stat.exists
     - not comfyui_skip_model_downloads | bool
@@ -104,8 +104,8 @@
     timeout: 3600
     owner: "{{ comfyui_user }}"
     group: "{{ comfyui_group }}"
-    mode: '0644'
-  when: 
+    mode: "0644"
+  when:
     - comfyui_install_flux1 | bool
     - not t5xxl_model_exists.stat.exists
     - not comfyui_skip_model_downloads | bool
@@ -124,12 +124,12 @@
     timeout: 3600
     owner: "{{ comfyui_user }}"
     group: "{{ comfyui_group }}"
-    mode: '0644'
-  when: 
+    mode: "0644"
+  when:
     - comfyui_install_sd_v15 | bool
     - not sd_v15_model_exists.stat.exists
     - not comfyui_skip_model_downloads | bool
-    
+
 - name: Check if SD v1.5 unet model already exists or is symlinked
   ansible.builtin.stat:
     path: "{{ comfyui_install_dir }}/models/unet/{{ comfyui_sd_v15_filename }}"
@@ -143,7 +143,7 @@
     state: link
     owner: "{{ comfyui_user }}"
     group: "{{ comfyui_group }}"
-  when: 
+  when:
     - comfyui_install_sd_v15 | bool
     - sd_v15_model_exists.stat.exists
     - not sd_v15_unet_exists.stat.exists

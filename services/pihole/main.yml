@@ -9,7 +9,7 @@
     web_password: "{{ lookup('env', 'PIHOLE_WEB_PASSWORD_HASH') }}"
     pihole_restore_version: v0.1.0
     aws_config_path: /root/.aws/config
-    install_backup_crontab: False
+    install_backup_crontab: false
 
   tasks:
     - name: Update apt cache

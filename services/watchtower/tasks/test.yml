@@ -102,9 +102,9 @@
 
 # User-space watchtower tests
 - name: Test user-space watchtower instances
-  include_tasks: test-user-watchtower.yml
+  ansible.builtin.include_tasks: test-user-watchtower.yml
   loop: "{{ watchtower_user_instances }}"
-  when: 
+  when:
     - install_watchtower_user | bool
     - watchtower_user_instances | length > 0
   tags: [watchtower-test, user-watchtower-test]

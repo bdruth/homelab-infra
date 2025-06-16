@@ -19,27 +19,27 @@
 - name: Import UV package manager installation tasks
   ansible.builtin.import_tasks: uv_manager.yml
   when: install_uv | bool
-  
+
 - name: Import n8n AI workflow platform tasks
   ansible.builtin.import_tasks: n8n.yml
   when: install_n8n | bool
-  
+
 - name: Import Whisper ASR Webservice tasks
   ansible.builtin.import_tasks: whisper_asr.yml
   when: install_whisper_asr | bool
-  
+
 - name: Import Open WebUI tasks
   ansible.builtin.import_tasks: open_webui.yml
   when: install_open_webui | bool
-  
+
 - name: Import ComfyUI tasks
   ansible.builtin.import_tasks: comfyui.yml
   when: install_comfyui | bool
-  
+
 - name: Import shared models tasks
   ansible.builtin.import_tasks: shared_models.yml
   when: install_shared_models | bool
-  
+
 - name: Import GPT Researcher tasks
   ansible.builtin.import_tasks: gpt_researcher.yml
   when: install_gpt_researcher | bool

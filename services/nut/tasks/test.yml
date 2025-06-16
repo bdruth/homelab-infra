@@ -78,7 +78,7 @@
   register: ups_connection_test
   changed_when: false
   ignore_errors: true
-  when: 
+  when:
     - nut_system is defined
     - nut_mode | default('netclient') == 'netclient'
   tags: [nut-test]
@@ -87,7 +87,7 @@
   ansible.builtin.debug:
     msg: "UPS connection: {{ 'OK - Connected' if ups_connection_test.rc == 0 else 'Warning - Cannot connect to UPS' }}"
   when:
-    - nut_system is defined  
+    - nut_system is defined
     - nut_mode | default('netclient') == 'netclient'
     - ups_connection_test is defined
   tags: [nut-test]
