@@ -1,8 +1,10 @@
-### Configuration
+# DNS High Availability Configuration
+
+## Configuration
 
 Example `terraform.tfvars` file:
 
-```
+```hcl
 gw_addr = "<gateway-ip-addr>"
 dns_ip_addr = "<lxc-container-ip>"
 ssh_priv_key_path = "<path-to-ssh-private-key>"

@@ -1,8 +1,10 @@
-### Configuration
+# Pihole DNS Configuration
+
+## Configuration
 
 Example `terraform.tfvars` file:
 
-```
+```hcl
 gw_addr = "<gateway-ip-addr>"
 ssh_priv_key_path = "<path-to-ssh-private-key>"
 s3_backend_endpoint = "http://<your-url-to-alt-s3-api-endpoint>:9000"
@@ -14,6 +16,6 @@ The `blue.tfvars` and `green.tfvars` files are used to configure the blue and gr
 
 Example:
 
-```
+```hcl
 pihole_ip = "<lxc-container-ip>"
 ```

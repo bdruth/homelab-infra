@@ -43,7 +43,7 @@
 
 ### Repository Structure
 
-```
+```text
 homelab-infra/
 ├── ansible/                   # Ansible playbooks and roles
 │   ├── {service-name}/        # Service-specific roles
