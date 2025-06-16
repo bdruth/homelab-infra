@@ -8,12 +8,41 @@ repos:
         language: system
         files: '\.tf$'
         pass_filenames: true
-# - repo: https://github.com/oxsecurity/megalinter
-#   rev: v8.8.0  # Git tag specifying the hook, not mega-linter-runner, version
-#   hooks:
-#     - id: megalinter-incremental # Faster, less thorough
-#       stages:
-#         - pre-commit
-#     - id: megalinter-full # Slower, more thorough
-#       stages:
-#         - pre-push
+  - repo: https://github.com/oxsecurity/megalinter
+    rev: v8.8.0 # Git tag specifying the hook, not mega-linter-runner, version
+    hooks:
+      - id: megalinter-incremental # Faster, less thorough
+        args:
+          - mega-linter-runner
+          - --containername
+          - "megalinter-incremental"
+          - --remove-container
+          - --fix
+          - --env
+          - "'APPLY_FIXES=all'"
+          - --env
+          - "'CLEAR_REPORT_FOLDER=true'"
+          - --env
+          - "'LOG_LEVEL=warning'"
+          - --filesonly
+          - -d
+          - synology1.local:5050/megalinter-terraform:v8-git-crypt
+        stages:
+          - pre-commit
+      - id: megalinter-full # Slower, more thorough
+        args:
+          - mega-linter-runner
+          - --containername
+          - "megalinter-full"
+          - --remove-container
+          - --fix
+          - --env
+          - "'APPLY_FIXES=all'"
+          - --env
+          - "'CLEAR_REPORT_FOLDER=true'"
+          - --env
+          - "'LOG_LEVEL=warning'"
+          - -d
+          - synology1.local:5050/megalinter-terraform:v8-git-crypt
+        stages:
+          - pre-push
