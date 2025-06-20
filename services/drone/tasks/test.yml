@@ -44,7 +44,7 @@
   when: install_drone | bool
 
 - name: Check if Drone containers are running
-  ansible.builtin.shell: docker ps | grep -E '(drone|runner)'
+  ansible.builtin.shell: set -o pipefail; docker ps | grep -E '(drone|runner)'
   register: container_status
   changed_when: false
   when: install_drone | bool

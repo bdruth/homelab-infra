@@ -11,12 +11,13 @@
       - nut
       - python3
       - pipx
-    state: latest
+    state: present
 
 - name: Make sure destination dir exists
   ansible.builtin.file:
     path: "{{ nut_conf_path | dirname }}"
     state: directory
+    mode: "0755"
 
 - name: Create nut.conf
   ansible.builtin.template:
@@ -46,9 +47,9 @@
   register: upsmon_conf
   when: nut_mode == 'netclient'
 
-- name: restart nut
+- name: Restart nut
   ansible.builtin.service:
-    name: "{{ (ansible_distribution == 'Debian')|ternary('nut.target', 'nut-monitor') }}"
+    name: "{{ (ansible_distribution == 'Debian') | ternary('nut.target', 'nut-monitor') }}"
     state: restarted
   when: nut_conf.changed or upsmon_conf.changed
   ignore_errors: "{{ ansible_check_mode }}"

@@ -7,32 +7,32 @@
 
   pre_tasks:
     - name: Check Docker version
-      command: "sudo docker version"
+      ansible.builtin.command: "sudo docker version"
       register: docker_version
       changed_when: false
       failed_when: false
 
     - name: Debug Docker version output
-      debug:
+      ansible.builtin.debug:
         msg: "Docker version output: {{ docker_version.stdout | default('Not available') }}"
 
     - name: Fail if Docker is not available
-      fail:
+      ansible.builtin.fail:
         msg: "Docker is not available on the target host. Output: {{ docker_version.stderr | default('No error message') }}"
       when: docker_version.rc != 0
 
     - name: Check if Docker Compose v2 is available
-      command: "sudo docker compose version"
+      ansible.builtin.command: "sudo docker compose version"
       register: compose_check
       changed_when: false
       failed_when: false
 
     - name: Fail if Docker Compose is not available
-      fail:
+      ansible.builtin.fail:
         msg: "Docker Compose is not available on the target host."
       when: compose_check.rc != 0
 
   tasks:
     - name: Include Gitea Act Runner tasks
-      include_tasks: tasks/main.yml
+      ansible.builtin.include_tasks: tasks/main.yml
       when: "'gitea-act-runner' in host_roles"

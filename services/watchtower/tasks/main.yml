@@ -68,7 +68,7 @@
 
 # User-space watchtower setup
 - name: Setup user-space watchtower instances
-  include_tasks: user-watchtower.yml
+  ansible.builtin.include_tasks: user-watchtower.yml
   loop: "{{ watchtower_user_instances }}"
   when:
     - install_watchtower_user | bool

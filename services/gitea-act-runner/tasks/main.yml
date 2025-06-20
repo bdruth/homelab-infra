@@ -3,7 +3,7 @@
 
 - name: Ensure directories exist
   become: true
-  file:
+  ansible.builtin.file:
     path: "{{ item }}"
     state: directory
     mode: "0755"
@@ -14,7 +14,7 @@
 
 - name: Create Docker Compose file for Gitea Act Runner
   become: true
-  template:
+  ansible.builtin.template:
     src: docker-compose.yml.j2
     dest: "{{ gitea_act_runner_dir }}/docker-compose/docker-compose.yml"
     mode: "0644"
@@ -22,15 +22,14 @@
 
 - name: Start Gitea Act Runner using docker compose
   become: true
-  command: "sudo docker compose up -d --pull always --force-recreate"
+  ansible.builtin.command: "sudo docker compose up -d --pull always --force-recreate"
   args:
     chdir: "{{ gitea_act_runner_dir }}/docker-compose"
   register: compose_result
   changed_when: "'Creating' in compose_result.stdout or 'Recreating' in compose_result.stdout or 'Starting' in compose_result.stdout"
 
 - name: Verify container is running
-  ansible.builtin.shell: sudo docker ps | grep watchtower
-  ignore_errors: true
+  ansible.builtin.shell: set -o pipefail; sudo docker ps | grep watchtower
   retries: 15
   delay: 4
   until: container_check.rc == 0
@@ -40,6 +39,6 @@
   failed_when: false
 
 - name: Fail if container is not running
-  fail:
+  ansible.builtin.fail:
     msg: "Gitea Act Runner container is not running"
   when: container_check.rc != 0

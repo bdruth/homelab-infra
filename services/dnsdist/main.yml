@@ -11,27 +11,29 @@
 
   tasks:
     - name: Reconfigure Timezone Data
-      shell: timedatectl set-timezone America/Chicago && dpkg-reconfigure -f noninteractive tzdata
+      ansible.builtin.shell: timedatectl set-timezone America/Chicago && dpkg-reconfigure -f noninteractive tzdata
+      changed_when: false
 
     - name: Update apt cache
-      apt:
+      ansible.builtin.apt:
         update_cache: true
 
     - name: Install APT packages
-      apt:
+      ansible.builtin.apt:
         pkg:
           - dnsdist
           - net-tools
           - rsyslog
-        state: latest
+        state: present
 
     - name: Make sure dnsdist.conf destination dir exists
-      file:
+      ansible.builtin.file:
         path: "{{ dnsdist_conf_path | dirname }}"
         state: directory
+        mode: "0755"
 
     - name: Create dnsdist.conf
-      template:
+      ansible.builtin.template:
         src: dnsdist.conf.j2
         dest: "{{ dnsdist_conf_path }}"
         owner: root
@@ -40,12 +42,13 @@
       register: dnsdist_conf
 
     - name: Make sure custom lua path dir exists
-      file:
+      ansible.builtin.file:
         path: "{{ custom_lua_path }}"
         state: directory
+        mode: "0755"
 
     - name: Create orderedwrandom Lua policy
-      copy:
+      ansible.builtin.copy:
         src: orderedwrandom.lua
         dest: "{{ custom_lua_path }}/orderedwrandom.lua"
         owner: root
@@ -53,8 +56,8 @@
         mode: "0644"
       register: orderedwrandom_lua
 
-    - name: restart dnsdist
-      service:
+    - name: Restart dnsdist
+      ansible.builtin.service:
         name: dnsdist
         state: restarted
       when: dnsdist_conf.changed or orderedwrandom_lua.changed
@@ -64,17 +67,17 @@
     #     var: ansible_facts
 
     - name: Create rsyslog configuration file for dnsdist
-      copy:
+      ansible.builtin.copy:
         dest: /etc/rsyslog.d/dnsdist.conf
         content: |
           :syslogtag, startswith, "dnsdist" action(type="omfwd" target="{{ remote_syslog_server }}" port="{{ remote_syslog_server_port }}" protocol="udp")
         owner: root
         group: root
-        mode: 0644
+        mode: "0644"
       notify: Restart rsyslog
 
   handlers:
     - name: Restart rsyslog
-      systemd:
+      ansible.builtin.systemd:
         name: rsyslog
         state: restarted

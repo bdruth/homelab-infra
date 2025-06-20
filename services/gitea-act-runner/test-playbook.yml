@@ -9,10 +9,15 @@
       ansible.builtin.include_vars:
         file: defaults/main.yml
 
+    - name: Check if host-specific variables exist
+      ansible.builtin.stat:
+        path: vars/main.yml
+      register: host_vars_file
+
     - name: Include host-specific variables if they exist
       ansible.builtin.include_vars:
         file: vars/main.yml
-      ignore_errors: true
+      when: host_vars_file.stat.exists
 
     - name: Include gitea-act-runner tasks
       ansible.builtin.include_tasks: tasks/main.yml
@@ -25,10 +30,15 @@
       ansible.builtin.include_vars:
         file: defaults/main.yml
 
+    - name: Check if host-specific variables exist for validation
+      ansible.builtin.stat:
+        path: vars/main.yml
+      register: host_vars_validation_file
+
     - name: Include host-specific variables for validation if they exist
       ansible.builtin.include_vars:
         file: vars/main.yml
-      ignore_errors: true
+      when: host_vars_validation_file.stat.exists
 # TODO: Write test tasks for Gitea Act Runner configuration validation
 # - name: Import Gitea Act Runner test tasks
 #   ansible.builtin.import_tasks: tasks/test.yml

@@ -4,22 +4,23 @@
   vars_files:
     - vars/main.yml
   vars:
-    setupVars_path: /etc/pihole/setupVars.conf
+    setup_vars_path: /etc/pihole/setupVars.conf
     web_password: "test_hash"
 
   tasks:
     - name: Test pihole.toml templating
-      template:
+      ansible.builtin.template:
         src: pihole.toml.j2
         dest: /tmp/pihole.toml.test
+        mode: "0644"
       check_mode: false
 
     - name: Display generated pihole.toml
-      command: cat /tmp/pihole.toml.test
+      ansible.builtin.command: cat /tmp/pihole.toml.test
       register: pihole_toml_content
       changed_when: false
       check_mode: false
 
     - name: Show pihole.toml content
-      debug:
+      ansible.builtin.debug:
         var: pihole_toml_content.stdout_lines

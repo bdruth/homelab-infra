@@ -63,14 +63,16 @@
 
 - name: Check NUT service status
   ansible.builtin.systemd:
-    name: "{{ (ansible_distribution == 'Debian')|ternary('nut.target', 'nut-monitor') }}"
+    name: "{{ (ansible_distribution == 'Debian') | ternary('nut.target', 'nut-monitor') }}"
   register: nut_service_status
   ignore_errors: true
   tags: [nut-test]
 
 - name: Display NUT service status
   ansible.builtin.debug:
-    msg: "NUT service status: {{ 'OK - Active' if nut_service_status.status.ActiveState == 'active' else 'Warning - Not active (' + nut_service_status.status.ActiveState|default('unknown') + ')' }}"
+    msg: >-
+      NUT service status: {{ 'OK - Active' if nut_service_status.status.ActiveState == 'active'
+      else 'Warning - Not active (' + nut_service_status.status.ActiveState | default('unknown') + ')' }}
   tags: [nut-test]
 
 - name: Test UPS connection (if configured)

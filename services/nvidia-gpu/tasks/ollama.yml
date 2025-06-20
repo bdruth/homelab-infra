@@ -10,6 +10,9 @@
   when: install_ollama | bool
 
 - name: Install latest Ollama using official installer
+  when:
+    - install_ollama | bool
+    - ollama_version_check.rc != 0
   block:
     - name: Create temp directory for Ollama installation
       ansible.builtin.tempfile:
@@ -37,9 +40,6 @@
       ansible.builtin.file:
         path: "{{ ollama_temp_dir.path }}"
         state: absent
-  when:
-    - install_ollama | bool
-    - ollama_version_check.rc != 0
 
 - name: Enable Ollama service
   ansible.builtin.systemd:

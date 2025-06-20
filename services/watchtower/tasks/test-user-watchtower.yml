@@ -1,7 +1,7 @@
 ---
 # Test tasks for user-space watchtower instance
 
-- name: "Check if user {{ item.username }} watchtower container is running"
+- name: "Check if watchtower container is running for user {{ item.username }}"
   ansible.builtin.shell: |
     export XDG_RUNTIME_DIR=/run/user/{{ item.uid }}
     export DOCKER_HOST=unix:///run/user/{{ item.uid }}/podman/podman.sock
@@ -60,7 +60,9 @@
 
 - name: "Display user watchtower service status for {{ item.username }}"
   ansible.builtin.debug:
-    msg: "User watchtower service status ({{ item.username }}): {{ 'OK - Active' if user_watchtower_service_status.status.ActiveState == 'active' else 'Failed - Not active' }}"
+    msg: >-
+      User watchtower service status ({{ item.username }}):
+      {{ 'OK - Active' if user_watchtower_service_status.status.ActiveState == 'active' else 'Failed - Not active' }}
   tags: [user-watchtower-test]
 
 - name: "Check podman socket status for user {{ item.username }}"

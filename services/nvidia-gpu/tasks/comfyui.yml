@@ -83,10 +83,14 @@
   ansible.builtin.command:
     cmd: "{{ comfyui_venv_path }}/bin/pip install torch torchvision torchaudio --extra-index-url {{ comfyui_torch_cuda_url }}"
   when: nvidia_install_gpu_drivers | bool
+  register: torch_install
+  changed_when: "'Successfully installed' in torch_install.stdout or 'Requirement already satisfied' not in torch_install.stdout"
 
 - name: Install ComfyUI requirements
   ansible.builtin.command:
     cmd: "{{ comfyui_venv_path }}/bin/pip install -r {{ comfyui_install_dir }}/requirements.txt"
+  register: comfyui_requirements
+  changed_when: "'Successfully installed' in comfyui_requirements.stdout or 'Requirement already satisfied' not in comfyui_requirements.stdout"
 
 - name: Set ownership of ComfyUI directory and all subdirectories
   ansible.builtin.file:
@@ -106,7 +110,9 @@
     group: root
     mode: "0644"
   register: comfyui_service_file
-  notify: Reload systemd
+  notify:
+    - Reload systemd
+    - Restart ComfyUI service
 
 - name: Enable and start ComfyUI service
   ansible.builtin.systemd:
@@ -115,9 +121,3 @@
     state: started
     daemon_reload: true
   ignore_errors: "{{ ansible_check_mode }}"
-
-- name: Restart ComfyUI service if service file changed
-  ansible.builtin.systemd:
-    name: comfyui
-    state: restarted
-  when: comfyui_service_file.changed

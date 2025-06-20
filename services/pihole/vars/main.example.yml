@@ -5,7 +5,7 @@ s3_api_endpoint_url: "https://{{ s3_api_host_name }}"
 s3_teleporter_bucket_name: example-bucket
 s3_teleporter_object_name: example/object.zip
 pushover_token: exampletoken123456
-pushover_userId: exampleuserid123456
+pushover_user_id: exampleuserid123456
 privacylevel: 0
 block_ttl: 120
 maxdbdays: 15

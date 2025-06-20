@@ -1,0 +1,21 @@
+---
+# Basic ansible-lint configuration
+exclude_paths:
+  - .git/
+  - .github/
+  - .gitlab/
+  - .cache/
+  - .ansible/
+  - .pytest_cache/
+  - __pycache__/
+
+# Use default rules
+skip_list: []
+
+# Enable default rules
+use_default_rules: true
+
+# Ansible-lint configuration
+loop_var_prefix: ^(item|element|member)_
+warn_list:
+  - experimental

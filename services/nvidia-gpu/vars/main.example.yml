@@ -82,14 +82,17 @@ comfyui_skip_model_downloads: false # Skip downloading models (useful for testin
 
 # FLUX.1 model configuration
 comfyui_flux1_variant: "schnell" # Which FLUX.1 variant to use (schnell or dev)
-comfyui_flux1_model_url: "https://huggingface.co/black-forest-labs/FLUX.1-{{ comfyui_flux1_variant }}/resolve/main/flux1-{{ comfyui_flux1_variant }}.safetensors" # URL to the FLUX.1 model
+comfyui_flux1_model_url: >-
+  https://huggingface.co/black-forest-labs/FLUX.1-{{ comfyui_flux1_variant }}/resolve/main/flux1-{{
+  comfyui_flux1_variant }}.safetensors" # URL to the FLUX.1 model
 comfyui_flux1_model_filename: "flux1-{{ comfyui_flux1_variant }}.safetensors" # Filename for the FLUX.1 model
 comfyui_vae_url: "https://huggingface.co/black-forest-labs/FLUX.1-{{ comfyui_flux1_variant }}/resolve/main/ae.safetensors" # URL to the VAE model
 comfyui_clip_url: "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors" # URL to the CLIP model
 comfyui_t5xxl_use_fp8: false # Use FP8 version (smaller file, less precise) instead of FP16
-comfyui_t5xxl_url: "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/{% if comfyui_t5xxl_use_fp8 %}t5xxl_fp8_e4m3fn.safetensors{% else %}t5xxl_fp16.safetensors{% endif %}" # URL to the T5XXL model
+comfyui_t5xxl_url: >-
+  https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/{% if comfyui_t5xxl_use_fp8
+  %}t5xxl_fp8_e4m3fn.safetensors{% else %}t5xxl_fp16.safetensors{% endif %}" # URL to the T5XXL model
 comfyui_t5xxl_filename: "{% if comfyui_t5xxl_use_fp8 %}t5xxl_fp8_e4m3fn.safetensors{% else %}t5xxl_fp16.safetensors{% endif %}" # Filename for the T5XXL model
-
 # Stable Diffusion v1.5 model configuration
 comfyui_sd_v15_url: "https://huggingface.co/runwayml/stable-diffusion-v1-5/resolve/main/v1-5-pruned-emaonly.safetensors" # URL to the SD v1.5 model
 comfyui_sd_v15_filename: "v1-5-pruned-emaonly.safetensors" # Filename for the SD v1.5 model

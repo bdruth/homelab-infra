@@ -94,6 +94,9 @@
   when: nvidia_configure_egpu | bool
 
 - name: Configure thunderbolt eGPU support
+  when:
+    - nvidia_configure_egpu | bool
+    - boltctl_check is not defined or boltctl_check.rc == 0
   block:
     - name: Check if thunderbolt devices are present
       ansible.builtin.command:
@@ -121,6 +124,3 @@
       register: bolt_enroll
       changed_when: bolt_enroll.rc == 0
       failed_when: false
-  when:
-    - nvidia_configure_egpu | bool
-    - boltctl_check is not defined or boltctl_check.rc == 0

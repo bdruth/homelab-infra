@@ -1,7 +1,7 @@
 ---
 name: DNS Infrastructure Deployment
 
-on:
+"on":
   push:
     branches: ["main"]
     paths:

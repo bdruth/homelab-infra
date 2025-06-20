@@ -10,38 +10,38 @@
 
   pre_tasks:
     - name: Check if Synology host is reachable
-      ping:
+      ansible.builtin.ping:
       register: ping_result
 
     - name: Display successful connection
-      debug:
+      ansible.builtin.debug:
         msg: "Successfully connected to Synology NAS at {{ ansible_host }}"
       when: ping_result is succeeded
 
     - name: Check for Synology DSM
-      stat:
+      ansible.builtin.stat:
         path: /etc/synoinfo.conf
       register: synoinfo
 
     - name: Set fact that this is a Synology device
-      set_fact:
+      ansible.builtin.set_fact:
         is_synology: "{{ synoinfo.stat.exists | default(false) }}"
 
     - name: Verify Docker is available on Synology
-      stat:
+      ansible.builtin.stat:
         path: "{{ synology_docker_path }}"
       register: synology_docker_binary
       when: is_synology
 
     - name: Set proper Docker command path
-      set_fact:
+      ansible.builtin.set_fact:
         docker_cmd: "{{ synology_docker_path }}"
       when: is_synology and synology_docker_binary.stat.exists
 
     - name: Debug docker command path
-      debug:
+      ansible.builtin.debug:
         msg: "Using Docker command: {{ docker_cmd }}"
 
   tasks:
     - name: Include Gitea tasks
-      include_tasks: gitea/tasks/main.yml
+      ansible.builtin.include_tasks: gitea/tasks/main.yml

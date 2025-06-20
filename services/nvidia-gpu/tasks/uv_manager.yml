@@ -10,6 +10,9 @@
   when: install_uv | bool
 
 - name: Install uv package manager
+  when:
+    - install_uv | bool
+    - uv_version_check.rc != 0
   block:
     - name: Create temp directory for uv installation
       ansible.builtin.tempfile:
@@ -35,6 +38,3 @@
       ansible.builtin.file:
         path: "{{ uv_temp_dir.path }}"
         state: absent
-  when:
-    - install_uv | bool
-    - uv_version_check.rc != 0

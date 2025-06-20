@@ -5,5 +5,5 @@
   hosts: all
   become: true
   roles:
-    - nut
-  when: "'nut' in host_roles | default(['nut'])"
+    - role: nut
+      when: "'nut' in host_roles | default(['nut'])"

@@ -27,7 +27,10 @@
 
 - name: Add InfluxData repository (with fallback for newer Ubuntu)
   ansible.builtin.apt_repository:
-    repo: "deb https://repos.influxdata.com/{{ ansible_distribution | lower }} {{ 'jammy' if ansible_distribution_release in ['noble', 'mantic'] else ansible_distribution_release }} stable"
+    repo: >-
+      deb https://repos.influxdata.com/{{ ansible_distribution | lower }}
+      {{ 'jammy' if ansible_distribution_release in ['noble', 'mantic'] else ansible_distribution_release }}
+      stable
     state: present
     update_cache: true
   when: ansible_os_family == "Debian"

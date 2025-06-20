@@ -1,9 +1,9 @@
 ---
 name: Services Deployment Workflow
 
-on:
+"on":
   push:
-    branches: ["main"]
+    branches: [main]
     paths:
       - "services/**"
       - "setup-services.sh"
@@ -60,7 +60,8 @@ jobs:
             echo "Detecting which roles were changed..."
 
             # Check for changes in common files that should trigger full deployment
-            if git diff --name-only HEAD~1 | grep -E "^(services/inventory\.yml|services/infrastructure\.yml|services/ansible\.cfg|setup-services\.sh|services-deploy\.sh|services-pkgx-deploy\.sh)"; then
+            if git diff --name-only HEAD~1 | \
+               grep -E "^(services/inventory\.yml|services/infrastructure\.yml|services/ansible\.cfg|setup-services\.sh|services-deploy\.sh)"; then
               echo "✅ Common services files changed, will run full deployment"
               echo "FULL_DEPLOYMENT" > .deploy_playbooks
               echo "::set-output name=deploy_full::yes"

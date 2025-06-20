@@ -10,7 +10,7 @@ nut_upsmon_primary_pass: changeme_primary_password
 
 # Pushover notifications (optional)
 pushover_token: your_pushover_app_token
-pushover_userId: your_pushover_user_key
+pushover_user_id: your_pushover_user_key
 
 # Watchtower global settings
 watchtower_debug: false

@@ -10,6 +10,9 @@
   when: install_btop | bool
 
 - name: Install latest btop from GitHub
+  when:
+    - install_btop | bool
+    - btop_version_check.rc != 0 or btop_version not in btop_version_check.stdout
   block:
     - name: Create temp directory for btop download
       ansible.builtin.tempfile:
@@ -41,6 +44,3 @@
       ansible.builtin.file:
         path: "{{ btop_temp_dir.path }}"
         state: absent
-  when:
-    - install_btop | bool
-    - btop_version_check.rc != 0 or btop_version not in btop_version_check.stdout

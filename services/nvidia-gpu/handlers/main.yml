@@ -1,0 +1,16 @@
+---
+# Handlers for nvidia-gpu role
+
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart Open WebUI service
+  ansible.builtin.systemd:
+    name: open-webui
+    state: restarted
+
+- name: Restart ComfyUI service
+  ansible.builtin.systemd:
+    name: comfyui
+    state: restarted

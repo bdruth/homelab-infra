@@ -4,8 +4,9 @@
 - name: Import Drone Runner Exec configuration playbook
   hosts: all
   become: true
-  roles:
-    - drone-runner-exec
+  tasks:
+    - name: Include main tasks
+      ansible.builtin.include_tasks: tasks/main.yml
 
 - name: Validate Drone Runner Exec configuration
   hosts: all

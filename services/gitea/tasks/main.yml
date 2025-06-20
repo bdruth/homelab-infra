@@ -2,7 +2,7 @@
 # Tasks for managing Gitea on Synology DSM
 
 - name: Ensure directories exist
-  file:
+  ansible.builtin.file:
     path: "{{ item }}"
     state: directory
     mode: "0755"
@@ -11,14 +11,14 @@
     - "{{ gitea_data_dir }}"
 
 - name: Template docker-compose.yml
-  template:
+  ansible.builtin.template:
     src: gitea-docker-compose.yml.j2
     dest: "/volume1/docker/compose/gitea/docker-compose.yml"
     mode: "0644"
   register: compose_template
 
 - name: Start Gitea using docker compose
-  command: "{{ docker_cmd }} compose up -d --pull always"
+  ansible.builtin.command: "{{ docker_cmd }} compose up -d --pull always"
   args:
     chdir: "/volume1/docker/compose/gitea"
   register: result

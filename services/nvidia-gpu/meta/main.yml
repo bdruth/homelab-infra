@@ -14,7 +14,6 @@ galaxy_info:
     - cuda
     - ai
     - ml
-    - machine-learning
     - linux
 
 dependencies:

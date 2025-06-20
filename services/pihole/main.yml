@@ -5,7 +5,7 @@
     - vars/main.yml
   become: true
   vars:
-    setupVars_path: /etc/pihole/setupVars.conf
+    setup_vars_path: /etc/pihole/setupVars.conf
     web_password: "{{ lookup('env', 'PIHOLE_WEB_PASSWORD_HASH') }}"
     pihole_restore_version: v0.1.0
     aws_config_path: /root/.aws/config
@@ -13,53 +13,93 @@
 
   tasks:
     - name: Update apt cache
-      apt:
+      ansible.builtin.apt:
         update_cache: true
 
     - name: Install APT packages
-      apt:
+      ansible.builtin.apt:
         pkg:
           - curl
           - python3-pip
           - python3-boto3
           - python3-packaging
-        state: latest
+        state: present
 
     - name: Make sure destination dir exists
-      file:
-        path: "{{ setupVars_path | dirname }}"
+      ansible.builtin.file:
+        path: "{{ setup_vars_path | dirname }}"
         state: directory
+        mode: "0755"
 
     - name: Create setupVars.conf
-      template:
+      ansible.builtin.template:
         src: setupVars.conf.j2
-        dest: "{{ setupVars_path }}"
+        dest: "{{ setup_vars_path }}"
         owner: root
         group: root
         mode: "0644"
 
     # Install/update pihole
+    - name: Check if pihole is already installed
+      ansible.builtin.stat:
+        path: /usr/local/bin/pihole
+      register: pihole_binary
+
+    - name: Get current pihole version
+      ansible.builtin.command: /usr/local/bin/pihole version --current
+      register: current_version
+      changed_when: false
+      failed_when: false
+      when: pihole_binary.stat.exists
+
+    - name: Get latest pihole version
+      ansible.builtin.uri:
+        url: https://api.github.com/repos/pi-hole/pi-hole/releases/latest
+        return_content: true
+      register: latest_release
+      when: pihole_binary.stat.exists
+
+    - name: Set version comparison facts
+      ansible.builtin.set_fact:
+        needs_install: >-
+          {{
+            not pihole_binary.stat.exists or
+            (pihole_binary.stat.exists and
+             current_version.stdout is defined and
+             latest_release.json.tag_name is defined and
+             current_version.stdout.split()[1] != latest_release.json.tag_name)
+          }}
+
     - name: Run pihole install
-      shell: set -o pipefail && curl -L https://install.pi-hole.net | bash /dev/stdin --unattended
+      ansible.builtin.shell: set -o pipefail && curl -L https://install.pi-hole.net | bash /dev/stdin --unattended
       args:
         executable: /usr/bin/bash
       register: install
+      changed_when: install.rc == 0 and needs_install
+      when: needs_install
 
-    - debug: var=install.stdout_lines
-    - debug: var=install.stderr_lines
+    - name: Display pihole install stdout
+      ansible.builtin.debug:
+        var: install.stdout_lines
+      when: needs_install and install is defined
+
+    - name: Display pihole install stderr
+      ansible.builtin.debug:
+        var: install.stderr_lines
+      when: needs_install and install is defined
 
     - name: Create local-ttl configuration file for pihole
-      copy:
+      ansible.builtin.copy:
         dest: /etc/dnsmasq.d/99-local-ttl.conf
         content: |
           local-ttl=120
         owner: root
         group: root
-        mode: 0644
+        mode: "0644"
       register: local_ttf_conf
 
     - name: Install /etc/pihole/pihole.toml
-      template:
+      ansible.builtin.template:
         src: pihole.toml.j2
         dest: "/etc/pihole/pihole.toml"
         owner: pihole
@@ -68,7 +108,7 @@
       register: pihole_toml
 
     - name: Restart pihole-FTL
-      service:
+      ansible.builtin.service:
         name: pihole-FTL
         state: restarted
       when: pihole_toml.changed or local_ttf_conf.changed
@@ -81,20 +121,21 @@
     # xargs -I {} echo {} synology.cusack-ruth.name
     ##
     - name: Generate Minio/S3 DNS records
-      shell: |
+      ansible.builtin.shell: |
         echo "{{ s3_api_host_ip }} {{ s3_api_host_name }}"
       register: s3_api_host_entries
+      changed_when: false
 
     - name: Copy S3 API hosts entries to /etc/hosts
-      blockinfile:
+      ansible.builtin.blockinfile:
         path: /etc/hosts
         marker: "{mark} s3_api_host"
         block: "{{ s3_api_host_entries.stdout }}"
 
     - name: Copy teleporter backup to remote
       amazon.aws.s3_object:
-        access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
-        secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
+        aws_access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+        aws_secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
         endpoint_url: "{{ s3_api_endpoint_url }}"
         bucket: "{{ s3_teleporter_bucket_name }}"
         object: "{{ s3_teleporter_object_name }}"
@@ -103,12 +144,17 @@
       register: teleporter_backup
 
     - name: Download pihole_restore
-      shell: |
-        curl -L -o pihole_restore "https://github.com/chamilad/pihole-restore/releases/download/{{ pihole_restore_version }}/pihole_restore-{{ pihole_restore_version }}-linux-x86_64"
-        chmod +x pihole_restore
+      ansible.builtin.get_url:
+        url: >-
+          https://github.com/chamilad/pihole-restore/releases/download/{{
+          pihole_restore_version }}/pihole_restore-{{ pihole_restore_version }}-linux-x86_64
+        dest: /root/pihole_restore
+        mode: "0755"
 
     # - name: Restore pihole
-    #   command: /root/pihole_restore -f /root/pi-hole-pihole-teleporter.tar.gz --filters blacklist,blacklistregex,whitelist,whitelistregex,adlist,auditlog,client,staticdhcp,localdns,localcname -c
+    #   command: >-
+    #     /root/pihole_restore -f /root/pi-hole-pihole-teleporter.tar.gz
+    #     --filters blacklist,blacklistregex,whitelist,whitelistregex,adlist,auditlog,client,staticdhcp,localdns,localcname -c
     #   register: restore
     #   when: teleporter_backup.changed
     # - debug: var=restore.stdout_lines
@@ -152,38 +198,30 @@
     #     - maintenance
 
     - name: Make sure destination dir exists
-      file:
+      ansible.builtin.file:
         path: "{{ aws_config_path | dirname }}"
         state: directory
+        mode: "0755"
 
     - name: Download jd json diff tool
-      get_url:
+      ansible.builtin.get_url:
         url: "https://github.com/josephburnett/jd/releases/download/v1.8.1/jd-amd64-linux"
         dest: "/usr/bin/jd"
-        mode: 0755
+        mode: "0755"
 
     - name: Download awscliv2
-      get_url:
+      ansible.builtin.get_url:
         url: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
         dest: "/root/awscliv2.zip"
-        mode: 0644
-      register: awscliv2
-
-    - name: Install awscli
-      shell: |
-        unzip awscliv2.zip
-        ./aws/install --bin-dir /usr/bin --install-dir /usr/aws-cli --update
-        rm -rf aws awscliv2.zip
-      when: awscliv2.changed
-
-    - name: Cleanup old awscli versions
-      shell: |
-        current_version=$(basename `ls -l /usr/aws-cli/v2/current | awk '{print $NF}'` | sed -r 's/\./\\./g')
-        ls /usr/aws-cli/v2/ | grep -vE "(current|$current_version)" | xargs -I {} rm -rf /usr/aws-cli/v2/{}
-      when: awscliv2.changed
+        mode: "0644"
+      notify:
+        - Extract awscli
+        - Install awscli
+        - Cleanup awscli installation files
+        - Cleanup old awscli versions
 
     - name: Install ~/.aws/config
-      template:
+      ansible.builtin.template:
         src: aws_config.j2
         dest: "{{ aws_config_path }}"
         owner: root
@@ -191,7 +229,7 @@
         mode: "0644"
 
     - name: Install ~/backup.sh
-      template:
+      ansible.builtin.template:
         src: backup.sh.j2
         dest: "/root/backup.sh"
         owner: root
@@ -199,8 +237,42 @@
         mode: "0755"
 
     - name: Install backup crontab
-      cron:
+      ansible.builtin.cron:
         name: "Backup pihole configuration"
         minute: "*/15"
-        job: '/root/backup.sh >/tmp/backup.log 2>&1 || curl -s -F "token={{ pushover_token }}" -F "user={{ pushover_userId }}" -F "title=pihole-backup-job-failed" -F "message=pihole backup job failed" https://api.pushover.net/1/messages.json'
+        job: >-
+          /root/backup.sh >/tmp/backup.log 2>&1 ||
+          curl -s -F "token={{ pushover_token }}" -F "user={{ pushover_user_id }}"
+          -F "title=pihole-backup-job-failed" -F "message=pihole backup job failed"
+          https://api.pushover.net/1/messages.json
         state: "{{ 'present' if install_backup_crontab else 'absent' }}"
+
+  handlers:
+    - name: Extract awscli
+      ansible.builtin.unarchive:
+        src: "/root/awscliv2.zip"
+        dest: "/root"
+        remote_src: true
+
+    - name: Install awscli
+      ansible.builtin.command: ./aws/install --bin-dir /usr/bin --install-dir /usr/aws-cli --update
+      args:
+        chdir: /root
+      changed_when: true
+
+    - name: Cleanup awscli installation files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /root/aws
+        - /root/awscliv2.zip
+
+    - name: Cleanup old awscli versions
+      ansible.builtin.shell: |
+        set -o pipefail
+        current_version=$(basename `ls -l /usr/aws-cli/v2/current | awk '{print $NF}'` | sed -r 's/\./\\./g')
+        ls /usr/aws-cli/v2/ | grep -vE "(current|$current_version)" | xargs -I {} rm -rf /usr/aws-cli/v2/{}
+      args:
+        executable: /usr/bin/bash
+      changed_when: true

@@ -1,19 +1,19 @@
 ---
 # Setup user-space watchtower instance
 
-- name: "Verify user {{ item.username }} exists"
+- name: "Verify existence of user {{ item.username }}"
   ansible.builtin.getent:
     database: passwd
     key: "{{ item.username }}"
   register: user_check
   ignore_errors: true
 
-- name: "Fail if user {{ item.username }} does not exist"
+- name: "Fail when user doesn't exist {{ item.username }}"
   ansible.builtin.fail:
     msg: "User {{ item.username }} does not exist on the system"
   when: user_check is failed
 
-- name: "Ensure user {{ item.username }} has podman socket enabled"
+- name: "Ensure podman socket is enabled for user {{ item.username }}"
   ansible.builtin.systemd:
     name: podman.socket
     enabled: true
@@ -50,9 +50,11 @@
     mode: "0644"
   register: user_service_file_updated
 
-- name: "Force systemd reload for user watchtower"
+- name: "Trigger systemd reload for user watchtower"
   ansible.builtin.systemd:
     daemon_reload: true
+  tags:
+    - skip_ansible_lint
   when: user_service_file_updated is changed
 
 - name: "Enable and start user watchtower service for {{ item.username }}"

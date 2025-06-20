@@ -23,6 +23,5 @@ galaxy_info:
     - monitoring
     - power
     - nut
-    - network-ups-tools
 
 dependencies: []

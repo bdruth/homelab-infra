@@ -5,5 +5,5 @@
   hosts: all
   become: true
   roles:
-    - nvidia-gpu
-  when: "'nvidia-gpu' in host_roles | default(['nvidia-gpu'])"
+    - role: nvidia-gpu
+      when: "'nvidia-gpu' in host_roles | default(['nvidia-gpu'])"

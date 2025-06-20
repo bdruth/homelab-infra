@@ -4,8 +4,9 @@
 - name: Import Watchtower configuration playbook
   hosts: all
   become: true
-  roles:
-    - watchtower
+  tasks:
+    - name: Include main watchtower tasks
+      ansible.builtin.include_tasks: tasks/main.yml
 
 - name: Validate Watchtower configuration
   hosts: all
