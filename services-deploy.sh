@@ -4,7 +4,7 @@
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 # Setup Services environment
-"${SCRIPT_DIR}"/setup-services.sh
+"${SCRIPT_DIR}"/setup-ansible.sh
 
 # Parse command line arguments
 PLAYBOOK="services/infrastructure.yml"  # Default playbook

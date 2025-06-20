@@ -11,7 +11,7 @@ name: DNS Infrastructure Deployment
       - "infrastructure/modules/**"
       - "deploy.sh"
       - "pkgx-deploy.sh"
-      - "setup-services.sh"
+      - "setup-ansible.sh"
       - ".gitea/workflows/infrastructure-deploy.yml"
 
 jobs:

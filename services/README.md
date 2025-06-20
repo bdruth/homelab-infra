@@ -42,7 +42,7 @@ docker run --rm -it \
     pkgx +tofu +pip +ansible +ssh /bin/bash' # setup pkgx environment
 ```
 
-2. Setup services by running `./setup-services.sh` inside the pkgx shell
+2. Setup services by running `./setup-ansible.sh` inside the pkgx shell
 
 3. Run playbooks:
 
