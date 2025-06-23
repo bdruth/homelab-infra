@@ -61,6 +61,15 @@ open_webui_rag_web_search_engine: "duckduckgo" # Web search engine to use
 open_webui_rag_web_loader_engine: "playwright" # Web loader engine to use
 open_webui_enable_image_generation: true # Enable image generation integration
 
+# Open WebUI Authelia OIDC configuration
+open_webui_enable_authelia: false # Set to true to enable Authelia OIDC authentication
+open_webui_url: "" # URL where Open WebUI is accessible (defaults to https://ansible_fqdn if not set)
+open_webui_oauth_client_id: "open-webui" # OIDC client ID configured in Authelia
+open_webui_oauth_client_secret: "insecure_secret" # OIDC client secret configured in Authelia
+open_webui_authelia_url: "https://auth.example.com" # URL where Authelia is hosted
+open_webui_allowed_roles: "openwebui,openwebui-admin" # User roles allowed to access Open WebUI
+open_webui_admin_roles: "openwebui-admin" # User roles granted admin access in Open WebUI
+
 # ComfyUI configuration
 comfyui_install_dir: "/opt/comfyui" # Installation directory
 comfyui_port: "8188" # Port for ComfyUI

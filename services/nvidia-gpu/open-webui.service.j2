@@ -19,6 +19,20 @@ ExecStart=/usr/bin/docker run --name open-webui \
   -e ENABLE_SEARCH_QUERY_GENERATION={{ open_webui_enable_search_query_generation | string | lower }} \
   -e RAG_WEB_SEARCH_ENGINE={{ open_webui_rag_web_search_engine }} \
   -e RAG_WEB_LOADER_ENGINE={{ open_webui_rag_web_loader_engine }} \
+  {% if open_webui_enable_authelia | default(false) | bool %}\
+  -e WEBUI_URL={{ open_webui_url | default('https://' + ansible_fqdn) }} \
+  -e ENABLE_OAUTH_SIGNUP=true \
+  -e OAUTH_MERGE_ACCOUNTS_BY_EMAIL=true \
+  -e OAUTH_CLIENT_ID={{ open_webui_oauth_client_id }} \
+  -e OAUTH_CLIENT_SECRET={{ open_webui_oauth_client_secret }} \
+  -e OPENID_PROVIDER_URL={{ open_webui_authelia_url }}/api/oidc \
+  -e OAUTH_PROVIDER_NAME=Authelia \
+  -e OAUTH_SCOPES="openid email profile groups" \
+  -e ENABLE_OAUTH_ROLE_MANAGEMENT=true \
+  -e OAUTH_ALLOWED_ROLES={{ open_webui_allowed_roles | default('openwebui,openwebui-admin') }} \
+  -e OAUTH_ADMIN_ROLES={{ open_webui_admin_roles | default('openwebui-admin') }} \
+  -e OAUTH_ROLES_CLAIM=groups \
+  {% endif %}\
   {% if install_comfyui | bool %}-e COMFYUI_BASE_URL=http://{{ ansible_default_ipv4.address }}:{{ comfyui_port }}/ \
   -e ENABLE_IMAGE_GENERATION={{ open_webui_enable_image_generation | string | lower }} {% endif %} \
   -p {{ open_webui_port }}:{{ open_webui_port }} \
