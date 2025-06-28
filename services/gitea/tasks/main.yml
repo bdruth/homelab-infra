@@ -9,6 +9,7 @@
   loop:
     - "/volume1/docker/compose/gitea"
     - "{{ gitea_data_dir }}"
+    - "{{ postgres_data_dir }}"
 
 - name: Template docker-compose.yml
   ansible.builtin.template:
