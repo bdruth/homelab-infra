@@ -1,3 +1,4 @@
 ignore_all_files_in_gitignore: true
 ignored_paths: [".local/share/pkgx/", ".pkgx/", ".cache/pkgx/"]
 project_name: "homelab-infra"
+language: python

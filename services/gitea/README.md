@@ -29,6 +29,11 @@ This role deploys and manages a Gitea instance using Docker on a Synology NAS ru
 | `gitea_http_port`       | HTTP port for Gitea                     | `3000`                      |
 | `gitea_ssh_port`        | SSH port for Gitea                      | `222`                       |
 | `gitea_actions_enabled` | Enable Gitea Actions                    | `true`                      |
+| `postgres_image`        | PostgreSQL Docker image version         | `postgres:alpine`           |
+| `postgres_user`         | PostgreSQL database user                | `gitea`                     |
+| `postgres_password`     | PostgreSQL database password            | `gitea`                     |
+| `postgres_db`           | PostgreSQL database name                | `gitea`                     |
+| `postgres_data_dir`     | Directory to store PostgreSQL data      | `/volume1/docker/gitea_db`  |
 | `gitea_extra_env`       | Map of additional environment variables | -                           |
 | `gitea_labels`          | Map of Docker labels                    | Default: Watchtower enabled |
 

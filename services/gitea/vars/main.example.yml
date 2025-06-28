@@ -22,6 +22,13 @@ gitea_root_url: "https://gitea.example.com"
 
 # Actions configuration
 gitea_actions_enabled: "true"
+
+# PostgreSQL configuration
+postgres_image: "postgres:alpine"
+postgres_user: "gitea"
+postgres_password: "gitea"
+postgres_db: "gitea"
+postgres_data_dir: "/volume1/docker/gitea_db"
 # Optional: Additional environment variables
 # gitea_extra_env:
 #   GITEA_CUSTOM: "/data/gitea"

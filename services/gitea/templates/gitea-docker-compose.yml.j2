@@ -15,6 +15,11 @@ services:
       - ACTIONS_ENABLED={{ gitea_actions_enabled | default('true') }}
       - DOMAIN={{ gitea_domain | default('gitea.example.com') }}
       - ROOT_URL={{ gitea_root_url | default('https://gitea.example.com') }}
+      - DB_TYPE=postgres
+      - DB_HOST=postgres:5432
+      - DB_NAME={{ postgres_db | default('gitea') }}
+      - DB_USER={{ postgres_user | default('gitea') }}
+      - DB_PASSWD={{ postgres_password | default('gitea') }}
 {% if gitea_extra_env is defined %}
 {% for key, value in gitea_extra_env.items() %}
       - {{ key }}={{ value }}
@@ -39,3 +44,15 @@ services:
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
 {% endif %}
+
+  postgres:
+    image: {{ postgres_image | default('postgres:alpine') }}
+    environment:
+      - POSTGRES_USER={{ postgres_user | default('gitea') }}
+      - POSTGRES_PASSWORD={{ postgres_password | default('gitea') }}
+      - POSTGRES_DB={{ postgres_db | default('gitea') }}
+    restart: always
+    volumes:
+      - {{ postgres_data_dir }}:/var/lib/postgresql/data
+    networks:
+      - gitea
