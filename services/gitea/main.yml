@@ -59,5 +59,8 @@
       failed_when: false
 
   tasks:
+    - name: Include Gitea variables
+      ansible.builtin.include_vars: vars/main.yml
+
     - name: Include Gitea tasks
       ansible.builtin.include_tasks: tasks/main.yml
