@@ -1,0 +1,79 @@
+---
+# Test tasks for Gitea Act Runner (Docker Compose deployment)
+
+- name: Verify Gitea Act Runner directory exists
+  ansible.builtin.stat:
+    path: "{{ gitea_act_runner_dir }}"
+  register: runner_dir
+
+- name: Check if runner directory exists
+  ansible.builtin.assert:
+    that:
+      - runner_dir.stat.exists
+      - runner_dir.stat.isdir
+    fail_msg: "Gitea Act Runner directory does not exist at {{ gitea_act_runner_dir }}"
+    success_msg: "Gitea Act Runner directory exists"
+
+- name: Verify Docker Compose file exists
+  ansible.builtin.stat:
+    path: "{{ gitea_act_runner_dir }}/docker-compose/docker-compose.yml"
+  register: compose_file
+
+- name: Check if Docker Compose file exists
+  ansible.builtin.assert:
+    that:
+      - compose_file.stat.exists
+    fail_msg: "Docker Compose file does not exist"
+    success_msg: "Docker Compose file exists"
+
+- name: Verify Gitea Act Runner container is running
+  ansible.builtin.shell: |
+    set -o pipefail
+    sudo docker ps --filter "name=gitea-act-runner" --format "table {%raw%}{{.Names}}\t{{.Status}}{%endraw%}"
+  args:
+    executable: /bin/bash
+  register: container_status
+  changed_when: false
+  failed_when: false
+
+- name: Check if container is running
+  ansible.builtin.assert:
+    that:
+      - container_status.rc == 0
+      - "'gitea-act-runner' in container_status.stdout"
+    fail_msg: "Gitea Act Runner container is not running"
+    success_msg: "Gitea Act Runner container is running"
+
+- name: Check Docker Compose configuration
+  ansible.builtin.shell: |
+    set -o pipefail
+    cd {{ gitea_act_runner_dir }}/docker-compose && sudo docker compose config --quiet
+  args:
+    executable: /bin/bash
+  register: compose_config_check
+  changed_when: false
+  failed_when: false
+
+- name: Verify Docker Compose configuration is valid
+  ansible.builtin.assert:
+    that:
+      - compose_config_check.rc == 0
+    fail_msg: "Docker Compose configuration is invalid"
+    success_msg: "Docker Compose configuration is valid"
+
+- name: Check if registration token is configured
+  ansible.builtin.shell: |
+    set -o pipefail
+    grep -q "GITEA_RUNNER_REGISTRATION_TOKEN" {{ gitea_act_runner_dir }}/docker-compose/docker-compose.yml
+  args:
+    executable: /bin/bash
+  register: token_check
+  changed_when: false
+  failed_when: false
+
+- name: Verify registration token is configured
+  ansible.builtin.assert:
+    that:
+      - token_check.rc == 0
+    fail_msg: "Registration token is not configured in Docker Compose file"
+    success_msg: "Registration token is properly configured"

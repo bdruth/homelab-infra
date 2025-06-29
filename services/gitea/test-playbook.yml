@@ -1,16 +1,45 @@
 ---
 # Test playbook for Gitea role
 
-- name: Test Gitea role
-  hosts: localhost
-  connection: local
+- name: Define gitea group dynamically
+  hosts: all
   gather_facts: false
-
   tasks:
-    - name: Include Gitea tasks
-      ansible.builtin.include_tasks: tasks/main.yml
-      vars:
-        gitea_container_name: "gitea-test"
-        gitea_data_dir: "/tmp/gitea-test"
-        gitea_http_port: "13000"
-        gitea_ssh_port: "2222"
+    - name: Add host to gitea_hosts group if it has the role
+      ansible.builtin.group_by:
+        key: "gitea_hosts"
+      when: "'gitea' in hostvars[inventory_hostname].get('host_roles', [])"
+
+- name: Import Gitea configuration playbook
+  hosts: gitea_hosts
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Include gitea default variables
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/defaults/main.yml"
+
+    - name: Include host-specific variables
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/vars/main.yml"
+      failed_when: false
+
+    - name: Include gitea tasks
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/tasks/main.yml"
+
+- name: Validate Gitea configuration
+  hosts: gitea_hosts
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Include gitea default variables for validation
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/defaults/main.yml"
+
+    - name: Include host-specific variables for validation
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/vars/main.yml"
+      failed_when: false
+
+    - name: Import Gitea test tasks
+      ansible.builtin.import_tasks: "{{ playbook_dir }}/tasks/test.yml"

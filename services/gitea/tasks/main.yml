@@ -7,19 +7,19 @@
     state: directory
     mode: "0755"
   loop:
-    - "/volume1/docker/compose/gitea"
+    - "{{ gitea_compose_dir }}"
     - "{{ gitea_data_dir }}"
 
 - name: Template docker-compose.yml
   ansible.builtin.template:
     src: gitea-docker-compose.yml.j2
-    dest: "/volume1/docker/compose/gitea/docker-compose.yml"
+    dest: "{{ gitea_compose_dir }}/docker-compose.yml"
     mode: "0644"
   register: compose_template
 
 - name: Start Gitea using docker compose
   ansible.builtin.command: "{{ docker_cmd }} compose up -d --pull always"
   args:
-    chdir: "/volume1/docker/compose/gitea"
+    chdir: "{{ gitea_compose_dir }}"
   register: result
   changed_when: "'Creating' in result.stdout or 'Recreating' in result.stdout or 'Starting' in result.stdout"

@@ -1,15 +1,19 @@
 ---
 # Disk Monitoring Configuration Tasks
 
+- name: Set role directory path
+  ansible.builtin.set_fact:
+    disk_monitoring_role_path: "{{ role_path | default(playbook_dir) }}"
+
 - name: Check if host-specific variables file exists
   ansible.builtin.stat:
-    path: "{{ role_path }}/vars/{{ inventory_hostname }}.yml"
+    path: "{{ disk_monitoring_role_path }}/vars/{{ inventory_hostname }}.yml"
   register: host_vars_check
   delegate_to: localhost
 
 - name: Load host-specific variables
   ansible.builtin.include_vars:
-    file: "{{ role_path }}/vars/{{ inventory_hostname }}.yml"
+    file: "{{ disk_monitoring_role_path }}/vars/{{ inventory_hostname }}.yml"
   when: host_vars_check.stat.exists
 
 - name: Add InfluxData GPG key

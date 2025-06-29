@@ -1,0 +1,83 @@
+---
+# Test tasks for Gitea (Docker Compose on Synology)
+
+- name: Verify Gitea directories exist
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  register: gitea_dirs
+  with_items:
+    - "{{ gitea_compose_dir }}"
+    - "{{ gitea_data_dir }}"
+  loop_control:
+    label: "{{ item }}"
+
+- name: Check if Gitea directories exist
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+      - item.stat.isdir
+    fail_msg: "Gitea directory {{ item.item }} does not exist"
+    success_msg: "Gitea directory {{ item.item }} exists"
+  loop: "{{ gitea_dirs.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Verify docker-compose file exists
+  ansible.builtin.stat:
+    path: "{{ gitea_compose_dir }}/docker-compose.yml"
+  register: docker_compose_file
+
+- name: Check if docker-compose file exists
+  ansible.builtin.assert:
+    that:
+      - docker_compose_file.stat.exists
+    fail_msg: "Gitea docker-compose.yml file does not exist"
+    success_msg: "Gitea docker-compose.yml file exists"
+
+- name: Verify Gitea container is running
+  ansible.builtin.shell: |
+    set -o pipefail
+    {{ docker_cmd }} ps --filter "name={{ gitea_container_name }}" --format "table {%raw%}{{.Names}}\t{{.Status}}{%endraw%}"
+  args:
+    executable: /bin/bash
+  register: container_status
+  changed_when: false
+  failed_when: false
+
+- name: Check if Gitea container is running
+  ansible.builtin.assert:
+    that:
+      - container_status.rc == 0
+      - "gitea_container_name in container_status.stdout"
+    fail_msg: "Gitea container {{ gitea_container_name }} is not running"
+    success_msg: "Gitea container {{ gitea_container_name }} is running"
+
+- name: Check Docker Compose configuration
+  ansible.builtin.shell: |
+    set -o pipefail
+    cd {{ gitea_compose_dir }} && {{ docker_cmd }} compose config --quiet
+  args:
+    executable: /bin/bash
+  register: compose_config_check
+  changed_when: false
+  failed_when: false
+
+- name: Verify Docker Compose configuration is valid
+  ansible.builtin.assert:
+    that:
+      - compose_config_check.rc == 0
+    fail_msg: "Gitea Docker Compose configuration is invalid"
+    success_msg: "Gitea Docker Compose configuration is valid"
+
+- name: Test Gitea HTTP connectivity (if accessible)
+  ansible.builtin.uri:
+    url: "http://localhost:{{ gitea_http_port }}"
+    method: GET
+    status_code: [200, 302]
+  register: gitea_http_check
+  failed_when: false
+  changed_when: false
+
+- name: Report Gitea HTTP status
+  ansible.builtin.debug:
+    msg: "Gitea HTTP endpoint {{ 'is accessible' if gitea_http_check.status in [200, 302] else 'is not accessible' }}"

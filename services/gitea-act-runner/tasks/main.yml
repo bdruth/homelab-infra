@@ -29,7 +29,11 @@
   changed_when: "'Creating' in compose_result.stdout or 'Recreating' in compose_result.stdout or 'Starting' in compose_result.stdout"
 
 - name: Verify container is running
-  ansible.builtin.shell: set -o pipefail; sudo docker ps | grep watchtower
+  ansible.builtin.shell: |
+    set -o pipefail
+    sudo docker ps | grep gitea-act-runner
+  args:
+    executable: /bin/bash
   retries: 15
   delay: 4
   until: container_check.rc == 0

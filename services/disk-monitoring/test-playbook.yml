@@ -1,0 +1,45 @@
+---
+# Test playbook for Disk Monitoring configuration
+
+- name: Define disk-monitoring group dynamically
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Add host to disk_monitoring group if it has the role
+      ansible.builtin.group_by:
+        key: "disk_monitoring_hosts"
+      when: "'disk-monitoring' in hostvars[inventory_hostname].get('host_roles', [])"
+
+- name: Import Disk Monitoring configuration playbook
+  hosts: disk_monitoring_hosts
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Include disk-monitoring default variables
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/defaults/main.yml"
+
+    - name: Include host-specific variables if they exist
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/vars/main.yml"
+      failed_when: false
+
+    - name: Include disk-monitoring tasks
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/tasks/main.yml"
+
+- name: Validate Disk Monitoring configuration
+  hosts: disk_monitoring_hosts
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Include disk-monitoring default variables for validation
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/defaults/main.yml"
+
+    - name: Include host-specific variables for validation if they exist
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/vars/main.yml"
+      failed_when: false
+
+    - name: Import Disk Monitoring test tasks
+      ansible.builtin.import_tasks: "{{ playbook_dir }}/tasks/test.yml"

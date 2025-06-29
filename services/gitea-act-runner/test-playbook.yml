@@ -1,44 +1,43 @@
 ---
 # Test playbook for Gitea Act Runner role
 
-- name: Import Gitea Act Runner configuration playbook
+- name: Define gitea-act-runner group dynamically
   hosts: all
+  gather_facts: false
+  tasks:
+    - name: Add host to gitea_act_runner_hosts group if it has the role
+      ansible.builtin.group_by:
+        key: "gitea_act_runner_hosts"
+      when: "'gitea-act-runner' in hostvars[inventory_hostname].get('host_roles', [])"
+
+- name: Import Gitea Act Runner configuration playbook
+  hosts: gitea_act_runner_hosts
   become: true
+  gather_facts: true
   tasks:
     - name: Include gitea-act-runner default variables
       ansible.builtin.include_vars:
-        file: defaults/main.yml
+        file: "{{ playbook_dir }}/defaults/main.yml"
 
-    - name: Check if host-specific variables exist
-      ansible.builtin.stat:
-        path: vars/main.yml
-      register: host_vars_file
-
-    - name: Include host-specific variables if they exist
+    - name: Include host-specific variables
       ansible.builtin.include_vars:
-        file: vars/main.yml
-      when: host_vars_file.stat.exists
+        file: "{{ playbook_dir }}/vars/main.yml"
 
     - name: Include gitea-act-runner tasks
-      ansible.builtin.include_tasks: tasks/main.yml
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/tasks/main.yml"
 
 - name: Validate Gitea Act Runner CI configuration
-  hosts: all
+  hosts: gitea_act_runner_hosts
   become: true
+  gather_facts: true
   tasks:
     - name: Include gitea-act-runner default variables for validation
       ansible.builtin.include_vars:
-        file: defaults/main.yml
+        file: "{{ playbook_dir }}/defaults/main.yml"
 
-    - name: Check if host-specific variables exist for validation
-      ansible.builtin.stat:
-        path: vars/main.yml
-      register: host_vars_validation_file
-
-    - name: Include host-specific variables for validation if they exist
+    - name: Include host-specific variables for validation
       ansible.builtin.include_vars:
-        file: vars/main.yml
-      when: host_vars_validation_file.stat.exists
-# TODO: Write test tasks for Gitea Act Runner configuration validation
-# - name: Import Gitea Act Runner test tasks
-#   ansible.builtin.import_tasks: tasks/test.yml
+        file: "{{ playbook_dir }}/vars/main.yml"
+
+    - name: Import Gitea Act Runner test tasks
+      ansible.builtin.import_tasks: "{{ playbook_dir }}/tasks/test.yml"

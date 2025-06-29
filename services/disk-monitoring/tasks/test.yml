@@ -1,0 +1,45 @@
+---
+# Test tasks for Disk Monitoring
+
+- name: Verify Telegraf is installed
+  ansible.builtin.command: dpkg-query -W telegraf
+  register: telegraf_check
+  changed_when: false
+  failed_when: telegraf_check.rc != 0
+  when: ansible_os_family == "Debian"
+
+- name: Verify Telegraf configuration file exists
+  ansible.builtin.stat:
+    path: "/etc/telegraf/telegraf.conf"
+  register: telegraf_conf_file
+
+- name: Check if Telegraf configuration exists
+  ansible.builtin.assert:
+    that:
+      - telegraf_conf_file.stat.exists
+    fail_msg: "Telegraf configuration file does not exist"
+    success_msg: "Telegraf configuration file exists"
+
+- name: Verify disk-related configuration files exist
+  ansible.builtin.stat:
+    path: "/etc/telegraf/telegraf.d/disk.conf"
+  register: disk_conf_file
+
+- name: Check if disk configuration exists
+  ansible.builtin.assert:
+    that:
+      - disk_conf_file.stat.exists
+    fail_msg: "Disk monitoring configuration file does not exist at /etc/telegraf/telegraf.d/disk.conf"
+    success_msg: "Disk monitoring configuration file exists"
+
+- name: Check if Telegraf service is running
+  ansible.builtin.systemd:
+    name: telegraf
+  register: telegraf_service_status
+
+- name: Verify Telegraf service is active
+  ansible.builtin.assert:
+    that:
+      - telegraf_service_status.status.ActiveState == 'active'
+    fail_msg: "Telegraf service is not active"
+    success_msg: "Telegraf service is active"
