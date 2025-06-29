@@ -12,19 +12,10 @@
         _run_watchtower: "{{ 'watchtower' in host_roles | default([]) }}"
         _run_nvidia_gpu: "{{ 'nvidia-gpu' in host_roles | default([]) }}"
         _run_drone: "{{ 'drone' in host_roles | default([]) }}"
+        _run_drone_runner_exec: "{{ 'drone-runner-exec' in host_roles | default([]) }}"
         _run_disk_monitoring: "{{ 'disk-monitoring' in host_roles | default([]) }}"
-        install_watchtower: "{{ 'watchtower' in host_roles | default([]) or 'nvidia-gpu' in host_roles | default([]) }}"
-
-    - name: Debug role facts
-      ansible.builtin.debug:
-        msg:
-          - "host_roles: {{ host_roles | default([]) }}"
-          - "_run_nut: {{ _run_nut }}"
-          - "_run_watchtower: {{ _run_watchtower }}"
-          - "_run_nvidia_gpu: {{ _run_nvidia_gpu }}"
-          - "_run_drone: {{ _run_drone }}"
-          - "_run_disk_monitoring: {{ _run_disk_monitoring }}"
-          - "install_watchtower: {{ install_watchtower }}"
+        _run_gitea: "{{ 'gitea' in host_roles | default([]) }}"
+        _run_gitea_act_runner: "{{ 'gitea-act-runner' in host_roles | default([]) }}"
 
   roles:
     - role: nut
@@ -35,5 +26,11 @@
       when: _run_nvidia_gpu | bool
     - role: drone
       when: _run_drone | bool
+    - role: drone-runner-exec
+      when: _run_drone_runner_exec | bool
     - role: disk-monitoring
       when: _run_disk_monitoring | bool
+    - role: gitea
+      when: _run_gitea | bool
+    - role: gitea-act-runner
+      when: _run_gitea_act_runner | bool
