@@ -88,8 +88,3 @@
       register: yaml_valid
       failed_when: yaml_valid.rc != 0
       changed_when: false
-
-    - name: Display rendered templates
-      ansible.builtin.debug:
-        msg: "Rendered {{ item.name }} template:\n{{ lookup('file', 'tmp/watchtower-test-' + item.name + '.yml') }}"
-      with_items: "{{ test_scenarios }}"

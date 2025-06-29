@@ -47,6 +47,7 @@ services:
 {%- endif -%}
 {%- if poll_interval | default(watchtower_poll_interval) | default('') -%}
   {%- set env_vars = env_vars + ['WATCHTOWER_POLL_INTERVAL=' + (poll_interval | default(watchtower_poll_interval))] -%}
+  {%- set env_vars = env_vars + ['WATCHTOWER_TIMEOUT=' + (timeout | default(watchtower_timeout) | default('10s'))] -%}
 {%- endif -%}
 
 {%- set hostname = ansible_hostname | default('localhost') -%}

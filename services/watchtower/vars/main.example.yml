@@ -20,6 +20,7 @@ watchtower_rolling_restart: true
 # Schedule options (use one or the other)
 watchtower_schedule: "0 0 4 * * *" # Cron format: daily at 4 AM
 watchtower_poll_interval: "86400" # Alternative: seconds between checks
+watchtower_timeout: "10s" # HTTP timeout for update check
 
 # Container exclusions (list of container names to exclude from updates)
 watchtower_exclude_containers:
