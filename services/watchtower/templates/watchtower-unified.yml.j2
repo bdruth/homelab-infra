@@ -1,0 +1,69 @@
+{# This template handles both system and user watchtower instances #}
+{% if is_user is defined and is_user %}
+  {% set container_name = 'watchtower-' + username %}
+  {% set socket_path = '/run/user/' + uid + '/podman/podman.sock:/var/run/docker.sock' %}
+{% else %}
+  {% set container_name = 'watchtower' %}
+  {% set socket_path = '/var/run/docker.sock:/var/run/docker.sock' %}
+{% endif %}
+
+{% if ansible_all_ipv6_addresses | default([]) | length > 0 %}
+networks:
+  net:
+    driver: bridge
+    enable_ipv6: true
+{% endif %}
+
+services:
+  {{ container_name }}:
+    image: ghcr.io/nicholas-fedor/watchtower:{{ version | default(watchtower_version) | default('latest') }}
+    container_name: {{ container_name }}
+    volumes:
+      - {{ socket_path }}
+    restart: always
+    command: --disable-memory-swappiness
+    {%- if exclude_containers | default(watchtower_exclude_containers) | default([]) | length > 0 %} --disable-containers {% for container in exclude_containers | default(watchtower_exclude_containers) | default([]) %}{{ container }}{% if not loop.last %},{% endif %}{% endfor %}{% endif %}
+
+{% if ansible_all_ipv6_addresses | default([]) | length > 0 %}
+    networks:
+      - net
+{% endif %}
+    environment:
+{%- set env_vars = [] -%}
+{%- if debug | default(watchtower_debug) | default(false) | bool -%}
+  {%- set env_vars = env_vars + ['WATCHTOWER_DEBUG=true'] -%}
+{%- endif -%}
+{%- if cleanup | default(watchtower_cleanup) | default(true) | bool -%}
+  {%- set env_vars = env_vars + ['WATCHTOWER_CLEANUP=true'] -%}
+{%- endif -%}
+{%- if include_stopped | default(watchtower_include_stopped) | default(false) | bool -%}
+  {%- set env_vars = env_vars + ['WATCHTOWER_INCLUDE_STOPPED=true'] -%}
+{%- endif -%}
+{%- if rolling_restart | default(watchtower_rolling_restart) | default(true) | bool -%}
+  {%- set env_vars = env_vars + ['WATCHTOWER_ROLLING_RESTART=true'] -%}
+{%- endif -%}
+{%- if schedule | default(watchtower_schedule) | default('0 0 4 * * *') -%}
+  {%- set env_vars = env_vars + ['WATCHTOWER_SCHEDULE=' + (schedule | default(watchtower_schedule) | default('0 0 4 * * *'))] -%}
+{%- endif -%}
+{%- if poll_interval | default(watchtower_poll_interval) | default('') -%}
+  {%- set env_vars = env_vars + ['WATCHTOWER_POLL_INTERVAL=' + (poll_interval | default(watchtower_poll_interval))] -%}
+{%- endif -%}
+
+{%- set hostname = ansible_hostname | default('localhost') -%}
+{%- if is_user | default(false) -%}
+  {%- set hostname = hostname + '-' + username -%}
+{%- endif -%}
+
+{%- if notifications_enabled | default(watchtower_notifications_enabled) | default(false) | bool 
+   and pushover_app_token | default(watchtower_pushover_app_token) | default('') 
+   and pushover_user_key | default(watchtower_pushover_user_key) | default('') -%}
+  {%- set env_vars = env_vars + [
+    'WATCHTOWER_NOTIFICATIONS=shoutrrr',
+    'WATCHTOWER_NOTIFICATION_URL=pushover://shoutrrr:' + (pushover_app_token | default(watchtower_pushover_app_token)) + '@' + (pushover_user_key | default(watchtower_pushover_user_key)),
+    'WATCHTOWER_NOTIFICATIONS_HOSTNAME=' + hostname
+  ] -%}
+{%- endif %}
+
+{% for var in env_vars %}
+      - {{ var }}
+{% endfor %}

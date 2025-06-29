@@ -1,0 +1,95 @@
+---
+- name: Test watchtower template rendering
+  vars:
+    test_scenarios:
+      - name: "system_container"
+        vars:
+          watchtower_version: "latest"
+          watchtower_exclude_containers: ["container1", "container2"]
+          watchtower_debug: true
+          watchtower_cleanup: true
+          watchtower_include_stopped: false
+          watchtower_rolling_restart: true
+          watchtower_schedule: "0 0 4 * * *"
+          watchtower_poll_interval: "24h"
+          watchtower_notifications_enabled: true
+          watchtower_pushover_app_token: "test_app_token"
+          watchtower_pushover_user_key: "test_user_key"
+      - name: "user_container"
+        vars:
+          is_user: true
+          username: "testuser"
+          uid: "1000"
+          version: "latest"
+          exclude_containers: ["container1", "container2"]
+          debug: true
+          cleanup: true
+          include_stopped: false
+          rolling_restart: true
+          schedule: "0 0 4 * * *"
+          poll_interval: "24h"
+          notifications_enabled: true
+          pushover_app_token: "test_app_token"
+          pushover_user_key: "test_user_key"
+  block:
+    - name: Create temporary directory in project space
+      ansible.builtin.file:
+        path: "tmp"
+        state: directory
+        mode: "0755"
+      delegate_to: localhost
+
+    - name: Render template for testing (system)
+      ansible.builtin.template:
+        src: watchtower-unified.yml.j2
+        dest: "tmp/watchtower-test-system_container.yml"
+        mode: "0644"
+      vars:
+        watchtower_version: "latest"
+        watchtower_exclude_containers: ["container1", "container2"]
+        watchtower_debug: true
+        watchtower_cleanup: true
+        watchtower_include_stopped: false
+        watchtower_rolling_restart: true
+        watchtower_schedule: "0 0 4 * * *"
+        watchtower_poll_interval: "24h"
+        watchtower_notifications_enabled: true
+        watchtower_pushover_app_token: "test_app_token"
+        watchtower_pushover_user_key: "test_user_key"
+      delegate_to: localhost
+
+    - name: Render template for testing (user)
+      ansible.builtin.template:
+        src: watchtower-unified.yml.j2
+        dest: "tmp/watchtower-test-user_container.yml"
+        mode: "0644"
+      vars:
+        is_user: true
+        username: "testuser"
+        uid: "1000"
+        version: "latest"
+        exclude_containers: ["container1", "container2"]
+        debug: true
+        cleanup: true
+        include_stopped: false
+        rolling_restart: true
+        schedule: "0 0 4 * * *"
+        poll_interval: "24h"
+        notifications_enabled: true
+        pushover_app_token: "test_app_token"
+        pushover_user_key: "test_user_key"
+      delegate_to: localhost
+
+    - name: Check if yaml is valid
+      ansible.builtin.command: >
+        uv run python -c "import sys, yaml; yaml.safe_load(sys.stdin)" < tmp/watchtower-test-{{ item.name }}.yml
+      with_items: "{{ test_scenarios }}"
+      delegate_to: localhost
+      register: yaml_valid
+      failed_when: yaml_valid.rc != 0
+      changed_when: false
+
+    - name: Display rendered templates
+      ansible.builtin.debug:
+        msg: "Rendered {{ item.name }} template:\n{{ lookup('file', 'tmp/watchtower-test-' + item.name + '.yml') }}"
+      with_items: "{{ test_scenarios }}"

@@ -1,0 +1,9 @@
+---
+- name: Test watchtower templates
+  hosts: localhost
+  connection: local
+  gather_facts: true
+
+  tasks:
+    - name: Include template test tasks
+      ansible.builtin.include_tasks: tasks/test_template_rendering.yml

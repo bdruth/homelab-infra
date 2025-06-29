@@ -24,7 +24,7 @@
 
 - name: Create watchtower docker-compose.yml file
   ansible.builtin.template:
-    src: watchtower-docker-compose.yml.j2
+    src: watchtower-unified.yml.j2
     dest: "{{ watchtower_install_dir }}/docker-compose.yml"
     owner: root
     group: root
