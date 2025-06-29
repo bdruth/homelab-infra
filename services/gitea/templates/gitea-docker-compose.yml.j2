@@ -7,7 +7,7 @@ networks:
 
 services:
   server:
-    image: gitea/gitea:{{ gitea_version | default('latest') }}
+    image: {{ gitea_repo | default('gitea') }}/gitea:{{ gitea_version | default('latest') }}
     container_name: {{ gitea_container_name | default('gitea') }}
     environment:
       - USER_UID={{ gitea_user_uid | default('1026') }}

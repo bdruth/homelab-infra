@@ -19,23 +19,24 @@ This role deploys and manages a Gitea instance using Docker on a Synology NAS ru
 
 ## Variables
 
-| Variable                | Description                             | Default                     |
-| ----------------------- | --------------------------------------- | --------------------------- |
-| `gitea_version`         | Gitea Docker image version              | `latest`                    |
-| `gitea_container_name`  | Docker container name                   | `gitea`                     |
-| `gitea_user_uid`        | UID for the Gitea user                  | `1026`                      |
-| `gitea_user_gid`        | GID for the Gitea user                  | `100`                       |
-| `gitea_data_dir`        | Directory to store Gitea data           | `/volume1/docker/gitea`     |
-| `gitea_http_port`       | HTTP port for Gitea                     | `3000`                      |
-| `gitea_ssh_port`        | SSH port for Gitea                      | `222`                       |
-| `gitea_actions_enabled` | Enable Gitea Actions                    | `true`                      |
-| `postgres_image`        | PostgreSQL Docker image version         | `postgres:alpine`           |
-| `postgres_user`         | PostgreSQL database user                | `gitea`                     |
-| `postgres_password`     | PostgreSQL database password            | `gitea`                     |
-| `postgres_db`           | PostgreSQL database name                | `gitea`                     |
-| `postgres_data_dir`     | Directory to store PostgreSQL data      | `/volume1/docker/gitea_db`  |
-| `gitea_extra_env`       | Map of additional environment variables | -                           |
-| `gitea_labels`          | Map of Docker labels                    | Default: Watchtower enabled |
+| Variable                | Description                              | Default                     |
+| ----------------------- | ---------------------------------------- | --------------------------- |
+| `gitea_repo`            | Gitea Docker image repo (support custom) | `gitea`                     |
+| `gitea_version`         | Gitea Docker image version               | `latest`                    |
+| `gitea_container_name`  | Docker container name                    | `gitea`                     |
+| `gitea_user_uid`        | UID for the Gitea user                   | `1026`                      |
+| `gitea_user_gid`        | GID for the Gitea user                   | `100`                       |
+| `gitea_data_dir`        | Directory to store Gitea data            | `/volume1/docker/gitea`     |
+| `gitea_http_port`       | HTTP port for Gitea                      | `3000`                      |
+| `gitea_ssh_port`        | SSH port for Gitea                       | `222`                       |
+| `gitea_actions_enabled` | Enable Gitea Actions                     | `true`                      |
+| `postgres_image`        | PostgreSQL Docker image version          | `postgres:alpine`           |
+| `postgres_user`         | PostgreSQL database user                 | `gitea`                     |
+| `postgres_password`     | PostgreSQL database password             | `gitea`                     |
+| `postgres_db`           | PostgreSQL database name                 | `gitea`                     |
+| `postgres_data_dir`     | Directory to store PostgreSQL data       | `/volume1/docker/gitea_db`  |
+| `gitea_extra_env`       | Map of additional environment variables  | -                           |
+| `gitea_labels`          | Map of Docker labels                     | Default: Watchtower enabled |
 
 ## Usage
 

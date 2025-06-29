@@ -2,6 +2,7 @@
 # Example variables for Gitea Ansible role
 
 # Container and image configuration
+gitea_repo: "gitea"
 gitea_version: "latest"
 gitea_container_name: "gitea"
 
