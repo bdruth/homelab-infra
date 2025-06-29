@@ -39,21 +39,21 @@
     owner: "{{ item.username }}"
     group: "{{ item.username }}"
     mode: "0644"
-    variables:
-      is_user: true
-      username: "{{ item.username }}"
-      uid: "{{ item.uid }}"
-      version: "{{ item.version | default('latest') }}"
-      exclude_containers: "{{ item.exclude_containers | default([]) }}"
-      debug: "{{ item.debug | default(false) }}"
-      cleanup: "{{ item.cleanup | default(true) }}"
-      include_stopped: "{{ item.include_stopped | default(false) }}"
-      rolling_restart: "{{ item.rolling_restart | default(true) }}"
-      schedule: "{{ item.schedule | default('0 0 4 * * *') }}"
-      poll_interval: "{{ item.poll_interval | default('') }}"
-      notifications_enabled: "{{ item.notifications_enabled | default(false) }}"
-      pushover_app_token: "{{ item.pushover_app_token | default('') }}"
-      pushover_user_key: "{{ item.pushover_user_key | default('') }}"
+  vars:
+    is_user: true
+    username: "{{ item.username }}"
+    uid: "{{ item.uid }}"
+    version: "{{ item.version | default('latest') }}"
+    exclude_containers: "{{ item.exclude_containers | default([]) }}"
+    debug: "{{ item.debug | default(false) }}"
+    cleanup: "{{ item.cleanup | default(true) }}"
+    include_stopped: "{{ item.include_stopped | default(false) }}"
+    rolling_restart: "{{ item.rolling_restart | default(true) }}"
+    schedule: "{{ item.schedule | default('0 0 4 * * *') }}"
+    poll_interval: "{{ item.poll_interval | default('') }}"
+    notifications_enabled: "{{ item.notifications_enabled | default(false) }}"
+    pushover_app_token: "{{ item.pushover_app_token | default('') }}"
+    pushover_user_key: "{{ item.pushover_user_key | default('') }}"
   register: user_watchtower_config_updated
 
 - name: "Create user watchtower service file for {{ item.username }}"
