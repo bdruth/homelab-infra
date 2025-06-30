@@ -17,14 +17,14 @@
   tasks:
     - name: Include gitea-act-runner default variables
       ansible.builtin.include_vars:
-        file: "{{ playbook_dir }}/defaults/main.yml"
+        file: "defaults/main.yml"
 
     - name: Include host-specific variables
       ansible.builtin.include_vars:
-        file: "{{ playbook_dir }}/vars/main.yml"
+        file: "vars/main.yml"
 
     - name: Include gitea-act-runner tasks
-      ansible.builtin.include_tasks: "{{ playbook_dir }}/tasks/main.yml"
+      ansible.builtin.include_tasks: "tasks/main.yml"
 
 - name: Validate Gitea Act Runner CI configuration
   hosts: gitea_act_runner_hosts
@@ -33,11 +33,11 @@
   tasks:
     - name: Include gitea-act-runner default variables for validation
       ansible.builtin.include_vars:
-        file: "{{ playbook_dir }}/defaults/main.yml"
+        file: "defaults/main.yml"
 
     - name: Include host-specific variables for validation
       ansible.builtin.include_vars:
-        file: "{{ playbook_dir }}/vars/main.yml"
+        file: "vars/main.yml"
 
     - name: Import Gitea Act Runner test tasks
-      ansible.builtin.import_tasks: "{{ playbook_dir }}/tasks/test.yml"
+      ansible.builtin.import_tasks: "tasks/test.yml"

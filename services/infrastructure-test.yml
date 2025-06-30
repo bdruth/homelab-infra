@@ -1,0 +1,28 @@
+---
+# Main infrastructure test playbook
+# Runs test playbooks for all services - each test playbook handles its own host filtering
+# This provides both service provisioning AND validation in one step
+
+- name: Test NUT configuration
+  import_playbook: nut/test-playbook.yml
+
+- name: Test Watchtower configuration
+  import_playbook: watchtower/test-playbook.yml
+
+- name: Test NVIDIA GPU configuration
+  import_playbook: nvidia-gpu/test-playbook.yml
+
+- name: Test Drone configuration
+  import_playbook: drone/test-playbook.yml
+
+- name: Test Drone Runner Exec configuration
+  import_playbook: drone-runner-exec/test-playbook.yml
+
+- name: Test Disk Monitoring configuration
+  import_playbook: disk-monitoring/test-playbook.yml
+
+- name: Test Gitea configuration
+  import_playbook: gitea/test-playbook.yml
+
+- name: Test Gitea Act Runner configuration
+  import_playbook: gitea-act-runner/test-playbook.yml

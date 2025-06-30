@@ -76,7 +76,7 @@
   tags: [nut-test]
 
 - name: Test UPS connection (if configured)
-  ansible.builtin.command: upsc {{ nut_system.split('@')[0] }}
+  ansible.builtin.command: upsc {{ nut_system }}
   register: ups_connection_test
   changed_when: false
   ignore_errors: true

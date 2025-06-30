@@ -1,44 +1,45 @@
 ---
 # Test playbook for Drone CI configuration
 
-- name: Import Drone CI configuration playbook
+- name: Define drone group dynamically
   hosts: all
+  gather_facts: false
+  tasks:
+    - name: Add host to drone_hosts group if it has the role
+      ansible.builtin.group_by:
+        key: "drone_hosts"
+      when: "'drone' in hostvars[inventory_hostname].get('host_roles', [])"
+
+- name: Import Drone CI configuration playbook
+  hosts: drone_hosts
   become: true
+  gather_facts: true
   tasks:
     - name: Include drone default variables
       ansible.builtin.include_vars:
-        file: defaults/main.yml
+        file: "defaults/main.yml"
 
-    - name: Check if host-specific variables exist
-      ansible.builtin.stat:
-        path: vars/main.yml
-      register: host_vars_file
-
-    - name: Include host-specific variables if they exist
+    - name: Include host-specific variables
       ansible.builtin.include_vars:
-        file: vars/main.yml
-      when: host_vars_file.stat.exists
+        file: "vars/main.yml"
+      failed_when: false
 
     - name: Include drone tasks
-      ansible.builtin.include_tasks: tasks/main.yml
+      ansible.builtin.include_tasks: "tasks/main.yml"
 
 - name: Validate Drone CI configuration
-  hosts: all
+  hosts: drone_hosts
   become: true
+  gather_facts: true
   tasks:
     - name: Include drone default variables for validation
       ansible.builtin.include_vars:
-        file: defaults/main.yml
+        file: "defaults/main.yml"
 
-    - name: Check if host-specific variables exist for validation
-      ansible.builtin.stat:
-        path: vars/main.yml
-      register: host_vars_validation_file
-
-    - name: Include host-specific variables for validation if they exist
+    - name: Include host-specific variables for validation
       ansible.builtin.include_vars:
-        file: vars/main.yml
-      when: host_vars_validation_file.stat.exists
+        file: "vars/main.yml"
+      failed_when: false
 
     - name: Import Drone test tasks
-      ansible.builtin.import_tasks: tasks/test.yml
+      ansible.builtin.import_tasks: "tasks/test.yml"

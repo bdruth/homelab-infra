@@ -1,5 +1,0 @@
----
-# Standalone playbook for Gitea on Synology NAS
-
-- name: Include Gitea role
-  import_playbook: gitea/main.yml

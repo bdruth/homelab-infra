@@ -61,7 +61,7 @@ jobs:
             # Check for each role directory and add to deploy list if changed
             git diff --name-only HEAD~1 \
               | grep -E "^services/(disk-monitoring|drone|gitea|nut|nvidia-gpu|watchtower)" \
-              | sed -E 's#^services/(disk-monitoring|drone-runner-exec|drone|gitea-act-runner|gitea|nut|nvidia-gpu|watchtower).*#services/\1-only.yml#' \
+              | sed -E 's#^services/(disk-monitoring|drone-runner-exec|drone|gitea-act-runner|gitea|nut|nvidia-gpu|watchtower).*#services/\1/test-playbook.yml#' \
               | sort -u > .deploy_playbooks
 
             # Count how many playbooks will be deployed
@@ -83,7 +83,7 @@ jobs:
           echo -n '${{ secrets.SSH_PRIVATE_KEY }}' > id_rsa.tmp
           chmod 600 id_rsa.tmp
 
-          ./services-pkgx-deploy.sh --playbook=services/infrastructure.yml "--private-key id_rsa.tmp"
+          ./services-pkgx-deploy.sh --playbook=services/infrastructure-test.yml "--private-key id_rsa.tmp"
 
       - name: deploy-changed-roles
         if: steps.check_changes.outputs.deploy_partial == 'yes'

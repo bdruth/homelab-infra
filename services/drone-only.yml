@@ -1,7 +1,0 @@
----
-# Playbook for applying just the Drone CI server role to hosts
-
-- name: Import Drone CI configuration playbook
-  import_playbook: drone/main.yml
-  vars:
-    target_hosts: "{{ groups['all'] | select('extract', hostvars, 'host_roles') | selectattr('host_roles', 'contains', 'drone') | list }}"

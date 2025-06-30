@@ -1,12 +1,45 @@
 ---
 # Test playbook for NUT configuration
 
+- name: Define nut group dynamically
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Add host to nut_hosts group if it has the role
+      ansible.builtin.group_by:
+        key: "nut_hosts"
+      when: "'nut' in hostvars[inventory_hostname].get('host_roles', [])"
+
 - name: Import NUT configuration playbook
-  import_playbook: main.yml
+  hosts: nut_hosts
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Include nut default variables
+      ansible.builtin.include_vars:
+        file: "defaults/main.yml"
+
+    - name: Include host-specific variables
+      ansible.builtin.include_vars:
+        file: "vars/main.yml"
+      failed_when: false
+
+    - name: Include nut tasks
+      ansible.builtin.include_tasks: "tasks/main.yml"
 
 - name: Validate NUT configuration
-  hosts: all
+  hosts: nut_hosts
   become: true
+  gather_facts: true
   tasks:
+    - name: Include nut default variables for validation
+      ansible.builtin.include_vars:
+        file: "defaults/main.yml"
+
+    - name: Include host-specific variables for validation
+      ansible.builtin.include_vars:
+        file: "vars/main.yml"
+      failed_when: false
+
     - name: Import NUT test tasks
-      ansible.builtin.import_tasks: tasks/test.yml
+      ansible.builtin.import_tasks: "tasks/test.yml"

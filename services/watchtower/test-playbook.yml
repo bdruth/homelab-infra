@@ -1,16 +1,45 @@
 ---
 # Test playbook for Watchtower configuration
 
-- name: Import Watchtower configuration playbook
+- name: Define watchtower group dynamically
   hosts: all
-  become: true
+  gather_facts: false
   tasks:
-    - name: Include main watchtower tasks
-      ansible.builtin.include_tasks: tasks/main.yml
+    - name: Add host to watchtower_hosts group if it has the role
+      ansible.builtin.group_by:
+        key: "watchtower_hosts"
+      when: "'watchtower' in hostvars[inventory_hostname].get('host_roles', [])"
+
+- name: Import Watchtower configuration playbook
+  hosts: watchtower_hosts
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Include watchtower default variables
+      ansible.builtin.include_vars:
+        file: "defaults/main.yml"
+
+    - name: Include host-specific variables
+      ansible.builtin.include_vars:
+        file: "vars/main.yml"
+      failed_when: false
+
+    - name: Include watchtower tasks
+      ansible.builtin.include_tasks: "tasks/main.yml"
 
 - name: Validate Watchtower configuration
-  hosts: all
+  hosts: watchtower_hosts
   become: true
+  gather_facts: true
   tasks:
+    - name: Include watchtower default variables for validation
+      ansible.builtin.include_vars:
+        file: "defaults/main.yml"
+
+    - name: Include host-specific variables for validation
+      ansible.builtin.include_vars:
+        file: "vars/main.yml"
+      failed_when: false
+
     - name: Import Watchtower test tasks
-      ansible.builtin.import_tasks: tasks/test.yml
+      ansible.builtin.import_tasks: "tasks/test.yml"
