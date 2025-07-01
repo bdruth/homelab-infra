@@ -61,6 +61,11 @@ open_webui_rag_web_search_engine: "duckduckgo" # Web search engine to use
 open_webui_rag_web_loader_engine: "playwright" # Web loader engine to use
 open_webui_enable_image_generation: true # Enable image generation integration
 
+# Open WebUI OpenAI API configuration
+open_webui_enable_openai_api: true # Enable OpenAI API support
+open_webui_openai_api_base_url: "https://api.openai.com/v1" # OpenAI API base URL
+open_webui_openai_api_key: "sk-example-key-replace-with-actual-key" # OpenAI API key (replace with actual key)
+
 # Open WebUI Authelia OIDC configuration
 open_webui_enable_authelia: false # Set to true to enable Authelia OIDC authentication
 open_webui_url: "" # URL where Open WebUI is accessible (defaults to https://ansible_fqdn if not set)

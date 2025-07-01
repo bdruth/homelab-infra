@@ -19,6 +19,9 @@ ExecStart=/usr/bin/docker run --name open-webui \
   -e ENABLE_SEARCH_QUERY_GENERATION={{ open_webui_enable_search_query_generation | string | lower }} \
   -e RAG_WEB_SEARCH_ENGINE={{ open_webui_rag_web_search_engine }} \
   -e RAG_WEB_LOADER_ENGINE={{ open_webui_rag_web_loader_engine }} \
+  -e ENABLE_OPENAI_API={{ open_webui_enable_openai_api | string | lower }} \
+  -e OPENAI_API_BASE_URL={{ open_webui_openai_api_base_url }} \
+  -e OPENAI_API_KEY={{ open_webui_openai_api_key }} \
   {% if open_webui_enable_authelia | default(false) | bool %}\
   -e WEBUI_URL={{ open_webui_url | default('https://' + ansible_fqdn) }} \
   -e ENABLE_OAUTH_SIGNUP=true \
