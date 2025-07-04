@@ -14,18 +14,8 @@
   hosts: gitea_hosts
   become: true
   gather_facts: true
-  tasks:
-    - name: Include gitea default variables
-      ansible.builtin.include_vars:
-        file: "defaults/main.yml"
-
-    - name: Include host-specific variables
-      ansible.builtin.include_vars:
-        file: "vars/main.yml"
-      failed_when: false
-
-    - name: Include gitea tasks
-      ansible.builtin.include_tasks: "tasks/main.yml"
+  roles:
+    - gitea
 
 - name: Validate Gitea configuration
   hosts: gitea_hosts

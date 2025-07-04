@@ -14,18 +14,8 @@
   hosts: nut_hosts
   become: true
   gather_facts: true
-  tasks:
-    - name: Include nut default variables
-      ansible.builtin.include_vars:
-        file: "defaults/main.yml"
-
-    - name: Include host-specific variables
-      ansible.builtin.include_vars:
-        file: "vars/main.yml"
-      failed_when: false
-
-    - name: Include nut tasks
-      ansible.builtin.include_tasks: "tasks/main.yml"
+  roles:
+    - nut
 
 - name: Validate NUT configuration
   hosts: nut_hosts

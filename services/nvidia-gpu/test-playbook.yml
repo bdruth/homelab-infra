@@ -14,16 +14,8 @@
   hosts: nvidia_gpu_hosts
   become: true
   gather_facts: true
-  tasks:
-    # No defaults directory for nvidia-gpu service - all config is in vars/main.yml
-
-    - name: Include host-specific variables
-      ansible.builtin.include_vars:
-        file: "vars/main.yml"
-      failed_when: false
-
-    - name: Include nvidia-gpu tasks
-      ansible.builtin.include_tasks: "tasks/main.yml"
+  roles:
+    - nvidia-gpu
 
 - name: Validate NVIDIA GPU configuration
   hosts: nvidia_gpu_hosts
