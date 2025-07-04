@@ -1,0 +1,1 @@
+Disk-monitoring role now defines `influxdb_host`, `influxdb_port`, and `influxdb_database` in `defaults/main.yml`; removed old `influxdb_url`. Host-level `influxdb_host` in inventory overrides defaults for Telegraf disk output.
