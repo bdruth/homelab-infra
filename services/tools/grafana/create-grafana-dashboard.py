@@ -23,12 +23,12 @@ class GrafanaDashboardCreator:
     def load_ansible_config(self):
         """Load configuration from Ansible files."""
         # Load group vars
-        group_vars_path = Path(__file__).parent / 'group_vars' / 'all.yml'
+        group_vars_path = Path(__file__).parent.parent.parent / 'disk-monitoring' / 'group_vars' / 'all.yml'
         with open(group_vars_path, 'r') as f:
             self.config = yaml.safe_load(f)
             
         # Load inventory to get host list
-        inventory_path = Path(__file__).parent / 'host-inventory.yml'
+        inventory_path = Path(__file__).parent.parent.parent / 'inventory.yml'
         with open(inventory_path, 'r') as f:
             inventory = yaml.safe_load(f)
             self.hosts = list(inventory['all']['hosts'].keys())
