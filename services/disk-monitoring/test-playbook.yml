@@ -14,18 +14,8 @@
   hosts: disk_monitoring_hosts
   become: true
   gather_facts: true
-  tasks:
-    - name: Include disk-monitoring default variables
-      ansible.builtin.include_vars:
-        file: "defaults/main.yml"
-
-    - name: Include host-specific variables if they exist
-      ansible.builtin.include_vars:
-        file: "vars/main.yml"
-      failed_when: false
-
-    - name: Include disk-monitoring tasks
-      ansible.builtin.include_tasks: "tasks/main.yml"
+  roles:
+    - disk-monitoring
 
 - name: Validate Disk Monitoring configuration
   hosts: disk_monitoring_hosts
