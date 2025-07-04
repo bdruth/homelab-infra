@@ -1,0 +1,1 @@
+Consolidated all disk-monitoring defaults (influxdb_*, telegraf_interval, telegraf_flush_interval, disk_monitoring_enabled, disk_usage_threshold, alert_eval_for, alert_interval_seconds, max_data_staleness_minutes, staleness_alert_eval_for) into `services/disk-monitoring/defaults/main.yml` and removed them from `services/disk-monitoring/group_vars/all.yml`.
