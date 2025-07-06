@@ -10,6 +10,7 @@
       - git
     state: present
     update_cache: true
+    cache_valid_time: 3600
 
 - name: Create ComfyUI group
   ansible.builtin.group:
@@ -80,17 +81,19 @@
     creates: "{{ comfyui_venv_path }}/bin/python"
 
 - name: Install PyTorch with CUDA support
-  ansible.builtin.command:
-    cmd: "{{ comfyui_venv_path }}/bin/pip install torch torchvision torchaudio --extra-index-url {{ comfyui_torch_cuda_url }}"
+  ansible.builtin.pip:
+    name:
+      - torch
+      - torchvision
+      - torchaudio
+    extra_args: "--extra-index-url {{ comfyui_torch_cuda_url }}"
+    virtualenv: "{{ comfyui_venv_path }}"
   when: nvidia_install_gpu_drivers | bool
-  register: torch_install
-  changed_when: "'Successfully installed' in torch_install.stdout or 'Requirement already satisfied' not in torch_install.stdout"
 
 - name: Install ComfyUI requirements
-  ansible.builtin.command:
-    cmd: "{{ comfyui_venv_path }}/bin/pip install -r {{ comfyui_install_dir }}/requirements.txt"
-  register: comfyui_requirements
-  changed_when: "'Successfully installed' in comfyui_requirements.stdout or 'Requirement already satisfied' not in comfyui_requirements.stdout"
+  ansible.builtin.pip:
+    requirements: "{{ comfyui_install_dir }}/requirements.txt"
+    virtualenv: "{{ comfyui_venv_path }}"
 
 - name: Set ownership of ComfyUI directory and all subdirectories
   ansible.builtin.file:
@@ -120,4 +123,5 @@
     enabled: true
     state: started
     daemon_reload: true
+  register: comfyui_service
   ignore_errors: "{{ ansible_check_mode }}"

@@ -64,13 +64,23 @@
 
 # docker-compose is installed elsewhere as part of the base system
 
+- name: Check if n8n containers are running
+  ansible.builtin.command:
+    cmd: "docker compose ps -q"
+    chdir: "{{ n8n_install_dir }}"
+  register: n8n_containers_check
+  changed_when: false
+
 - name: Start n8n with Docker Compose
   ansible.builtin.command:
     cmd: "docker compose --profile {{ docker_compose_profile }} up -d"
     chdir: "{{ n8n_install_dir }}"
   register: docker_compose_result
   changed_when: docker_compose_result.rc == 0
-  when: n8n_env_updated is not changed and n8n_compose_updated is not changed
+  when:
+    - n8n_env_updated is not changed
+    - n8n_compose_updated is not changed
+    - n8n_containers_check.stdout | length == 0
 
 - name: Restart n8n with Docker Compose if configuration changed
   ansible.builtin.command:
@@ -99,5 +109,6 @@
   ansible.builtin.systemd:
     name: n8n
     enabled: true
+    state: started
     daemon_reload: true
   ignore_errors: "{{ ansible_check_mode }}"

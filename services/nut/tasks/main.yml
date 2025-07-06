@@ -4,6 +4,7 @@
 - name: Update apt cache
   ansible.builtin.apt:
     update_cache: true
+    cache_valid_time: 3600
 
 - name: Install APT packages
   ansible.builtin.apt:
@@ -12,6 +13,7 @@
       - python3
       - pipx
     state: present
+    cache_valid_time: 3600
 
 - name: Make sure destination dir exists
   ansible.builtin.file:

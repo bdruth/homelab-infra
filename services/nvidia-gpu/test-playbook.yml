@@ -9,6 +9,7 @@
       ansible.builtin.group_by:
         key: "nvidia_gpu_hosts"
       when: "'nvidia-gpu' in hostvars[inventory_hostname].get('host_roles', [])"
+      changed_when: false
 
 - name: Validate NVIDIA GPU configuration
   hosts: nvidia_gpu_hosts

@@ -9,6 +9,7 @@
       ansible.builtin.group_by:
         key: "gitea_act_runner_hosts"
       when: "'gitea-act-runner' in hostvars[inventory_hostname].get('host_roles', [])"
+      changed_when: false
 
 - name: Validate Gitea Act Runner CI configuration
   hosts: gitea_act_runner_hosts

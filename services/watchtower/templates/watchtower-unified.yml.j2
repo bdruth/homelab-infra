@@ -7,7 +7,7 @@
   {% set socket_path = '/var/run/docker.sock:/var/run/docker.sock' %}
 {% endif %}
 
-{% if ansible_all_ipv6_addresses | default([]) | length > 0 %}
+{% if ansible_default_ipv6 %}
 networks:
   net:
     driver: bridge
@@ -21,13 +21,15 @@ services:
     volumes:
       - {{ socket_path }}
     restart: always
-    command: --disable-memory-swappiness
-    {%- if exclude_containers | default(watchtower_exclude_containers) | default([]) | length > 0 %} --disable-containers {% for container in exclude_containers | default(watchtower_exclude_containers) | default([]) %}{{ container }}{% if not loop.last %},{% endif %}{% endfor %}{% endif %}
-
-{% if ansible_all_ipv6_addresses | default([]) | length > 0 %}
+{% if ansible_default_ipv6 %}
     networks:
       - net
 {% endif %}
+    command: >-
+      --disable-memory-swappiness
+      {%- if exclude_containers | default(watchtower_exclude_containers) | default([]) | length > 0 %}
+      --disable-containers {% for container in exclude_containers | default(watchtower_exclude_containers) | default([]) %}{{ container }}{% if not loop.last %},{% endif %}{% endfor %}
+      {%- endif %}
     environment:
 {%- set env_vars = [] -%}
 {%- if debug | default(watchtower_debug) | default(false) | bool -%}

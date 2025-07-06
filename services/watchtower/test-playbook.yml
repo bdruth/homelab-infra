@@ -9,6 +9,7 @@
       ansible.builtin.group_by:
         key: "watchtower_hosts"
       when: "'watchtower' in hostvars[inventory_hostname].get('host_roles', [])"
+      changed_when: false
 
 - name: Validate Watchtower configuration
   hosts: watchtower_hosts

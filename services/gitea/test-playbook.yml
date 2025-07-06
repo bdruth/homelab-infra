@@ -9,6 +9,7 @@
       ansible.builtin.group_by:
         key: "gitea_hosts"
       when: "'gitea' in hostvars[inventory_hostname].get('host_roles', [])"
+      changed_when: false
 
 - name: Validate Gitea configuration
   hosts: gitea_hosts

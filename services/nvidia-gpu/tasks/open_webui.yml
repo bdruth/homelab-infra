@@ -30,4 +30,5 @@
     enabled: true
     state: started
     daemon_reload: true
+  register: open_webui_service
   ignore_errors: "{{ ansible_check_mode }}"

@@ -23,6 +23,7 @@
 - name: Update apt cache
   ansible.builtin.apt:
     update_cache: true
+    cache_valid_time: 3600
   when: nvidia_install_gpu_drivers | bool or nvidia_install_cuda_toolkit | bool
 
 # Install NVIDIA packages
@@ -33,6 +34,7 @@
       - "nvidia-utils-{{ nvidia_driver_version }}"
     state: present
     update_cache: true
+    cache_valid_time: 3600
   register: driver_package_install
   until: driver_package_install is success
   retries: 3
@@ -49,6 +51,7 @@
       - nvidia-container-toolkit
     state: present
     update_cache: true
+    cache_valid_time: 3600
   register: cuda_package_install
   until: cuda_package_install is success
   retries: 3

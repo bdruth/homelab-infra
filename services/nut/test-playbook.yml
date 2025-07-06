@@ -9,6 +9,7 @@
       ansible.builtin.group_by:
         key: "nut_hosts"
       when: "'nut' in hostvars[inventory_hostname].get('host_roles', [])"
+      changed_when: false
 
 - name: Validate NUT configuration
   hosts: nut_hosts

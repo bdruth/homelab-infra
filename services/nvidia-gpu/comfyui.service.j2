@@ -9,7 +9,7 @@ Group={{ comfyui_group }}
 Restart=always
 RestartSec=10
 WorkingDirectory={{ comfyui_install_dir }}
-ExecStart={{ comfyui_venv_path }}/bin/python main.py {% if comfyui_low_vram %}--lowvram {% endif %}{% if comfyui_cpu_vae %}--cpu-vae {% endif %}--port {{ comfyui_port }} --listen {{ ansible_default_ipv4.address }}
+ExecStart={{ comfyui_venv_path }}/bin/python main.py {% if comfyui_low_vram %}--lowvram {% endif %}{% if comfyui_cpu_vae %}--cpu-vae {% endif %}--port {{ comfyui_port }} --listen 0.0.0.0
 
 [Install]
 WantedBy=multi-user.target

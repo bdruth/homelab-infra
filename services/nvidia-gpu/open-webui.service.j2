@@ -12,8 +12,8 @@ ExecStartPre=-/usr/bin/docker stop open-webui
 ExecStartPre=-/usr/bin/docker rm open-webui
 ExecStart=/usr/bin/docker run --name open-webui \
   -v {{ open_webui_install_dir }}/data:/app/backend/data \
-  -e OLLAMA_BASE_URL=http://{{ ansible_default_ipv4.address }}:11434 \
-  -e OLLAMA_API_BASE_URL=http://{{ ansible_default_ipv4.address }}:11434/api \
+  -e OLLAMA_BASE_URL=http://0.0.0.0:11434 \
+  -e OLLAMA_API_BASE_URL=http://0.0.0.0:11434/api \
   -e PORT={{ open_webui_port }} \
   -e ENABLE_RAG_WEB_SEARCH={{ open_webui_enable_rag_web_search | string | lower }} \
   -e ENABLE_SEARCH_QUERY_GENERATION={{ open_webui_enable_search_query_generation | string | lower }} \
@@ -36,7 +36,7 @@ ExecStart=/usr/bin/docker run --name open-webui \
   -e OAUTH_ADMIN_ROLES={{ open_webui_admin_roles | default('openwebui-admin') }} \
   -e OAUTH_ROLES_CLAIM=groups \
   {% endif %}\
-  {% if install_comfyui | bool %}-e COMFYUI_BASE_URL=http://{{ ansible_default_ipv4.address }}:{{ comfyui_port }}/ \
+  {% if install_comfyui | bool %}-e COMFYUI_BASE_URL=http://0.0.0.0:{{ comfyui_port }}/ \
   -e ENABLE_IMAGE_GENERATION={{ open_webui_enable_image_generation | string | lower }} {% endif %} \
   -e ENABLE_PERSISTENT_CONFIG=false \
   -p {{ open_webui_port }}:{{ open_webui_port }} \

@@ -9,6 +9,7 @@
       ansible.builtin.group_by:
         key: "disk_monitoring_hosts"
       when: "'disk-monitoring' in hostvars[inventory_hostname].get('host_roles', [])"
+      changed_when: false
 
 - name: Validate Disk Monitoring configuration
   hosts: disk_monitoring_hosts

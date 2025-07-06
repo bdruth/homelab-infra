@@ -9,6 +9,7 @@
       ansible.builtin.group_by:
         key: "drone_hosts"
       when: "'drone' in hostvars[inventory_hostname].get('host_roles', [])"
+      changed_when: false
 
 - name: Import Drone CI configuration and run tests
   hosts: drone_hosts
