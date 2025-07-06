@@ -10,26 +10,12 @@
         key: "gitea_hosts"
       when: "'gitea' in hostvars[inventory_hostname].get('host_roles', [])"
 
-- name: Import Gitea configuration playbook
+- name: Validate Gitea configuration
   hosts: gitea_hosts
   become: true
   gather_facts: true
   roles:
     - gitea
-
-- name: Validate Gitea configuration
-  hosts: gitea_hosts
-  become: true
-  gather_facts: true
   tasks:
-    - name: Include gitea default variables for validation
-      ansible.builtin.include_vars:
-        file: "defaults/main.yml"
-
-    - name: Include host-specific variables for validation
-      ansible.builtin.include_vars:
-        file: "vars/main.yml"
-      failed_when: false
-
     - name: Import Gitea test tasks
       ansible.builtin.import_tasks: "tasks/test.yml"

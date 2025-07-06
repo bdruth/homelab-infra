@@ -10,25 +10,13 @@
         key: "nvidia_gpu_hosts"
       when: "'nvidia-gpu' in hostvars[inventory_hostname].get('host_roles', [])"
 
-- name: Import NVIDIA GPU configuration playbook
+- name: Validate NVIDIA GPU configuration
   hosts: nvidia_gpu_hosts
   become: true
   gather_facts: true
   roles:
     - nvidia-gpu
-
-- name: Validate NVIDIA GPU configuration
-  hosts: nvidia_gpu_hosts
-  become: true
-  gather_facts: true
   tasks:
-    # No defaults directory for nvidia-gpu service - all config is in vars/main.yml
-
-    - name: Include host-specific variables for validation
-      ansible.builtin.include_vars:
-        file: "vars/main.yml"
-      failed_when: false
-
     - name: Check NVIDIA driver is installed
       ansible.builtin.command: nvidia-smi
       register: nvidia_smi_result

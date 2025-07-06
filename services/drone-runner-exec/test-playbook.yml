@@ -10,26 +10,12 @@
         key: "drone_runner_exec_hosts"
       when: "'drone-runner-exec' in hostvars[inventory_hostname].get('host_roles', [])"
 
-- name: Import Drone Runner Exec configuration playbook
+- name: Validate Drone Runner Exec configuration
   hosts: drone_runner_exec_hosts
   become: true
   gather_facts: true
   roles:
     - drone-runner-exec
-
-- name: Validate Drone Runner Exec configuration
-  hosts: drone_runner_exec_hosts
-  become: true
-  gather_facts: true
   tasks:
-    - name: Include drone-runner-exec default variables for validation
-      ansible.builtin.include_vars:
-        file: "defaults/main.yml"
-
-    - name: Include host-specific variables for validation
-      ansible.builtin.include_vars:
-        file: "vars/main.yml"
-      failed_when: false
-
     - name: Import Drone Runner Exec test tasks
       ansible.builtin.import_tasks: "tasks/test.yml"

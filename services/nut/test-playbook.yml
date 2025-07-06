@@ -10,17 +10,12 @@
         key: "nut_hosts"
       when: "'nut' in hostvars[inventory_hostname].get('host_roles', [])"
 
-- name: Import NUT configuration playbook
+- name: Validate NUT configuration
   hosts: nut_hosts
   become: true
   gather_facts: true
   roles:
     - nut
-
-- name: Validate NUT configuration
-  hosts: nut_hosts
-  become: true
-  gather_facts: true
   tasks:
     # Using roles instead of manually including vars to maintain proper variable precedence
     - name: Import NUT test tasks
