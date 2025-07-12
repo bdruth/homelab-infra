@@ -22,6 +22,22 @@
     - install_microk8s | bool
     - snapd_check.rc != 0
 
+- name: Install Helm via snap
+  ansible.builtin.snap:
+    name: helm
+    classic: yes
+    state: present
+  when: install_microk8s | bool
+
+- name: Install Python Kubernetes client library
+  ansible.builtin.apt:
+    name: python3-kubernetes
+    state: present
+    update_cache: yes
+  when:
+    - install_microk8s | bool
+    - ansible_pkg_mgr == 'apt'
+
 - name: Check if MicroK8s is already installed
   ansible.builtin.command: snap list microk8s
   register: microk8s_installed
@@ -62,6 +78,21 @@
   retries: 10
   delay: 30
   until: microk8s_status.rc == 0
+
+- name: Export MicroK8s kubeconfig
+  ansible.builtin.command: microk8s config
+  register: microk8s_kubeconfig
+  changed_when: false
+  when: install_microk8s | bool
+
+- name: Write kubeconfig to user home
+  ansible.builtin.copy:
+    content: "{{ microk8s_kubeconfig.stdout }}"
+    dest: "{{ ansible_env.HOME }}/.kube/config"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0600"
+  when: install_microk8s | bool
 
 - name: Get current enabled addons
   ansible.builtin.command: microk8s status --format yaml

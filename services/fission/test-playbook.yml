@@ -1,0 +1,22 @@
+---
+# Test playbook for Fission configuration
+
+- name: Define fission group dynamically
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Add host to fission_hosts group if it has the role
+      ansible.builtin.group_by:
+        key: "fission_hosts"
+      when: "'fission' in hostvars[inventory_hostname].get('host_roles', [])"
+      changed_when: false
+
+- name: Validate Fission deployment
+  hosts: fission_hosts
+  become: true
+  gather_facts: true
+  roles:
+    - fission
+  tasks:
+    - name: Import Fission test tasks
+      ansible.builtin.import_tasks: "tasks/test.yml"

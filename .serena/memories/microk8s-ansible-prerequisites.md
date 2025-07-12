@@ -1,0 +1,1 @@
+Enhanced the microk8s role to install Helm (via snap), the Python Kubernetes client, and export MicroK8s kubeconfig for Ansible modules.

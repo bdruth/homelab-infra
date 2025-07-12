@@ -1,0 +1,23 @@
+---
+# Main tasks for installing Fission via Helm
+
+- name: Add Fission Helm repository
+  kubernetes.core.helm_repository:
+    name: "{{ chart_repo_name }}"
+    repo_url: "{{ chart_repo_url }}"
+
+- name: Ensure Fission namespace exists
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Namespace
+    name: "{{ fission_namespace }}"
+    state: present
+
+- name: Deploy or upgrade Fission release
+  kubernetes.core.helm:
+    name: "{{ release_name }}"
+    chart_ref: "{{ chart_repo_name }}/{{ chart_name }}"
+    namespace: "{{ fission_namespace }}"
+    create_namespace: false
+    values: "{{ chart_values }}"
+    # chart_version omitted to use latest chart

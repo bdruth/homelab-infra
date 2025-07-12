@@ -1,0 +1,15 @@
+---
+# Test tasks for Fission deployment
+
+- name: Verify Fission namespace exists
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Namespace
+    name: "{{ fission_namespace }}"
+  register: fission_ns
+
+- name: Assert Fission namespace is present
+  ansible.builtin.assert:
+    that:
+      - fission_ns.resources | length > 0
+    fail_msg: "Fission namespace '{{ fission_namespace }}' was not found"

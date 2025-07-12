@@ -1,0 +1,1 @@
+Scaffolded a new Ansible role `fission` to deploy Fission on MicroK8s using the Helm chart `fission-charts/fission-all`, including defaults, tasks, handlers, tests, and integration into infrastructure playbooks.

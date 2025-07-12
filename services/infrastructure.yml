@@ -17,6 +17,7 @@
         _run_gitea: "{{ 'gitea' in host_roles | default([]) }}"
         _run_gitea_act_runner: "{{ 'gitea-act-runner' in host_roles | default([]) }}"
         _run_microk8s: "{{ 'microk8s' in host_roles | default([]) }}"
+        _run_fission: "{{ 'fission' in host_roles | default([]) }}"
 
   roles:
     - role: nut
@@ -37,3 +38,5 @@
       when: _run_gitea_act_runner | bool
     - role: microk8s
       when: _run_microk8s | bool
+    - role: fission
+      when: _run_fission | bool

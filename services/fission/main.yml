@@ -1,0 +1,10 @@
+---
+# Fission role main playbook
+
+- name: Deploy Fission via Helm
+  hosts: "{{ target_hosts | default('all') }}"
+  become: true
+  tasks:
+    - name: Include Fission tasks
+      ansible.builtin.include_tasks: tasks/main.yml
+      when: "'fission' in host_roles"
