@@ -13,3 +13,30 @@
     that:
       - fission_ns.resources | length > 0
     fail_msg: "Fission namespace '{{ fission_namespace }}' was not found"
+
+- name: Get Fission pods in namespace
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Pod
+    namespace: "{{ fission_namespace }}"
+  register: fission_pods
+
+- name: Assert at least one Fission pod is running
+  ansible.builtin.assert:
+    that:
+      - fission_pods.resources | selectattr('status.phase','equalto','Running') | list | length > 0
+    fail_msg: "No running Fission pods found in namespace '{{ fission_namespace }}'"
+
+- name: Verify Fission CLI version (client)
+  ansible.builtin.command:
+    cmd: "fission version"
+  register: fission_version_output
+  changed_when: false
+  when: fission_cli_install | bool
+
+- name: Assert Fission CLI version is correct
+  ansible.builtin.assert:
+    that:
+      - "('v' + fission_cli_resolved_version) in fission_version_output.stdout"
+    fail_msg: "Fission version v{{ fission_cli_resolved_version }} not found in output"
+  when: fission_cli_install | bool

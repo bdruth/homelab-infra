@@ -1,10 +1,62 @@
 ---
 # Main tasks for installing Fission via Helm
 
+- name: Ensure MicroK8s hostpath-storage addon is enabled
+  ansible.builtin.command: microk8s enable hostpath-storage
+  register: storage_result
+  changed_when: "'Enabling' in storage_result.stdout"
+  failed_when: storage_result.rc != 0 and 'already enabled' not in storage_result.stderr
+
 - name: Add Fission Helm repository
   kubernetes.core.helm_repository:
     name: "{{ chart_repo_name }}"
     repo_url: "{{ chart_repo_url }}"
+
+- name: Install basic Fission CRDs (excluding problematic ones)
+  kubernetes.core.k8s:
+    src: "{{ item }}"
+    state: present
+  loop:
+    - "https://raw.githubusercontent.com/fission/fission/v{{ fission_cli_resolved_version | default('1.21.0') }}/crds/v1/fission.io_canaryconfigs.yaml"
+    - "https://raw.githubusercontent.com/fission/fission/v{{ fission_cli_resolved_version | default('1.21.0') }}/crds/v1/fission.io_httptriggers.yaml"
+    - "https://raw.githubusercontent.com/fission/fission/v{{ fission_cli_resolved_version | default('1.21.0') }}/crds/v1/fission.io_kuberneteswatchtriggers.yaml"
+    - "https://raw.githubusercontent.com/fission/fission/v{{ fission_cli_resolved_version | default('1.21.0') }}/crds/v1/fission.io_packages.yaml"
+    - "https://raw.githubusercontent.com/fission/fission/v{{ fission_cli_resolved_version | default('1.21.0') }}/crds/v1/fission.io_timetriggers.yaml"
+  ignore_errors: true
+
+- name: Install functions CRD from older working version
+  kubernetes.core.k8s:
+    src: "https://raw.githubusercontent.com/fission/fission/v1.15.0/crds/v1/fission.io_functions.yaml"
+    state: present
+  ignore_errors: true
+
+- name: Create minimal environments CRD (workaround for annotation size limit)
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: apiextensions.k8s.io/v1
+      kind: CustomResourceDefinition
+      metadata:
+        name: environments.fission.io
+      spec:
+        group: fission.io
+        versions:
+          - name: v1
+            served: true
+            storage: true
+            schema:
+              openAPIV3Schema:
+                type: object
+                properties:
+                  spec:
+                    type: object
+                  status:
+                    type: object
+        scope: Namespaced
+        names:
+          plural: environments
+          singular: environment
+          kind: Environment
+    state: present
 
 - name: Ensure Fission namespace exists
   kubernetes.core.k8s:
@@ -21,3 +73,32 @@
     create_namespace: false
     values: "{{ chart_values }}"
     # chart_version omitted to use latest chart
+
+- name: Fetch latest Fission CLI release info from GitHub
+  ansible.builtin.uri:
+    url: https://api.github.com/repos/fission/fission/releases/latest
+    return_content: yes
+    headers:
+      Accept: application/vnd.github.v3+json
+  register: fission_latest_release
+  when:
+    - fission_cli_install | bool
+    - fission_cli_version == ''
+
+- name: Resolve Fission CLI version
+  ansible.builtin.set_fact:
+    fission_cli_resolved_version: "{{ fission_cli_version if fission_cli_version else (fission_latest_release.json.tag_name | regex_replace('^v','')) }}"
+  when: fission_cli_install | bool
+
+- name: Compute Fission CLI download URL
+  ansible.builtin.set_fact:
+    fission_cli_url: "https://github.com/fission/fission/releases/download/v{{ fission_cli_resolved_version }}/fission-v{{ fission_cli_resolved_version }}-linux-amd64"
+  when: fission_cli_install | bool
+
+- name: Download Fission CLI binary to /usr/local/bin
+  ansible.builtin.get_url:
+    url: "{{ fission_cli_url }}"
+    dest: "/usr/local/bin/fission"
+    mode: '0755'
+  become: true
+  when: fission_cli_install | bool

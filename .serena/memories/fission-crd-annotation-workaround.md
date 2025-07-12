@@ -1,0 +1,1 @@
+Fission CRDs have annotation size issues in recent versions (>262KB limit). Workaround: install functions CRD from v1.15.0 and create minimal environments CRD via Ansible definition to avoid oversized annotations.

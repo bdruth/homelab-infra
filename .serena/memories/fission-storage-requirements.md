@@ -1,0 +1,1 @@
+Fission requires hostpath-storage addon enabled in MicroK8s for persistent volumes. Without it, storagesvc pod stays pending and other pods crash. Role now ensures this addon is enabled before Helm deployment.
