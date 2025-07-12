@@ -1,5 +1,98 @@
 # Workflow and Standards
 
+## 🚨 CRITICAL SECURITY REQUIREMENTS 🚨
+
+### ⚠️ ABSOLUTE PROHIBITION: NO PRIVATE INFORMATION EXPOSURE ⚠️
+
+**NEVER** include private or sensitive information in:
+- ❌ **Commit messages** (git commit messages are PUBLIC)
+- ❌ **Pull request descriptions**
+- ❌ **Issue descriptions**
+- ❌ **Code comments**
+- ❌ **Documentation files** (unless git-crypt protected)
+- ❌ **Log outputs** shared publicly
+- ❌ **Example files** or configuration templates
+- ❌ **Error messages** or debug output
+
+### 🔒 EXAMPLES OF PRIVATE INFORMATION THAT MUST NEVER BE EXPOSED
+- Private hostnames (e.g., `server.private-domain.com`)
+- IP addresses of internal infrastructure
+- Usernames or account names
+- Server names or infrastructure details
+- Internal service URLs or endpoints
+- Private network topology information
+- System specifications or hardware details
+- Internal process names or service configurations
+
+### ✅ SAFE ALTERNATIVES FOR DOCUMENTATION
+- Use placeholders: `<hostname>`, `<server>`, `<service-name>`
+- Use generic examples: `example.com`, `server.example.com`
+- Use template variables: `{{ ansible_host }}`, `{{ service_url }}`
+- Use descriptive terms: "configured logging server", "target host", "syslog endpoint"
+
+### 🔐 IDENTIFYING GIT-CRYPT PROTECTED FILES
+
+**Files that CAN contain sensitive information** (encrypted by git-crypt):
+Check `.gitattributes` for patterns with `filter=git-crypt`. Current protected patterns:
+- `**/vars/main.yml` - Service role variables
+- `*.tfbackend` - Terraform backend configurations  
+- `*.tfvars` - Terraform variable files
+- `*inventory.yml` - Ansible inventory files
+- `**/group_vars/*.yml` - Ansible group variables
+- `**/host_vars/*.yml` - Ansible host variables
+- `**/defaults/*.yml` - Ansible role defaults
+
+**Files that CANNOT contain sensitive information** (not encrypted):
+- `*.example.*` - Example files (explicitly excluded from git-crypt)
+- `README.md` files
+- `main.yml` playbooks
+- `test-playbook.yml` files
+- Commit messages and git metadata
+- Documentation files
+- Template files (`.j2`)
+
+**To verify if a file is git-crypt protected:**
+```bash
+# Check if file shows as encrypted in git status
+git-crypt status
+
+# Check .gitattributes patterns
+grep "filter=git-crypt" .gitattributes
+```
+
+### 🛡️ MANDATORY SECURITY CHECKLIST BEFORE ANY COMMIT
+
+**EVERY commit message MUST be reviewed for:**
+- [ ] ❌ No private hostnames or domains
+- [ ] ❌ No internal IP addresses
+- [ ] ❌ No usernames or account details
+- [ ] ❌ No server names or infrastructure specifics
+- [ ] ❌ No sensitive configuration values
+- [ ] ✅ Only generic, public-safe descriptions
+
+**IF YOU ACCIDENTALLY INCLUDE PRIVATE INFORMATION:**
+1. 🛑 **IMMEDIATELY** stop the commit process
+2. 🔄 Use `git reset --soft HEAD~1` if already committed locally
+3. ✏️ Rewrite commit message with generic terms
+4. 🔍 Double-check all changes for any other private data
+5. ✅ Recommit with clean, public-safe message
+
+### 📝 COMMIT MESSAGE SECURITY GUIDELINES
+
+**❌ WRONG - Exposes Private Information:**
+```text
+feat: Add syslog forwarding to graylog.private-company.com
+- Configured logging to internal-server-01.local
+- Updated firewall rules for 192.168.1.100
+```
+
+**✅ CORRECT - Generic and Safe:**
+```text
+feat: Add centralized syslog forwarding capability
+- Configured logging to designated syslog server
+- Updated firewall rules for internal infrastructure
+```
+
 ## Task Completion Process
 
 ### 1. Code Quality Checks
@@ -57,9 +150,22 @@
 
 - **Sensitive Information**: Ensure any sensitive data is properly encrypted with git-crypt
 - **Example Files**: Make sure example files do not contain actual secrets
+- **🚨 COMMIT MESSAGE SECURITY**: Review every commit message for private information exposure
+- **🔐 GIT-CRYPT VERIFICATION**: Before adding sensitive data, verify file is git-crypt protected:
+  ```bash
+  # Check if file pattern is in .gitattributes with git-crypt filter
+  grep "filter=git-crypt" .gitattributes
+  
+  # Verify git-crypt status of files
+  git-crypt status
+  
+  # If file should be protected but isn't, add pattern to .gitattributes:
+  echo "path/to/sensitive/file filter=git-crypt diff=git-crypt" >> .gitattributes
+  ```
 
 ### 6. Commit and Push
 
+- **🔒 SECURITY REVIEW**: Check commit message for private information exposure
 - **Pre-push Checks**: The pre-push hook runs the full MegaLinter suite
 - **CI/CD**: After pushing, monitor the Gitea Actions workflows for successful execution
 
@@ -96,6 +202,12 @@ When adding a new Ansible service role, ensure ALL of the following integration 
 - [ ] Service-specific README with configuration examples
 - [ ] Update main project documentation if the service adds new capabilities
 - [ ] Ensure inventory examples demonstrate proper service configuration
+
+### 🔒 Security Requirements for New Services
+- [ ] **No private information** in any service files
+- [ ] **Generic examples** in documentation and README files
+- [ ] **Template variables** used instead of hardcoded values
+- [ ] **Example configurations** use placeholder domains and IPs
 
 ## Code Style Standards
 
