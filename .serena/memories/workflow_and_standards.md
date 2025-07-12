@@ -63,6 +63,40 @@
 - **Pre-push Checks**: The pre-push hook runs the full MegaLinter suite
 - **CI/CD**: After pushing, monitor the Gitea Actions workflows for successful execution
 
+## New Service Creation Checklist
+
+When adding a new Ansible service role, ensure ALL of the following integration points are updated:
+
+### Required Files for New Service
+- [ ] `services/<service-name>/defaults/main.yml` - Default configuration
+- [ ] `services/<service-name>/tasks/main.yml` - Main installation tasks
+- [ ] `services/<service-name>/handlers/main.yml` - Service handlers
+- [ ] `services/<service-name>/meta/main.yml` - Role metadata
+- [ ] `services/<service-name>/vars/main.yml` - Internal variables (if needed)
+- [ ] `services/<service-name>/templates/` - Configuration templates (if needed)
+- [ ] `services/<service-name>/main.yml` - Standalone deployment playbook
+- [ ] `services/<service-name>/test-playbook.yml` - Service test playbook
+- [ ] `services/<service-name>/tasks/test.yml` - Test validation tasks
+- [ ] `services/<service-name>/README.md` - Service documentation
+
+### Required Integration Updates
+- [ ] **`services/infrastructure.yml`** - Add role to main infrastructure playbook:
+  - Add `_run_<service>` variable to pre_tasks set_fact
+  - Add role entry with conditional execution
+- [ ] **`services/infrastructure-test.yml`** - Add test playbook import:
+  - Add `import_playbook: <service-name>/test-playbook.yml`
+- [ ] **`services/inventory.example.yml`** - Add example configuration for the service
+
+### Testing Requirements
+- [ ] Standalone service test: `./services-pkgx-deploy.sh <service-name>/test-playbook.yml`
+- [ ] Full infrastructure test: `./services-pkgx-deploy.sh infrastructure-test.yml`
+- [ ] Isolated deployment test: `./services-pkgx-deploy.sh <service-name>/main.yml`
+
+### Documentation Requirements
+- [ ] Service-specific README with configuration examples
+- [ ] Update main project documentation if the service adds new capabilities
+- [ ] Ensure inventory examples demonstrate proper service configuration
+
 ## Code Style Standards
 
 ### Terraform/OpenTofu

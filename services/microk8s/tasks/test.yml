@@ -1,0 +1,57 @@
+---
+# Test tasks for MicroK8s
+
+- name: Test MicroK8s installation
+  block:
+    - name: Check if MicroK8s is installed
+      ansible.builtin.command: microk8s version
+      register: microk8s_version_check
+      changed_when: false
+      when: install_microk8s | bool
+
+    - name: Verify MicroK8s status
+      ansible.builtin.command: microk8s status --wait-ready --timeout=300
+      register: microk8s_status_check
+      changed_when: false
+      when: install_microk8s | bool
+
+    - name: Test kubectl access
+      ansible.builtin.command: microk8s kubectl get nodes
+      register: kubectl_nodes_check
+      changed_when: false
+      when: install_microk8s | bool
+
+    - name: Verify enabled addons
+      ansible.builtin.command: microk8s status --format yaml
+      register: addons_check
+      changed_when: false
+      when: install_microk8s | bool
+
+    - name: Check if user is in microk8s group
+      ansible.builtin.command: groups {{ ansible_user }}
+      register: user_groups_check
+      changed_when: false
+      when: install_microk8s | bool
+
+    - name: Verify syslog configuration exists
+      ansible.builtin.stat:
+        path: /etc/rsyslog.d/50-microk8s.conf
+      register: syslog_config_check
+      when:
+        - install_microk8s | bool
+        - microk8s_syslog_enabled | bool
+
+    - name: Display test results
+      ansible.builtin.debug:
+        msg:
+          - "MicroK8s Version: {{ microk8s_version_check.stdout | default('Not installed') }}"
+          - "MicroK8s Status: {{ 'Ready' if microk8s_status_check.rc == 0 else 'Not Ready' }}"
+          - "Kubectl Access: {{ 'OK' if kubectl_nodes_check.rc == 0 else 'Failed' }}"
+          - "User Groups: {{ user_groups_check.stdout | default('Unknown') }}"
+          - "Syslog Config: {{ 'Present' if syslog_config_check.stat.exists | default(false) else 'Missing' }}"
+      when: install_microk8s | bool
+
+  rescue:
+    - name: Test failed
+      ansible.builtin.fail:
+        msg: "MicroK8s test failed. Check the installation and configuration."

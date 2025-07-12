@@ -26,3 +26,6 @@
 
 - name: Test Gitea Act Runner configuration
   import_playbook: gitea-act-runner/test-playbook.yml
+
+- name: Test MicroK8s configuration
+  import_playbook: microk8s/test-playbook.yml

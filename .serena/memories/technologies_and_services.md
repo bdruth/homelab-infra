@@ -24,6 +24,14 @@
 | **dnsdist**          | DNS load balancing, routing       | Handles advanced DNS functionality       |
 | **Watchtower**       | Automated container updates       | Keeps Docker containers updated          |
 | **Network UPS Tools** | UPS monitoring and management     | Power supply monitoring                  |
+| **MicroK8s**         | Lightweight Kubernetes            | Single-node container orchestration     |
+
+## Container Orchestration
+
+| Service              | Purpose                           | Implementation                           |
+| -------------------- | --------------------------------- | ---------------------------------------- |
+| **MicroK8s**         | Kubernetes distribution           | Snap-based installation, single-node    |
+| **Add-ons**          | Kubernetes enhancements          | DNS, hostpath-storage, dashboard, ingress |
 
 ## Monitoring & Observability
 
@@ -33,6 +41,7 @@
 | **Grafana**        | Metrics visualization   | Creates dashboards for monitoring data    |
 | **UPS Monitoring** | Power supply monitoring | Custom implementation                     |
 | **Grafana Tools**  | Dashboard management    | Creates and updates monitoring dashboards |
+| **Graylog**        | Centralized logging     | Receives syslog from all services        |
 
 ## Special Purpose Services
 
@@ -49,6 +58,7 @@
 - **Terraform/OpenTofu**: Provider plugins for specific functionality
 - **Docker**: Container runtime and images
 - **DNS**: Upstream DNS providers for forwarding
+- **MicroK8s**: Snap package manager for installation
 
 ### Service Dependencies
 
@@ -56,9 +66,12 @@
 - **Drone Runners**: Depend on Drone CI server
 - **Gitea Act Runners**: Depend on Gitea for job coordination
 - **Monitoring**: Depends on metrics collection and storage
+- **MicroK8s**: Depends on snapd and system resources (4GB+ RAM, 20GB+ disk)
 
 ### External Integrations
 
 - DNS resolution with upstream providers
 - Certificate management for secure services
 - Potential cloud service integrations
+- Centralized logging to graylog.cusack-ruth.name
+- Kubernetes workload deployment capabilities

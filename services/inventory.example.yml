@@ -44,3 +44,15 @@ all:
       shutdown_priority: secondary
       # Watchtower configuration
       watchtower_notifications_enabled: true
+
+    # Kubernetes server with MicroK8s
+    k8s-server.example.com:
+      ansible_host: 192.168.1.104
+      host_roles: [microk8s]
+      # MicroK8s configuration
+      install_microk8s: true
+      microk8s_addons_enabled:
+        - dns
+        - hostpath-storage
+        - dashboard
+        - ingress

@@ -1,0 +1,18 @@
+# MicroK8s syslog forwarding configuration
+# Forward MicroK8s logs to centralized logging server
+
+# Capture MicroK8s related logs
+:programname, startswith, "microk8s" @@{{ microk8s_syslog_server }}:{{ microk8s_syslog_port }}
+:programname, startswith, "k8s" @@{{ microk8s_syslog_server }}:{{ microk8s_syslog_port }}
+:programname, startswith, "kubelet" @@{{ microk8s_syslog_server }}:{{ microk8s_syslog_port }}
+:programname, startswith, "containerd" @@{{ microk8s_syslog_server }}:{{ microk8s_syslog_port }}
+
+# Capture snap microk8s service logs
+:programname, startswith, "snap.microk8s" @@{{ microk8s_syslog_server }}:{{ microk8s_syslog_port }}
+
+# Stop processing these logs locally to avoid duplication
+:programname, startswith, "microk8s" stop
+:programname, startswith, "k8s" stop
+:programname, startswith, "kubelet" stop
+:programname, startswith, "containerd" stop
+:programname, startswith, "snap.microk8s" stop

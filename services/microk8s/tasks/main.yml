@@ -1,0 +1,135 @@
+---
+# Setup MicroK8s single-node Kubernetes cluster
+
+- name: Verify system requirements
+  ansible.builtin.fail:
+    msg: "MicroK8s requires at least 4GB of memory and 20GB of disk space"
+  when:
+    - install_microk8s | bool
+    - ansible_memtotal_mb < 4000
+
+- name: Check if snapd is available
+  ansible.builtin.command: snap version
+  register: snapd_check
+  changed_when: false
+  ignore_errors: true
+  when: install_microk8s | bool
+
+- name: Fail if snapd is not available
+  ansible.builtin.fail:
+    msg: "snapd is not available. Please ensure snapd is installed on this system."
+  when:
+    - install_microk8s | bool
+    - snapd_check.rc != 0
+
+- name: Check if MicroK8s is already installed
+  ansible.builtin.command: snap list microk8s
+  register: microk8s_installed
+  changed_when: false
+  ignore_errors: true
+  when: install_microk8s | bool
+
+- name: Install MicroK8s via snap
+  ansible.builtin.command: >
+    snap install microk8s --classic --channel={{ microk8s_channel }}
+  when:
+    - install_microk8s | bool
+    - microk8s_installed.rc != 0
+  notify: restart microk8s
+
+- name: Add current user to microk8s group
+  ansible.builtin.user:
+    name: "{{ ansible_user }}"
+    groups: microk8s
+    append: true
+  when: install_microk8s | bool
+  notify: restart microk8s
+
+- name: Create .kube directory for current user
+  ansible.builtin.file:
+    path: "{{ ansible_env.HOME }}/.kube"
+    state: directory
+    mode: "0700"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+  when: install_microk8s | bool
+
+- name: Wait for MicroK8s to be ready
+  ansible.builtin.command: microk8s status --wait-ready
+  register: microk8s_status
+  changed_when: false
+  when: install_microk8s | bool
+  retries: 10
+  delay: 30
+  until: microk8s_status.rc == 0
+
+- name: Get current enabled addons
+  ansible.builtin.command: microk8s status --format yaml
+  register: microk8s_status_yaml
+  changed_when: false
+  when: install_microk8s | bool
+
+- name: Enable specified addons
+  ansible.builtin.command: microk8s enable {{ item }}
+  loop: "{{ microk8s_addons_enabled }}"
+  when:
+    - install_microk8s | bool
+    - item not in microk8s_status_yaml.stdout
+  register: addon_enable_result
+  changed_when: addon_enable_result.rc == 0
+
+- name: Create kubectl alias
+  ansible.builtin.lineinfile:
+    path: "{{ ansible_env.HOME }}/.bashrc"
+    line: "alias kubectl='microk8s kubectl'"
+    create: true
+    backup: true
+  when:
+    - install_microk8s | bool
+    - microk8s_kubectl_alias | bool
+
+- name: Configure syslog forwarding for MicroK8s
+  ansible.builtin.template:
+    src: rsyslog-microk8s.conf.j2
+    dest: /etc/rsyslog.d/50-microk8s.conf
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+  when:
+    - install_microk8s | bool
+    - microk8s_syslog_enabled | bool
+  notify: restart rsyslog
+
+- name: Check if MicroK8s is running
+  ansible.builtin.command: microk8s status --wait-ready --timeout=10
+  register: microk8s_running_check
+  failed_when: false
+  changed_when: false
+  when: install_microk8s | bool
+
+- name: Start MicroK8s if not running
+  ansible.builtin.command: microk8s start
+  register: microk8s_start_result
+  changed_when: microk8s_start_result.rc == 0
+  when:
+    - install_microk8s | bool
+    - microk8s_running_check.rc != 0
+
+- name: Check if MicroK8s auto-start is enabled
+  ansible.builtin.command: systemctl is-enabled snap.microk8s.daemon-kubelite.service
+  register: microk8s_enabled_check
+  failed_when: false
+  changed_when: false
+  when:
+    - install_microk8s | bool
+    - microk8s_auto_start | bool
+
+- name: Enable MicroK8s auto-start
+  ansible.builtin.command: systemctl enable snap.microk8s.daemon-kubelite.service
+  register: microk8s_enable_result
+  changed_when: microk8s_enable_result.rc == 0
+  when:
+    - install_microk8s | bool
+    - microk8s_auto_start | bool
+    - microk8s_enabled_check.stdout != "enabled"

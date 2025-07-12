@@ -1,0 +1,22 @@
+---
+# Test playbook for MicroK8s configuration
+
+- name: Define microk8s group dynamically
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Add host to microk8s_hosts group if it has the role
+      ansible.builtin.group_by:
+        key: "microk8s_hosts"
+      when: "'microk8s' in hostvars[inventory_hostname].get('host_roles', [])"
+      changed_when: false
+
+- name: Validate MicroK8s configuration
+  hosts: microk8s_hosts
+  become: true
+  gather_facts: true
+  roles:
+    - microk8s
+  tasks:
+    - name: Import MicroK8s test tasks
+      ansible.builtin.import_tasks: "tasks/test.yml"

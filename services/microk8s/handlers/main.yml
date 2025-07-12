@@ -1,0 +1,15 @@
+---
+# MicroK8s handlers
+
+- name: restart microk8s
+  ansible.builtin.shell: |
+    microk8s stop
+    sleep 5
+    microk8s start
+  listen: restart microk8s
+
+- name: restart rsyslog
+  ansible.builtin.systemd:
+    name: rsyslog
+    state: restarted
+  listen: restart rsyslog
