@@ -28,6 +28,7 @@ graph TD
 - **DNS Management** (Pi-hole, dnsdist)
 - **Monitoring** (Disk monitoring, UPS monitoring)
 - **Container Management** (Watchtower)
+- **Serverless Computing** (Fission on MicroK8s)
 - **Special Purpose** (NVIDIA GPU support, Network UPS Tools)
 
 ## Getting Started
@@ -117,6 +118,8 @@ The project includes dedicated playbooks for various services:
   - `nut-only.yml`
   - `nvidia-gpu-only.yml`
   - `watchtower-only.yml`
+  - `microk8s-only.yml`
+  - `fission-only.yml`
 
 > **Note:** The DNS-related components (Pi-hole and dnsdist) are integrated with Terraform/OpenTofu IaC for Proxmox and don't have standalone playbooks.
 
