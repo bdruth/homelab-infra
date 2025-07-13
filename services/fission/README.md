@@ -36,6 +36,13 @@ chart_name: fission-all
 # CLI installation
 fission_cli_install: true
 fission_cli_version: ""  # Empty string uses latest
+
+# Example: Fission chart values with NATS message queue support
+fission_chart_values:
+  messagequeue:
+    nats:
+      enabled: true
+      url: "nats://nats.nats-system.svc.cluster.local:4222"
 ```
 
 ## Important Notes
@@ -67,16 +74,51 @@ Tests verify:
 - CLI installation and version
 - Basic functionality with `fission check`
 
+## NATS Integration
+
+To enable NATS message queue integration with Fission:
+
+1. Deploy NATS first using the NATS role
+2. Configure Fission chart values for NATS message queue:
+
+```yaml
+fission_chart_values:
+  messagequeue:
+    nats:
+      enabled: true
+      url: "nats://nats.nats-system.svc.cluster.local:4222"
+```
+
+This configures Fission to use NATS for message queue triggers, enabling event-driven serverless functions.
+
 ## Usage Example
 
-Include in your playbook:
-
+### Basic Installation
 ```yaml
 - name: Install Fission
   include_role:
     name: fission
   vars:
     fission_cli_install: true
+```
+
+### With NATS Integration
+```yaml
+# In inventory or group_vars
+fission_chart_values:
+  messagequeue:
+    nats:
+      enabled: true
+      url: "nats://nats.nats-system.svc.cluster.local:4222"
+
+# In playbook
+- name: Install NATS messaging
+  include_role:
+    name: nats
+
+- name: Install Fission with NATS support
+  include_role:
+    name: fission
 ```
 
 ## References

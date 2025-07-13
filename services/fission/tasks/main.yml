@@ -44,7 +44,7 @@
     chart_ref: "{{ chart_repo_name }}/{{ chart_name }}"
     namespace: "{{ fission_namespace }}"
     create_namespace: false
-    values: "{{ chart_values }}"
+    values: "{{ fission_chart_values }}"
     # chart_version omitted to use latest chart
 
 - name: Fetch latest Fission CLI release info from GitHub

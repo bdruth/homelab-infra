@@ -48,7 +48,7 @@ all:
     # Kubernetes server with MicroK8s
     k8s-server.example.com:
       ansible_host: 192.168.1.104
-      host_roles: [microk8s, fission]
+      host_roles: [microk8s, nats, fission]
       # MicroK8s configuration
       install_microk8s: true
       microk8s_addons_enabled:
@@ -56,3 +56,20 @@ all:
         - hostpath-storage
         - dashboard
         - ingress
+      # NATS configuration (used by 'nats' role)
+      nats_chart_values:
+        nats:
+          jetstream:
+            enabled: true
+            fileStore:
+              pvc:
+                size: 20Gi
+        monitoring:
+          enabled: true
+
+      # Fission configuration with NATS message queue support (used by 'fission' role)
+      fission_chart_values:
+        messagequeue:
+          nats:
+            enabled: true
+            url: "nats://nats.nats-system.svc.cluster.local:4222"

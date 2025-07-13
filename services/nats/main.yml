@@ -1,0 +1,10 @@
+---
+# NATS role main playbook
+
+- name: Deploy NATS messaging system
+  hosts: "{{ target_hosts | default('all') }}"
+  become: true
+  tasks:
+    - name: Include NATS tasks
+      ansible.builtin.include_tasks: tasks/main.yml
+      when: "'nats' in host_roles"

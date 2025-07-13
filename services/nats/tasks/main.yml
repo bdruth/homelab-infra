@@ -1,0 +1,25 @@
+---
+# Main tasks for installing NATS via Helm
+
+- name: Add NATS Helm repository
+  kubernetes.core.helm_repository:
+    name: "{{ chart_repo_name }}"
+    repo_url: "{{ chart_repo_url }}"
+
+- name: Ensure NATS namespace exists
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Namespace
+    name: "{{ nats_namespace }}"
+    state: present
+
+- name: Deploy or upgrade NATS release
+  kubernetes.core.helm:
+    name: "{{ release_name }}"
+    chart_ref: "{{ chart_repo_name }}/{{ chart_name }}"
+    namespace: "{{ nats_namespace }}"
+    create_namespace: false
+    values: "{{ nats_chart_values }}"
+    wait: true
+    wait_timeout: 60s
+    # chart_version omitted to use latest chart

@@ -100,12 +100,17 @@
   changed_when: false
   when: install_microk8s | bool
 
+- name: Parse enabled addons from status
+  ansible.builtin.set_fact:
+    microk8s_enabled_addons: "{{ (microk8s_status_yaml.stdout | from_yaml).addons | selectattr('status', 'equalto', 'enabled') | map(attribute='name') | list }}"
+  when: install_microk8s | bool
+
 - name: Enable specified addons
   ansible.builtin.command: microk8s enable {{ item }}
   loop: "{{ microk8s_addons_enabled }}"
   when:
     - install_microk8s | bool
-    - item not in microk8s_status_yaml.stdout
+    - item not in microk8s_enabled_addons
   register: addon_enable_result
   changed_when: addon_enable_result.rc == 0
 

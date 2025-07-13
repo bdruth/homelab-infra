@@ -1,0 +1,3 @@
+---
+# Handlers for NATS role
+# No restart handlers needed for NATS as it's managed by Kubernetes

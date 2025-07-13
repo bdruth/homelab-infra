@@ -30,5 +30,8 @@
 - name: Test MicroK8s configuration
   import_playbook: microk8s/test-playbook.yml
 
+- name: Test NATS configuration
+  import_playbook: nats/test-playbook.yml
+
 - name: Test Fission configuration
   import_playbook: fission/test-playbook.yml

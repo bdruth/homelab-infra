@@ -1,0 +1,48 @@
+---
+# Test tasks for NATS
+
+- name: Wait for NATS deployment to be ready
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    name: "{{ release_name }}"
+    namespace: "{{ nats_namespace }}"
+    wait: true
+    wait_condition:
+      type: Available
+      status: "True"
+    wait_timeout: 300
+
+- name: Verify NATS service is available
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Service
+    name: "{{ release_name }}"
+    namespace: "{{ nats_namespace }}"
+  register: nats_service
+
+- name: Display NATS service information
+  ansible.builtin.debug:
+    msg: "NATS service available at {{ nats_service.resources[0].spec.clusterIP }}:{{ nats_service.resources[0].spec.ports[0].port }}"
+
+- name: Verify NATS StatefulSet is ready (if JetStream enabled)
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: StatefulSet
+    name: "{{ release_name }}"
+    namespace: "{{ nats_namespace }}"
+  register: nats_statefulset
+  when: nats_chart_values.nats.jetstream.enabled | default(false)
+
+- name: Check NATS pod status
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Pod
+    namespace: "{{ nats_namespace }}"
+    label_selectors:
+      - "app.kubernetes.io/name=nats"
+  register: nats_pods
+
+- name: Display NATS pod status
+  ansible.builtin.debug:
+    msg: "NATS pods: {{ nats_pods.resources | length }} running"

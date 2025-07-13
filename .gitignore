@@ -16,3 +16,4 @@
 .git-crypt-key
 .pkgx
 megalinter-reports/
+certs/

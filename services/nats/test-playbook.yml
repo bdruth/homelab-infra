@@ -1,0 +1,22 @@
+---
+# Test playbook for NATS configuration
+
+- name: Define nats group dynamically
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Add host to nats_hosts group if it has the role
+      ansible.builtin.group_by:
+        key: "nats_hosts"
+      when: "'nats' in hostvars[inventory_hostname].get('host_roles', [])"
+      changed_when: false
+
+- name: Validate NATS deployment
+  hosts: nats_hosts
+  become: true
+  gather_facts: true
+  roles:
+    - nats
+  tasks:
+    - name: Import NATS test tasks
+      ansible.builtin.import_tasks: "tasks/test.yml"
