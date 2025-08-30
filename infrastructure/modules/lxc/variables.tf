@@ -48,3 +48,21 @@ variable "lxc_rootfs_size" {
   type        = string
   default     = "4G"
 }
+
+variable "lxc_mountpoints" {
+  description = "Optional additional LXC mount points (mp0..mpN)."
+  type = list(object({
+    mp        = string,
+    size      = string,
+    slot      = string, # e.g. "0" for mp0
+    key       = string, # usually same as slot
+    storage   = string, # storage name for storage-backed, or host path for bind mount
+    backup    = optional(bool),
+    volume    = optional(string),
+    acl       = optional(bool),
+    quota     = optional(bool),
+    replicate = optional(bool),
+    shared    = optional(bool)
+  }))
+  default = []
+}

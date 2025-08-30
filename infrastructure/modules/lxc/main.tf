@@ -47,4 +47,21 @@ resource "proxmox_lxc" "container" {
   pool            = "terraform-prov-pool"
   target_node     = "proxmox-main"
   unprivileged    = true
+
+  dynamic "mountpoint" {
+    for_each = var.lxc_mountpoints
+    content {
+      mp        = mountpoint.value.mp
+      size      = mountpoint.value.size
+      slot      = mountpoint.value.slot
+      key       = mountpoint.value.key
+      storage   = mountpoint.value.storage
+      backup    = try(mountpoint.value.backup, null)
+      volume    = try(mountpoint.value.volume, null)
+      acl       = try(mountpoint.value.acl, null)
+      quota     = try(mountpoint.value.quota, null)
+      replicate = try(mountpoint.value.replicate, null)
+      shared    = try(mountpoint.value.shared, null)
+    }
+  }
 }
