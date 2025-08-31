@@ -7,6 +7,7 @@ module "pihole_lxc" {
   lxc_onboot      = true
   lxc_rootfs_size = "8G"
   lxc_memory      = "1024"
+  lxc_nameserver  = "1.1.1.1"
 }
 
 data "http" "pihole_latest_release" {

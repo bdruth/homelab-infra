@@ -21,6 +21,7 @@ fi
 
 set -x
 tofu init -backend-config="${TF_VAR_namespace}-config.s3.tfbackend" -upgrade  -reconfigure
+# tofu taint module.pihole.module.pihole_lxc.proxmox_lxc.container
 if [[ "$*" =~ "output" || "$*" =~ "taint" || "$*" =~ "state" ]]
 then
   tofu "$@"
