@@ -27,3 +27,8 @@ variable "proxmox_api_url" {
   description = "API URL to manage proxmox LXC resources"
   type        = string
 }
+
+variable "ssh_public_keys" {
+  description = "SSH public key(s) to install in LXC"
+  type        = string
+}

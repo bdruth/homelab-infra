@@ -1,0 +1,84 @@
+env: production
+app:
+  aggregation_time: '02:15'
+  report_time_weekly: 'fri,18:00'
+  data_cleanup_time: '15:30'
+  import_batch_size: 50
+  inactive_days: 7
+  heartbeat_max_age: '4h'
+  count_heartbeats: false
+  custom_languages:
+    vue: Vue
+    jsx: JSX
+
+server:
+  listen_ipv4: '{{ wakapi_listen_addr.split(":")[0] }}'
+  listen_ipv6: ''
+  listen_socket_path: ''
+  timeout_sec: 30
+  port: {{ wakapi_listen_addr.split(":")[1] }}
+  base_path: '{{ wakapi_base_path }}'
+  public_url: '{{ wakapi_public_url }}'
+  tls_cert_path: ''
+  tls_key_path: ''
+
+security:
+  password_salt: '{{ wakapi_password_salt }}'
+  insecure_cookies: false
+  cookie_max_age: 172800
+  allow_signup: true
+  expose_metrics: {{ wakapi_expose_metrics | lower }}
+  enable_pprof: {{ wakapi_enable_pprof | lower }}
+  trusted_header_auth: {{ wakapi_trusted_header_auth | lower }}
+  trusted_header_auth_key: '{{ wakapi_trusted_header_auth_key }}'
+  disable_frontpage: {{ wakapi_disable_frontpage | lower }}
+
+db:
+  host: '{{ wakapi_db_host }}'
+  port: {{ wakapi_db_port or 0 }}
+  socket: ''
+  user: '{{ wakapi_db_user }}'
+  password: '{{ wakapi_db_password }}'
+  name: '{{ wakapi_db_name }}'
+  dialect: '{{ wakapi_db_dialect }}'
+  charset: '{{ wakapi_db_charset }}'
+  max_conn: 2
+  ssl: false
+  automigrate_fail_silently: false
+
+{% if wakapi_smtp_enabled %}
+mail:
+  enabled: true
+  provider: smtp
+  smtp:
+    host: '{{ wakapi_smtp_host }}'
+    port: {{ wakapi_smtp_port }}
+    username: '{{ wakapi_smtp_username }}'
+    password: '{{ wakapi_smtp_password }}'
+    sender: '{{ wakapi_smtp_sender }}'
+    tls: true
+{% else %}
+mail:
+  enabled: false
+{% endif %}
+
+sentry:
+  dsn: ''
+  enable_tracing: false
+  sample_rate: 0.75
+  sample_rate_heartbeats: 0.1
+
+quick_start: false
+skip_migration: false
+support_contact: 'hostmaster@{{ ansible_fqdn }}'
+
+{% if wakapi_cleanup_enabled %}
+data_cleanup:
+  enabled: true
+  retention_months: {{ wakapi_cleanup_retention_months }}
+  interval: '1h'
+  dry_run: {{ wakapi_cleanup_dry_run | lower }}
+{% else %}
+data_cleanup:
+  enabled: false
+{% endif %}

@@ -1,0 +1,102 @@
+---
+# Setup Wakapi coding activity tracker
+
+- name: Create wakapi system group
+  ansible.builtin.group:
+    name: "{{ wakapi_group }}"
+    state: present
+    system: true
+  when: install_wakapi | bool
+
+- name: Create wakapi system user
+  ansible.builtin.user:
+    name: "{{ wakapi_user }}"
+    group: "{{ wakapi_group }}"
+    system: true
+    shell: /bin/false
+    home: "{{ wakapi_install_dir }}"
+    create_home: false
+  when: install_wakapi | bool
+
+- name: Create wakapi directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ wakapi_user }}"
+    group: "{{ wakapi_group }}"
+    mode: "0755"
+  loop:
+    - "{{ wakapi_install_dir }}"
+    - "{{ wakapi_install_dir }}/data"
+    - "{{ wakapi_install_dir }}/config"
+    - "{{ wakapi_install_dir }}/bin"
+  when: install_wakapi | bool
+
+- name: Download wakapi binary
+  ansible.builtin.get_url:
+    url: "{{ wakapi_download_url }}"
+    dest: "/tmp/wakapi_{{ wakapi_version }}.zip"
+    mode: "0644"
+  when: install_wakapi | bool
+
+- name: Ensure `unzip` is installed
+  ansible.builtin.package:
+    name: unzip
+    state: present
+  when: install_wakapi | bool
+
+- name: Extract wakapi binary
+  ansible.builtin.unarchive:
+    src: "/tmp/wakapi_{{ wakapi_version }}.zip"
+    dest: "{{ wakapi_install_dir }}/bin"
+    remote_src: true
+    owner: "{{ wakapi_user }}"
+    group: "{{ wakapi_group }}"
+    mode: "0755"
+  when: install_wakapi | bool
+
+- name: Create wakapi configuration file
+  ansible.builtin.template:
+    src: wakapi.yml.j2
+    dest: "{{ wakapi_install_dir }}/config/wakapi.yml"
+    owner: "{{ wakapi_user }}"
+    group: "{{ wakapi_group }}"
+    mode: "0644"
+  register: wakapi_config_updated
+  when: install_wakapi | bool
+
+- name: Create wakapi systemd service file
+  ansible.builtin.template:
+    src: wakapi.service.j2
+    dest: /etc/systemd/system/wakapi.service
+    owner: root
+    group: root
+    mode: "0644"
+  register: service_file_updated
+  when: install_wakapi | bool
+
+- name: Force systemd reload
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: install_wakapi | bool and service_file_updated is changed
+
+- name: Enable and start wakapi service
+  ansible.builtin.systemd:
+    name: wakapi
+    enabled: true
+    state: "{{ 'restarted' if service_file_updated is changed or wakapi_config_updated is changed else 'started' }}"
+  when: install_wakapi | bool
+
+- name: Wait for wakapi to start
+  ansible.builtin.wait_for:
+    port: 3000
+    host: "{{ ansible_default_ipv4.address }}"
+    delay: 5
+    timeout: 60
+  when: install_wakapi | bool
+
+- name: Clean up downloaded archive
+  ansible.builtin.file:
+    path: "/tmp/wakapi_{{ wakapi_version }}.tar.gz"
+    state: absent
+  when: install_wakapi | bool

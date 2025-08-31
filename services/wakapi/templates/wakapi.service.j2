@@ -1,0 +1,30 @@
+[Unit]
+Description=Wakapi coding activity tracker
+Documentation=https://github.com/muety/wakapi
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User={{ wakapi_user }}
+Group={{ wakapi_group }}
+WorkingDirectory={{ wakapi_install_dir }}
+ExecStart={{ wakapi_install_dir }}/bin/wakapi -config {{ wakapi_install_dir }}/config/wakapi.yml
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=wakapi
+
+# Security settings
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths={{ wakapi_install_dir }}
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,22 @@
+---
+- name: Test Wakapi deployment
+  hosts: wakapi_servers
+  become: true
+  vars:
+    install_wakapi: true
+    wakapi_public_url: "http://{{ ansible_default_ipv4.address }}:3000"
+  roles:
+    - wakapi
+
+  post_tasks:
+    - name: Verify wakapi is running
+      ansible.builtin.uri:
+        url: "{{ wakapi_public_url }}"
+        method: GET
+        status_code: 200
+      retries: 5
+      delay: 10
+
+    - name: Display wakapi URL
+      ansible.builtin.debug:
+        msg: "Wakapi is available at: {{ wakapi_public_url }}"
