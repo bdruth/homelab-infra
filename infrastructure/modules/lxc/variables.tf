@@ -66,3 +66,8 @@ variable "lxc_mountpoints" {
   }))
   default = []
 }
+variable "lxc_nameserver" {
+  description = "Optional: Space-separated list of DNS servers for the LXC container. If null, the container will inherit DNS from the Proxmox host."
+  type        = string
+  default     = null # This makes the parameter optional
+}

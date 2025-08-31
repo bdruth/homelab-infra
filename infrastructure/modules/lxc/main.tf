@@ -29,6 +29,7 @@ resource "proxmox_lxc" "container" {
     hwaddr = var.lxc_hwaddr
   }
 
+  nameserver = var.lxc_nameserver != null ? var.lxc_nameserver : null
   rootfs {
     acl       = false
     quota     = false
