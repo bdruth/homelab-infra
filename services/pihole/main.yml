@@ -271,8 +271,12 @@
     - name: Cleanup old awscli versions
       ansible.builtin.shell: |
         set -o pipefail
-        current_version=$(basename `ls -l /usr/aws-cli/v2/current | awk '{print $NF}'` | sed -r 's/\./\\./g')
-        ls /usr/aws-cli/v2/ | grep -vE "(current|$current_version)" | xargs -I {} rm -rf /usr/aws-cli/v2/{}
+        current_version_name=$(basename "$(readlink -f /usr/aws-cli/v2/current)")
+        for dir in /usr/aws-cli/v2/*; do
+          if [[ -d "$dir" && "$(basename "$dir")" != "current" && "$(basename "$dir")" != "$current_version_name" ]]; then
+            rm -rf "$dir"
+          fi
+        done
       args:
         executable: /usr/bin/bash
       changed_when: true
