@@ -31,7 +31,7 @@
   ansible.builtin.apt:
     name:
       - "nvidia-driver-{{ nvidia_driver_version }}"
-      - "nvidia-utils-{{ nvidia_driver_version }}"
+      - "nvidia-utils-{{ nvidia_driver_version | replace('-open', '') }}"
     state: present
     update_cache: true
     cache_valid_time: 3600
