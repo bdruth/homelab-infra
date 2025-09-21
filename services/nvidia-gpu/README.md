@@ -4,7 +4,7 @@ This Ansible module configures a system for AI/ML/CUDA workloads with NVIDIA GPU
 
 ## Features
 
-- Installs NVIDIA drivers (version 570 by default, configurable)
+- Installs NVIDIA drivers (version 580 by default, configurable)
 - Configures CUDA toolkit and samples
 - Sets up container runtime for GPU workloads
 - Blacklists nouveau drivers for compatibility
@@ -22,7 +22,7 @@ This Ansible module configures a system for AI/ML/CUDA workloads with NVIDIA GPU
 ## Requirements
 
 - Ubuntu Noble (24.04)
-- NVIDIA GPU compatible with driver version 570 (or other configured version)
+- NVIDIA GPU compatible with driver version 580 (or other configured version)
 
 ## Module Structure
 

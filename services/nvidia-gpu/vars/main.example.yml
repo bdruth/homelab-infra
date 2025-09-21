@@ -20,7 +20,7 @@ install_watchtower: true # Whether to install watchtower for automatic container
 install_gpt_researcher: true # Whether to install GPT Researcher
 
 # Package versions and configuration
-nvidia_driver_version: "570" # Used in package name (nvidia-driver-570)
+nvidia_driver_version: "580-open" # Used in package name (nvidia-driver-580-open)
 btop_version: "1.4.0" # Version to install from GitHub releases
 n8n_version: "main" # Git branch or tag to use for n8n installation
 
