@@ -211,26 +211,25 @@
         - open_webui_result.rc is defined and open_webui_result.rc == 0
         - open_webui_http_check.status is defined and open_webui_http_check.status == 200
 
-    - name: Check Open WebUI Web RAG configuration
-      ansible.builtin.shell: >
-        docker inspect open-webui | grep -E "ENABLE_RAG_WEB_SEARCH|ENABLE_SEARCH_QUERY_GENERATION|RAG_WEB_SEARCH_ENGINE|RAG_WEB_LOADER_ENGINE"
-      register: open_webui_rag_config_result
+    - name: Check Open WebUI web search configuration
+      ansible.builtin.shell: >-
+        docker inspect open-webui | grep -E "ENABLE_WEB_SEARCH|ENABLE_SEARCH_QUERY_GENERATION|WEB_SEARCH_ENGINE|WEB_LOADER_ENGINE"
+      register: open_webui_web_search_config_result
       changed_when: false
       ignore_errors: true
       when:
         - install_open_webui is defined and install_open_webui | bool
         - open_webui_result.rc is defined and open_webui_result.rc == 0
-        - open_webui_enable_rag_web_search is defined and open_webui_enable_rag_web_search | bool
+        - open_webui_enable_web_search is defined and open_webui_enable_web_search | bool
 
-    - name: Display Open WebUI Web RAG configuration status
+    - name: Display Open WebUI web search configuration status
       ansible.builtin.debug:
-        msg: "Open WebUI Web RAG configuration: {{
-          'OK - Configured correctly' if open_webui_rag_config_result.rc is defined and open_webui_rag_config_result.rc == 0
-          else 'Not properly configured' }}"
+        msg: >-
+          Open WebUI Web Search configuration: {{ 'OK - Configured correctly' if open_webui_web_search_config_result.rc is defined and open_webui_web_search_config_result.rc == 0 else 'Not properly configured' }}
       when:
         - install_open_webui is defined and install_open_webui | bool
         - open_webui_result.rc is defined and open_webui_result.rc == 0
-        - open_webui_enable_rag_web_search is defined and open_webui_enable_rag_web_search | bool
+        - open_webui_enable_web_search is defined and open_webui_enable_web_search | bool
 
     - name: Check Open WebUI Image Generation configuration
       ansible.builtin.shell: >-
