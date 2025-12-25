@@ -39,6 +39,8 @@ ExecStart=/usr/bin/docker run --name open-webui \
   {% if install_comfyui | bool %}-e COMFYUI_BASE_URL=http://0.0.0.0:{{ comfyui_port }}/ \
   -e ENABLE_IMAGE_GENERATION={{ open_webui_enable_image_generation | string | lower }} {% endif %} \
   -e ENABLE_PERSISTENT_CONFIG=false \
+  -e WEBUI_SECRET_KEY={{ open_webui_secret_key }} \
+  -e OAUTH_CODE_CHALLENGE_METHOD=S256 \
   -p {{ open_webui_port }}:{{ open_webui_port }} \
   {% if nvidia_install_gpu_drivers | bool %}--device nvidia.com/gpu=all --security-opt=label=disable {% endif %} \
   ghcr.io/open-webui/open-webui:main

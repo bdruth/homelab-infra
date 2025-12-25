@@ -65,6 +65,7 @@ open_webui_enable_image_generation: true # Enable image generation integration
 open_webui_enable_openai_api: true # Enable OpenAI API support
 open_webui_openai_api_base_url: "https://api.openai.com/v1" # OpenAI API base URL
 open_webui_openai_api_key: "sk-example-key-replace-with-actual-key" # OpenAI API key (replace with actual key)
+open_webui_secret_key: "" # Secret key for Open WebUI, e.g. `head -c 12 /dev/random | base64`
 
 # Open WebUI Authelia OIDC configuration
 open_webui_enable_authelia: false # Set to true to enable Authelia OIDC authentication
