@@ -14,6 +14,23 @@
       ansible.builtin.shell: timedatectl set-timezone America/Chicago && dpkg-reconfigure -f noninteractive tzdata
       changed_when: false
 
+    - name: Configure tailscaled for userspace networking
+      ansible.builtin.copy:
+        dest: /etc/default/tailscaled
+        content: |
+          # Userspace networking for LXC containers without TUN device access
+          PORT="41641"
+          FLAGS="--tun=userspace-networking"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Install and configure Tailscale
+      ansible.builtin.include_role:
+        name: artis3n.tailscale.machine
+      vars:
+        tailscale_args: "--accept-dns=false"
+
     - name: Update apt cache
       ansible.builtin.apt:
         update_cache: true

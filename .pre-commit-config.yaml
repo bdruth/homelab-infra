@@ -26,7 +26,7 @@ repos:
           - "'LOG_LEVEL=warning'"
           - --filesonly
           - -d
-          - synology1.local:5050/megalinter-terraform:v8-git-crypt
+          - synology1:5050/megalinter-terraform:v8-git-crypt
         stages:
           - pre-commit
       - id: megalinter-full # Slower, more thorough

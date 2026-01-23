@@ -18,7 +18,10 @@
       "Bash(grep:*)",
       "Bash(find:*)",
       "Bash(gpg:*)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebSearch"
     ],
     "deny": []
   }

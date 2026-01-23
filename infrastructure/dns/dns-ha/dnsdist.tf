@@ -27,7 +27,7 @@ resource "null_resource" "install_dnsdist" {
     working_dir = path.module
   }
   provisioner "local-exec" {
-    command     = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${module.dns_ha_lxc.lxc_ip_addr},' -u root --private-key ${var.ssh_priv_key_path} ../../../services/dnsdist/main.yml -e '{\"dns_ip_addrs\":${jsonencode(local.dns_ip_addrs)}}'"
+    command     = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${module.dns_ha_lxc.lxc_ip_addr},' -u root --private-key ${var.ssh_priv_key_path} ../../../services/dnsdist/main.yml -e '{\"dns_ip_addrs\":${jsonencode(local.dns_ip_addrs)}}' -e 'ansible_python_interpreter=/usr/bin/python3'"
     working_dir = path.module
   }
 }
