@@ -38,7 +38,7 @@ resource "null_resource" "run_ansible_playbook" {
     working_dir = path.module
   }
   provisioner "local-exec" {
-    command     = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${module.pihole_lxc.lxc_ip_addr},' -u root --private-key '${var.ssh_priv_key_path}' ${local.install_backup} ../../../services/pihole/main.yml"
+    command     = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${module.pihole_lxc.lxc_ip_addr},' -u root --private-key '${var.ssh_priv_key_path}' -e 'ansible_python_interpreter=/usr/bin/python3' ${local.install_backup} ../../../services/pihole/main.yml"
     working_dir = path.module
   }
 }
@@ -54,7 +54,7 @@ resource "null_resource" "run_ansible_maintenance_tag" {
     working_dir = path.module
   }
   provisioner "local-exec" {
-    command     = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${module.pihole_lxc.lxc_ip_addr},' -u root --private-key '${var.ssh_priv_key_path}' ${local.install_backup} ../../../services/pihole/main.yml --tags maintenance"
+    command     = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${module.pihole_lxc.lxc_ip_addr},' -u root --private-key '${var.ssh_priv_key_path}' ${local.install_backup} -e 'ansible_python_interpreter=/usr/bin/python3' ../../../services/pihole/main.yml --tags maintenance"
     working_dir = path.module
   }
 }
