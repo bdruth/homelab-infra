@@ -21,7 +21,11 @@
       "Bash(git config:*)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "WebSearch"
+      "WebSearch",
+      "WebFetch(domain:coder.com)",
+      "Bash(xargs ls:*)",
+      "Bash(gh api:*)",
+      "Bash(gh search code:*)"
     ],
     "deny": []
   }

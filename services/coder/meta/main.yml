@@ -1,0 +1,21 @@
+---
+galaxy_info:
+  author: Brice Ruth
+  description: Ansible role for deploying Coder development platform with PostgreSQL
+  license: MIT
+  min_ansible_version: "2.9"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - all
+    - name: Debian
+      versions:
+        - all
+
+  galaxy_tags:
+    - coder
+    - development
+    - docker
+    - podman
+
+dependencies: []

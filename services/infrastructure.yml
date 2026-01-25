@@ -19,6 +19,7 @@
         _run_microk8s: "{{ 'microk8s' in host_roles | default([]) }}"
         _run_fission: "{{ 'fission' in host_roles | default([]) }}"
         _run_nats: "{{ 'nats' in host_roles | default([]) }}"
+        _run_coder: "{{ 'coder' in host_roles | default([]) }}"
 
   roles:
     - role: nut
@@ -43,3 +44,5 @@
       when: _run_nats | bool
     - role: fission
       when: _run_fission | bool
+    - role: coder
+      when: _run_coder | bool

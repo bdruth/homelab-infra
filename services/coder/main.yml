@@ -1,0 +1,10 @@
+---
+# Coder Ansible Role Main Playbook
+
+- name: Setup Coder development platform
+  hosts: "{{ target_hosts | default('all') }}"
+  become: true
+  tasks:
+    - name: Include coder tasks
+      ansible.builtin.include_tasks: tasks/main.yml
+      when: "'coder' in host_roles"

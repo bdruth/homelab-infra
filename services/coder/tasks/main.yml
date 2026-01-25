@@ -1,0 +1,88 @@
+---
+# Setup Coder development platform with PostgreSQL database
+
+- name: Verify docker compose is available
+  ansible.builtin.command: "docker compose version"
+  register: docker_compose_check
+  changed_when: false
+  ignore_errors: true
+  when: install_coder | bool
+
+- name: Fail if docker compose is not available
+  ansible.builtin.fail:
+    msg: "docker compose is not available. Please ensure podman and podman-docker compatibility are properly installed."
+  when:
+    - install_coder | bool
+    - docker_compose_check.rc != 0
+
+- name: Create Coder install directory
+  ansible.builtin.file:
+    path: "{{ coder_install_dir }}"
+    state: directory
+    mode: "0755"
+  when: install_coder | bool
+
+- name: Create Coder data directory
+  ansible.builtin.file:
+    path: "{{ coder_data_dir }}"
+    state: directory
+    mode: "0755"
+  when: install_coder | bool
+
+- name: Create Coder home directory
+  ansible.builtin.file:
+    path: "{{ coder_home_dir }}"
+    state: directory
+    mode: "0755"
+  when: install_coder | bool
+
+- name: Create Coder PostgreSQL data directory
+  ansible.builtin.file:
+    path: "{{ coder_postgres_data_dir }}"
+    state: directory
+    mode: "0755"
+  when: install_coder | bool
+
+- name: Create Coder docker-compose.yml file
+  ansible.builtin.template:
+    src: coder-docker-compose.yml.j2
+    dest: "{{ coder_install_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  register: coder_config_updated
+  when: install_coder | bool
+
+- name: Create coder service file
+  ansible.builtin.template:
+    src: coder.service.j2
+    dest: /etc/systemd/system/coder.service
+    owner: root
+    group: root
+    mode: "0644"
+  register: service_file_updated
+  when: install_coder | bool
+
+- name: Force systemd reload
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: install_coder | bool and service_file_updated is changed
+
+- name: Enable and start coder service
+  ansible.builtin.systemd:
+    name: coder
+    enabled: true
+    state: "{{ 'restarted' if service_file_updated is changed or coder_config_updated is changed else 'started' }}"
+    daemon_reload: true
+  register: coder_service
+  when: install_coder | bool
+
+- name: Wait for coder containers to start
+  ansible.builtin.shell: "docker ps | grep -E 'coder'"
+  register: coder_containers
+  changed_when: false
+  ignore_errors: true
+  retries: 15
+  delay: 4
+  until: coder_containers.rc == 0
+  when: install_coder | bool

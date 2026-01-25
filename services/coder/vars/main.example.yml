@@ -1,0 +1,16 @@
+---
+# Example variables for Coder role - copy to main.yml and adjust values
+
+# Access URL (external URL users connect to)
+coder_access_url: "https://coder.example.com"
+
+# PostgreSQL password - generate with: openssl rand -hex 16
+coder_postgres_password: "generate-random-secret"
+
+# Optional: OIDC configuration
+# coder_extra_env:
+#   CODER_OIDC_ISSUER_URL: "https://auth.example.com"
+#   CODER_OIDC_CLIENT_ID: "coder"
+#   CODER_OIDC_CLIENT_SECRET: "secret"
+#   CODER_TELEMETRY_ENABLE: "false"
+#   CODER_WILDCARD_ACCESS_URL: "*.coder.example.com"

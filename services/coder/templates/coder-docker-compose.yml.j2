@@ -1,0 +1,51 @@
+version: "3.9"
+
+networks:
+  coder:
+    external: false
+    enable_ipv6: true
+
+services:
+  coder:
+    image: {{ coder_image_repo }}:{{ coder_image_version }}
+    container_name: coder
+    environment:
+      - CODER_PG_CONNECTION_URL=postgresql://{{ coder_postgres_user }}:{{ coder_postgres_password }}@database:5432/{{ coder_postgres_db }}?sslmode=disable
+      - CODER_HTTP_ADDRESS={{ coder_http_address }}
+      - CODER_ACCESS_URL={{ coder_access_url }}
+{% if coder_extra_env is defined %}
+{% for key, value in coder_extra_env.items() %}
+      - {{ key }}={{ value }}
+{% endfor %}
+{% endif %}
+    ports:
+      - "{{ coder_http_port }}:7080"
+    volumes:
+      - /var/run/podman/podman.sock:/var/run/docker.sock
+      - {{ coder_home_dir }}:/home/coder
+    networks:
+      - coder
+    depends_on:
+      database:
+        condition: service_healthy
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    restart: always
+
+  database:
+    image: {{ coder_postgres_image }}
+    container_name: coder-postgres
+    environment:
+      - POSTGRES_USER={{ coder_postgres_user }}
+      - POSTGRES_PASSWORD={{ coder_postgres_password }}
+      - POSTGRES_DB={{ coder_postgres_db }}
+    volumes:
+      - {{ coder_postgres_data_dir }}:/var/lib/postgresql/data
+    networks:
+      - coder
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U {{ coder_postgres_user }} -d {{ coder_postgres_db }}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
