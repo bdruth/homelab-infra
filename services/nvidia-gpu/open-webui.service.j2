@@ -23,7 +23,7 @@ ExecStart=/usr/bin/docker run --name open-webui \
   -e OPENAI_API_BASE_URL={{ open_webui_openai_api_base_url }} \
   -e OPENAI_API_KEY={{ open_webui_openai_api_key }} \
   {% if open_webui_enable_authelia | default(false) | bool %}\
-  -e WEBUI_URL={{ open_webui_url | default('https://' + ansible_fqdn) }} \
+  -e WEBUI_URL={{ open_webui_url | default('https://' + ansible_facts["fqdn"]) }} \
   -e ENABLE_OAUTH_SIGNUP=true \
   -e OAUTH_MERGE_ACCOUNTS_BY_EMAIL=true \
   -e OAUTH_CLIENT_ID={{ open_webui_oauth_client_id }} \

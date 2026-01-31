@@ -16,28 +16,58 @@
     file: "{{ disk_monitoring_role_path }}/vars/{{ inventory_hostname }}.yml"
   when: host_vars_check.stat.exists
 
-- name: Add InfluxData GPG key
-  ansible.builtin.get_url:
-    url: https://repos.influxdata.com/influxdata-archive_compat.key
-    dest: /tmp/influxdata-archive_compat.key
-    mode: "0644"
-  when: ansible_os_family == "Debian"
-
-- name: Import InfluxData GPG key
-  ansible.builtin.apt_key:
-    file: /tmp/influxdata-archive_compat.key
+- name: Install InfluxData archive keyring package
+  ansible.builtin.apt:
+    name: influxdata-archive-keyring
     state: present
-  when: ansible_os_family == "Debian"
+  register: keyring_pkg
+  ignore_errors: true
+  when: ansible_facts["os_family"] == "Debian"
 
-- name: Add InfluxData repository (with fallback for newer Ubuntu)
+- name: Fetch InfluxData GPG key (fallback if keyring package unavailable)
+  ansible.builtin.shell: >-
+    curl -fsSL https://repos.influxdata.com/influxdata-archive_compat-exp2029.key
+    | gpg --dearmor
+    | tee /usr/share/keyrings/influxdata-archive.gpg > /dev/null
+  args:
+    creates: /usr/share/keyrings/influxdata-archive.gpg
+  when: ansible_facts["os_family"] == "Debian" and keyring_pkg is failed
+
+- name: Remove old InfluxData repository files
+  ansible.builtin.shell: rm -f /etc/apt/sources.list.d/repos_influxdata_com_*.list
+  args:
+    removes: /etc/apt/sources.list.d/repos_influxdata_com_debian.list
+  when: ansible_facts["os_family"] == "Debian"
+
+- name: Remove old InfluxData apt key
+  ansible.builtin.apt_key:
+    id: 9D539D90D3328DC7D6C8D3B9D8FF8E1F7DF8B07E
+    state: absent
+  ignore_errors: true
+  when: ansible_facts["os_family"] == "Debian"
+
+- name: Add InfluxData repository (signed-by keyring)
+  ansible.builtin.copy:
+    content: "deb [signed-by=/usr/share/keyrings/influxdata-archive.gpg] https://repos.influxdata.com/debian stable main\n"
+    dest: /etc/apt/sources.list.d/influxdata.list
+    mode: "0644"
+  register: influxdata_repo
+  when: ansible_facts["os_family"] == "Debian"
+
+- name: Remove old-style InfluxData repository entry
   ansible.builtin.apt_repository:
     repo: >-
-      deb https://repos.influxdata.com/{{ ansible_distribution | lower }}
-      {{ 'jammy' if ansible_distribution_release in ['noble', 'mantic'] else ansible_distribution_release }}
+      deb https://repos.influxdata.com/{{ ansible_facts["distribution"] | lower }}
+      {{ 'jammy' if ansible_facts["distribution_release"] in ['noble', 'mantic'] else ansible_facts["distribution_release"] }}
       stable
-    state: present
+    state: absent
+  ignore_errors: true
+  when: ansible_facts["os_family"] == "Debian"
+
+- name: Update apt cache
+  ansible.builtin.apt:
     update_cache: true
-  when: ansible_os_family == "Debian"
+  when: ansible_facts["os_family"] == "Debian" and (influxdata_repo is changed)
 
 - name: Install Telegraf
   ansible.builtin.package:

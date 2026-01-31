@@ -23,7 +23,7 @@
   until: base_package_install is success
   retries: 3
   delay: 5
-  ignore_errors: "{{ ansible_check_mode }}"
+  ignore_errors: "{{ ansible_facts['check_mode'] }}"
 
 - name: Remove docker-compose package from apt
   ansible.builtin.apt:
@@ -47,7 +47,7 @@
 
 - name: Install latest docker-compose
   ansible.builtin.get_url:
-    url: "https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-{{ ansible_system }}-{{ ansible_architecture }}"
+    url: "https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-{{ ansible_facts['system'] }}-{{ ansible_facts['architecture'] }}"
     dest: /usr/local/bin/docker-compose
     mode: "0755"
     force: true

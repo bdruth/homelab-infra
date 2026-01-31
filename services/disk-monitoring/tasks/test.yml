@@ -6,7 +6,7 @@
   register: telegraf_check
   changed_when: false
   failed_when: telegraf_check.rc != 0
-  when: ansible_os_family == "Debian"
+  when: ansible_facts["os_family"] == "Debian"
 
 - name: Verify Telegraf configuration file exists
   ansible.builtin.stat:

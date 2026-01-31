@@ -1,3 +1,3 @@
 #!/bin/bash
 
-pkgx +ansible +ssh +python ./services-deploy.sh "$@"
+pkgx pkgx@1 +ansible +ssh +python ./services-deploy.sh "$@"

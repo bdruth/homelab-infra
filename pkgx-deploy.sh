@@ -1,3 +1,3 @@
 #!/bin/bash
 
-pkgx +tofu +pip +ansible ./deploy.sh "$@"
+pkgx pkgx@1 +tofu +pip +ansible ./deploy.sh "$@"

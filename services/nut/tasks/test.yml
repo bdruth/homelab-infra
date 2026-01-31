@@ -63,7 +63,7 @@
 
 - name: Check NUT service status
   ansible.builtin.systemd:
-    name: "{{ (ansible_distribution == 'Debian') | ternary('nut.target', 'nut-monitor') }}"
+    name: "{{ (ansible_facts['distribution'] == 'Debian') | ternary('nut.target', 'nut-monitor') }}"
   register: nut_service_status
   ignore_errors: true
   tags: [nut-test]

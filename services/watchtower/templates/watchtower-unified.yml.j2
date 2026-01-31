@@ -1,13 +1,13 @@
 {# This template handles both system and user watchtower instances #}
 {% if is_user is defined and is_user %}
   {% set container_name = 'watchtower-' + username %}
-  {% set socket_path = '/run/user/' + uid + '/podman/podman.sock:/var/run/docker.sock' %}
+  {% set socket_path = '/run/user/' + uid | string + '/podman/podman.sock:/var/run/docker.sock' %}
 {% else %}
   {% set container_name = 'watchtower' %}
   {% set socket_path = '/var/run/docker.sock:/var/run/docker.sock' %}
 {% endif %}
 
-{% if ansible_default_ipv6 %}
+{% if ansible_facts['default_ipv6'] | default({}) %}
 networks:
   net:
     driver: bridge
@@ -21,7 +21,7 @@ services:
     volumes:
       - {{ socket_path }}
     restart: always
-{% if ansible_default_ipv6 %}
+{% if ansible_facts['default_ipv6'] | default({}) %}
     networks:
       - net
 {% endif %}
@@ -52,7 +52,7 @@ services:
   {%- set env_vars = env_vars + ['WATCHTOWER_TIMEOUT=' + (timeout | default(watchtower_timeout) | default('10s'))] -%}
 {%- endif -%}
 
-{%- set hostname = ansible_hostname | default('localhost') -%}
+{%- set hostname = ansible_facts['hostname'] | default('localhost') -%}
 {%- if is_user | default(false) -%}
   {%- set hostname = hostname + '-' + username -%}
 {%- endif -%}
