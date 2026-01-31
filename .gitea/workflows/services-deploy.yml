@@ -53,7 +53,7 @@ jobs:
 
             # Check for changes in common files that should trigger full deployment
             if git diff --name-only HEAD~1 | \
-               grep -E "^(services/inventory\.yml|services/infrastructure\.yml|services/ansible\.cfg|setup-services\.sh|services-deploy\.sh)"; then
+               grep -E "^(services/inventory\.yml|services/infrastructure(-test)?\.yml|services/ansible\.cfg|setup-services\.sh|services-deploy\.sh)"; then
               echo "✅ Common services files changed, will run full deployment"
               echo "FULL_DEPLOYMENT" > .deploy_playbooks
               echo "::set-output name=deploy_full::yes"
@@ -61,8 +61,8 @@ jobs:
             fi
             # Check for each role directory and add to deploy list if changed
             git diff --name-only HEAD~1 \
-              | grep -E "^services/(disk-monitoring|drone|gitea|nut|nvidia-gpu|watchtower)" \
-              | sed -E 's#^services/(disk-monitoring|drone-runner-exec|drone|gitea-act-runner|gitea|nut|nvidia-gpu|watchtower).*#services/\1/test-playbook.yml#' \
+              | grep -E "^services/(disk-monitoring|drone|gitea|nut|nvidia-gpu|watchtower|coder)" \
+              | sed -E 's#^services/(disk-monitoring|drone-runner-exec|drone|gitea-act-runner|gitea|nut|nvidia-gpu|watchtower|coder).*#services/\1/test-playbook.yml#' \
               | sort -u > .deploy_playbooks
 
             # Count how many playbooks will be deployed

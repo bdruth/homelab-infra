@@ -1,0 +1,60 @@
+---
+# Reusable Coder test tasks
+
+- name: Check if docker-compose is installed
+  ansible.builtin.command: docker compose version
+  register: docker_compose_result
+  changed_when: false
+  ignore_errors: true
+  when: install_coder | bool
+  tags: [coder-test]
+
+- name: Display docker-compose status
+  ansible.builtin.debug:
+    msg: "docker-compose status: {{ 'OK' if docker_compose_result.rc == 0 else 'Not properly installed' }}"
+  when: install_coder | bool
+  tags: [coder-test]
+
+- name: Check docker-compose file exists
+  ansible.builtin.stat:
+    path: "{{ coder_install_dir }}/docker-compose.yml"
+  register: coder_compose_file
+  when: install_coder | bool
+  tags: [coder-test]
+
+- name: Display Coder docker-compose file status
+  ansible.builtin.debug:
+    msg: "Coder docker-compose file: {{ 'OK' if coder_compose_file.stat.exists else 'Not found' }}"
+  when: install_coder | bool
+  tags: [coder-test]
+
+- name: Wait for Coder containers to start
+  ansible.builtin.shell: docker ps | grep -E 'coder'
+  register: coder_result
+  changed_when: false
+  ignore_errors: true
+  retries: 15
+  delay: 4
+  until: coder_result.rc == 0
+  when: install_coder | bool
+  tags: [coder-test]
+
+- name: Display Coder container status
+  ansible.builtin.debug:
+    msg: "Coder status: {{ 'OK' if coder_result.rc == 0 else 'Not properly installed or not running' }}"
+  when: install_coder | bool
+  tags: [coder-test]
+
+- name: Check Coder systemd service status
+  ansible.builtin.systemd:
+    name: coder
+  register: coder_service_status
+  ignore_errors: true
+  when: install_coder | bool
+  tags: [coder-test]
+
+- name: Display Coder service status
+  ansible.builtin.debug:
+    msg: "Coder service status: {{ 'OK - Active' if coder_service_status.status.ActiveState == 'active' else 'Failed - Not active' }}"
+  when: install_coder | bool
+  tags: [coder-test]

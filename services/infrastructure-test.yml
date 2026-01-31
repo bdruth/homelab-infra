@@ -35,3 +35,6 @@
 
 - name: Test Fission configuration
   import_playbook: fission/test-playbook.yml
+
+- name: Test Coder configuration
+  import_playbook: coder/test-playbook.yml

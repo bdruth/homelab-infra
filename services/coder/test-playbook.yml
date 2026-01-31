@@ -1,0 +1,22 @@
+---
+# Test playbook for Coder configuration
+
+- name: Define coder group dynamically
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Add host to coder_hosts group if it has the role
+      ansible.builtin.group_by:
+        key: "coder_hosts"
+      when: "'coder' in hostvars[inventory_hostname].get('host_roles', [])"
+      changed_when: false
+
+- name: Validate Coder configuration
+  hosts: coder_hosts
+  become: true
+  gather_facts: true
+  roles:
+    - coder
+  tasks:
+    - name: Import Coder test tasks
+      ansible.builtin.import_tasks: "tasks/test.yml"
