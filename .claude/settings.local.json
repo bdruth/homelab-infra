@@ -28,7 +28,8 @@
       "Bash(gh search code:*)",
       "mcp__serena__search_for_pattern",
       "Bash(git rm:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "mcp__serena__find_file"
     ],
     "deny": []
   }
