@@ -1,7 +1,7 @@
 [Unit]
 Description=Coder Development Platform
-After=podman.service
-Requires=podman.service
+After=podman.service podman.socket
+Requires=podman.service podman.socket
 
 [Service]
 WorkingDirectory={{ coder_install_dir }}
