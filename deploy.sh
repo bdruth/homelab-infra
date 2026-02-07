@@ -47,3 +47,7 @@ tofu init -backend-config=config.s3.tfbackend -upgrade -reconfigure
 tofu apply --auto-approve
 dns_ha_ip=$(tofu output -raw dns_ha_ip | tail -n 1)
 test_dns "$dns_ha_ip" "api.github.com"
+
+cd "${SCRIPT_DIR}/infrastructure/matterbridge"
+tofu init -backend-config=config.s3.tfbackend -upgrade -reconfigure
+tofu apply --auto-approve

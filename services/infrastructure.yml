@@ -20,6 +20,7 @@
         _run_fission: "{{ 'fission' in host_roles | default([]) }}"
         _run_nats: "{{ 'nats' in host_roles | default([]) }}"
         _run_coder: "{{ 'coder' in host_roles | default([]) }}"
+        _run_matterbridge: "{{ 'matterbridge' in host_roles | default([]) }}"
 
   roles:
     - role: nut

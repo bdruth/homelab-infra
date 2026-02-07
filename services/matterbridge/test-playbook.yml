@@ -1,0 +1,19 @@
+---
+- name: Import matterbridge deployment
+  ansible.builtin.import_playbook: main.yml
+
+- name: Verify matterbridge deployment
+  hosts: all
+  become: true
+  tasks:
+    - name: Verify matterbridge is running
+      ansible.builtin.uri:
+        url: "http://localhost:8283"
+        method: GET
+        status_code: 200
+      retries: 5
+      delay: 10
+
+    - name: Display matterbridge URL
+      ansible.builtin.debug:
+        msg: "Matterbridge is available at: http://{{ ansible_host }}:8283"

@@ -1,0 +1,106 @@
+---
+- name: Install matterbridge
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: Install curl
+      ansible.builtin.apt:
+        pkg:
+          - curl
+        state: present
+
+    - name: Check if NodeSource is configured
+      ansible.builtin.stat:
+        path: /etc/apt/sources.list.d/nodesource.list
+      register: nodesource_list
+
+    - name: Install Node.js 24 LTS via NodeSource
+      ansible.builtin.shell: set -o pipefail && curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
+      args:
+        executable: /usr/bin/bash
+      when: not nodesource_list.stat.exists
+      changed_when: true
+
+    - name: Install nodejs
+      ansible.builtin.apt:
+        pkg:
+          - nodejs
+        state: present
+        update_cache: true
+
+    - name: Create matterbridge group
+      ansible.builtin.group:
+        name: matterbridge
+        system: true
+        state: present
+
+    - name: Create matterbridge user
+      ansible.builtin.user:
+        name: matterbridge
+        group: matterbridge
+        home: /opt/matterbridge
+        shell: /bin/false
+        system: true
+        create_home: false
+        state: present
+
+    - name: Create matterbridge directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: matterbridge
+        group: matterbridge
+        mode: "0755"
+      loop:
+        - /opt/matterbridge
+        - /opt/matterbridge/data
+
+    - name: Install matterbridge globally
+      community.general.npm:
+        name: matterbridge
+        global: true
+        production: true
+      notify:
+        - Restart matterbridge
+
+    - name: Deploy matterbridge systemd service
+      ansible.builtin.template:
+        src: templates/matterbridge.service.j2
+        dest: /etc/systemd/system/matterbridge.service
+        owner: root
+        group: root
+        mode: "0644"
+      notify:
+        - Reload systemd
+        - Restart matterbridge
+
+    - name: Enable and start matterbridge service
+      ansible.builtin.systemd:
+        name: matterbridge
+        enabled: true
+        state: started
+
+    - name: Wait for matterbridge to be available
+      ansible.builtin.uri:
+        url: "http://localhost:8283"
+        method: GET
+      register: matterbridge_health
+      retries: 12
+      delay: 5
+      until: matterbridge_health.status == 200
+      failed_when: false
+
+  handlers:
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Restart matterbridge
+      ansible.builtin.systemd:
+        name: matterbridge
+        state: restarted

@@ -1,0 +1,23 @@
+[Unit]
+Description=Matterbridge smart home bridge
+Documentation=https://github.com/Luligu/matterbridge
+After=network.target
+
+[Service]
+Type=simple
+User=matterbridge
+Group=matterbridge
+WorkingDirectory=/opt/matterbridge
+ExecStart=/usr/bin/matterbridge -bridge -frontend 8283 -profile /opt/matterbridge/data
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=matterbridge
+NoNewPrivileges=true
+ProtectHome=true
+ReadWritePaths=/opt/matterbridge
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

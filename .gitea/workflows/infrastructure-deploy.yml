@@ -12,10 +12,12 @@ name: DNS Infrastructure Deployment
       - "deploy.sh"
       - "pkgx-deploy.sh"
       - "setup-ansible.sh"
+      - "infrastructure/matterbridge/**"
+      - "services/matterbridge/**"
       - ".gitea/workflows/infrastructure-deploy.yml"
 
 jobs:
-  dns-infrastructure-deploy:
+  infrastructure-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
