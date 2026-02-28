@@ -6,7 +6,10 @@ name: n8n-ai-starter-kit
 services:
   n8n:
     container_name: n8n
-    image: docker.n8n.io/n8nio/n8n:latest
+    # image: docker.n8n.io/n8nio/n8n:latest
+    build:
+      context: ./dev
+      dockerfile: Dockerfile
     restart: always
     user: "1000:1000"  # Explicitly set user to match host directory permissions
     ports:
@@ -27,6 +30,8 @@ services:
       - WEBHOOK_URL=${WEBHOOK_URL}
       - N8N_AI_ENABLED=${N8N_AI_ENABLED}
       - N8N_AI_OLLAMA_BASE_URL=${N8N_AI_OLLAMA_BASE_URL}
+      - N8N_TRUST_PROXY=true
+      - N8N_PROXY_HOPS=1
     volumes:
       - ${N8N_BASE_PATH}:/home/node/.n8n
       - ${SHARED_PATH}:/data/shared
