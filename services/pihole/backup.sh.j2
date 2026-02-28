@@ -5,27 +5,50 @@ set -e
 compare_file_list() {
   local current=$1; shift
   local new=$1;
-  diff <(find "$current" -type f -printf '%f\n'|sort) <(find "$new" -type f -printf '%f\n'|sort) | wc -l
+  local files_changed_count=0
+
+  # Get sorted list of relative paths (not just basenames)
+  local current_files new_files
+  current_files=$(cd "$current" && find . -type f -print | sort)
+  new_files=$(cd "$new" && find . -type f -print | sort)
+
+  # Find files only in current (removed)
+  while read -r f; do
+    if [ -n "$f" ]; then
+      echo "File removed: $f" >&2
+      files_changed_count=$((files_changed_count+1))
+    fi
+  done <<< "$(comm -23 <(echo "$current_files") <(echo "$new_files"))"
+
+  # Find files only in new (added)
+  while read -r f; do
+    if [ -n "$f" ]; then
+      echo "File added: $f" >&2
+      files_changed_count=$((files_changed_count+1))
+    fi
+  done <<< "$(comm -13 <(echo "$current_files") <(echo "$new_files"))"
+
+  echo "$files_changed_count"
 }
 
 count_json_files_changed() {
   local current=$1; shift
   local new=$1;
   local files_changed_count=0
-  local files_changed=()
   cd "$current"
   while read -r f
-  do 
-  {
-    echo "--- $f"
-    jd -set "$f" "../$new/$f"
+  do
+    if [ -z "$f" ]; then continue; fi
+    # jd returns 0 if identical, 1 if different, 2 on error
+    jd -set "$f" "../$new/$f" > /dev/null 2>&1
     ec=$?
-    files_changed_count=$((files_changed_count+ec))
-    if [ $ec -eq 1 ]; then files_changed+=("$f"); fi
-  } > /dev/null 2>&1
+    if [ $ec -eq 1 ]; then
+      echo "JSON file changed: $f" >&2
+      files_changed_count=$((files_changed_count+1))
+    elif [ $ec -ne 0 ]; then
+      echo "JSON file compare error (ec=$ec): $f" >&2
+    fi
   done <<< "$(find . -type f -name '*.json' -print | grep -vE '(client|adlist)\.json')"
-  # Print list of files that were changed
-  echo "Files changed: ${files_changed[*]}" >&2
   echo "$files_changed_count"
   cd ..
 }
@@ -34,22 +57,53 @@ count_conf_files_changed() {
   local current=$1; shift
   local new=$1;
   local files_changed_count=0
-  local files_changed=()
   cd "$current"
   while read -r f
-  do 
-  {
-    echo "--- $f"
-    diff "$f" "../$new/$f"
+  do
+    if [ -z "$f" ]; then continue; fi
+    # diff returns 0 if identical, 1 if different, 2 on error
+    diff "$f" "../$new/$f" > /dev/null 2>&1
     ec=$?
-    files_changed_count=$((files_changed_count+ec))
-    if [ $ec -eq 1 ]; then files_changed+=("$f"); fi
-  } > /dev/null 2>&1
-  done <<< "$(find . -type f -not -name '*.json' -print)"
-  # Print list of files that were changed
-  echo "Files changed: ${files_changed[*]}" >&2
+    if [ $ec -eq 1 ]; then
+      echo "Config file changed: $f" >&2
+      files_changed_count=$((files_changed_count+1))
+    elif [ $ec -ne 0 ]; then
+      echo "Config file compare error (ec=$ec): $f" >&2
+    fi
+  done <<< "$(find . -type f -not -name '*.json' -not -name '*.db' -print)"
   echo "$files_changed_count"
   cd ..
+}
+
+compare_ftl_db_config() {
+  local current=$1; shift
+  local new=$1;
+  local files_changed_count=0
+
+  # Tables containing configuration (not ephemeral query logs)
+  local config_tables="domain_by_id client_by_id forward_by_id addinfo_by_id"
+
+  local current_db="$current/etc/pihole/pihole-FTL.db"
+  local new_db="$new/etc/pihole/pihole-FTL.db"
+
+  # If either DB doesn't exist, consider it changed
+  if [ ! -f "$current_db" ] || [ ! -f "$new_db" ]; then
+    echo "1"
+    return
+  fi
+
+  # Dump config tables and compare
+  for table in $config_tables; do
+    current_dump=$(sqlite3 "$current_db" ".dump $table" 2>/dev/null || echo "")
+    new_dump=$(sqlite3 "$new_db" ".dump $table" 2>/dev/null || echo "")
+
+    if [ "$current_dump" != "$new_dump" ]; then
+      echo "FTL config table changed: $table" >&2
+      files_changed_count=$((files_changed_count+1))
+    fi
+  done
+
+  echo "$files_changed_count"
 }
 
 TMP_DIR=$(mktemp -d)
@@ -72,6 +126,8 @@ changes=$((changes+rv))
 rv=$(count_json_files_changed current new)
 changes=$((changes+rv))
 rv=$(count_conf_files_changed current new)
+changes=$((changes+rv))
+rv=$(compare_ftl_db_config current new)
 changes=$((changes+rv))
 if [ $changes -gt 0 ]
 then 
