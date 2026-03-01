@@ -12,8 +12,8 @@ ExecStartPre=-/usr/bin/docker stop open-webui
 ExecStartPre=-/usr/bin/docker rm open-webui
 ExecStart=/usr/bin/docker run --name open-webui \
   -v {{ open_webui_install_dir }}/data:/app/backend/data \
-  -e OLLAMA_BASE_URL=http://0.0.0.0:11434 \
-  -e OLLAMA_API_BASE_URL=http://0.0.0.0:11434/api \
+  -e OLLAMA_BASE_URL=http://host.containers.internal:11434 \
+  -e OLLAMA_API_BASE_URL=http://host.containers.internal:11434/api \
   -e PORT={{ open_webui_port }} \
   -e ENABLE_WEB_SEARCH={{ open_webui_enable_web_search | string | lower }} \
   -e ENABLE_SEARCH_QUERY_GENERATION={{ open_webui_enable_search_query_generation | string | lower }} \
