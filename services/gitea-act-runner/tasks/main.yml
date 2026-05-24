@@ -46,6 +46,11 @@
     mode: "0644"
   register: compose_template
 
+# Only re-run `compose up -d` when the rendered compose file actually changed,
+# otherwise the container gets recreated on every CI run. That matters here
+# because gitea-act-runner is itself the CI runner: recreating the container
+# kills the in-flight job and the workflow reports failure even though the
+# deployment succeeded.
 - name: Start Gitea Act Runner using docker compose
   become: true
   ansible.builtin.command: "docker compose up -d"
@@ -53,6 +58,7 @@
     chdir: "{{ gitea_act_runner_dir }}/docker-compose"
   register: compose_result
   changed_when: "'Creating' in compose_result.stdout or 'Recreating' in compose_result.stdout or 'Starting' in compose_result.stdout"
+  when: compose_template.changed
 
 - name: Verify container is running
   ansible.builtin.shell: |
