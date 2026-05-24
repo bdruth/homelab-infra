@@ -27,16 +27,38 @@
 - name: Provision Open WebUI OpenAI connections
   when: open_webui_admin_api_token | default('') | length > 0
   block:
-    - name: Wait for Open WebUI HTTP service to be ready
+    # First wait for the TCP port to accept connections. wait_for handles
+    # the "container starting / Playwright install in progress / port not
+    # listening yet" window cleanly without needing failed_when gymnastics
+    # on the uri module. Cold starts can take ~30-60 seconds for
+    # WEB_LOADER_ENGINE=playwright to apt-install Chromium dependencies.
+    - name: Wait for Open WebUI port to accept connections
+      ansible.builtin.wait_for:
+        host: localhost
+        port: "{{ open_webui_port }}"
+        state: started
+        timeout: 300
+
+    # /ready (not /health) is the strict readiness check: only returns 200
+    # after FastAPI startup hooks finish. /health is liveness-only and answers
+    # before the app is fully initialized.
+    - name: Wait for Open WebUI /ready to return 200
       ansible.builtin.uri:
-        url: "http://localhost:{{ open_webui_port }}/health"
+        url: "http://localhost:{{ open_webui_port }}/ready"
         method: GET
         status_code: 200
         timeout: 10
-      register: open_webui_health
+      register: open_webui_ready
       retries: 30
-      delay: 5
-      until: open_webui_health.status == 200
+      delay: 2
+      until: open_webui_ready.status is defined and open_webui_ready.status == 200
+      changed_when: false
+      failed_when: false
+
+    - name: Fail if Open WebUI never became ready
+      ansible.builtin.fail:
+        msg: "Open WebUI did not return 200 from /ready within the wait window"
+      when: open_webui_ready.status is not defined or open_webui_ready.status != 200
 
     - name: Build OPENAI_API_CONFIGS dict (config-only fields, keyed by index)
       ansible.builtin.set_fact:
