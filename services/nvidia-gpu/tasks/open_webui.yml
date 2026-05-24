@@ -32,3 +32,15 @@
     daemon_reload: true
   register: open_webui_service
   ignore_errors: "{{ ansible_check_mode }}"
+
+# Trigger any pending handler so the container is restarted before we POST to
+# its API in the next task; avoids posting connection config to the old
+# instance about to be killed.
+- name: Flush Open WebUI handlers before connection provisioning
+  ansible.builtin.meta: flush_handlers
+
+- name: Import Open WebUI connection-provisioning tasks
+  ansible.builtin.import_tasks: open_webui_connections.yml
+  when:
+    - open_webui_connections is defined
+    - open_webui_connections | length > 0

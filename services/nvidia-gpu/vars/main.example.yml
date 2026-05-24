@@ -141,3 +141,32 @@ copilot_api_rate_limit_seconds: 30 # Minimum seconds between requests (anti-abus
 copilot_api_wait_on_limit: true # Wait during cooldown instead of returning 429
 copilot_api_registry_user: "" # Username for the private container registry (used to write /root/.docker/config.json)
 copilot_api_registry_token: "" # Read-token for the private container registry (leave empty to skip docker login)
+
+# Open WebUI: declarative OpenAI connection list
+# Provisions OPENAI_API_BASE_URLS / KEYS / CONFIGS via Open WebUI's admin API
+# on each deploy. One-time bootstrap: log in as admin, generate an API token,
+# store it as `open_webui_admin_api_token` in vars/main.yml. Leaving the token
+# empty skips provisioning entirely.
+open_webui_admin_api_token: "" # API token from Open WebUI Settings > Account > API Keys
+# Each list item becomes one connection in the UI. Required keys: `url`, `key`.
+# Optional keys forwarded to OPENAI_API_CONFIGS verbatim:
+#   enable, tags, prefix_id, model_ids, connection_type, auth_type, headers,
+#   provider, azure, api_version, api_type ("responses" for the Responses API).
+open_webui_connections:
+  - url: "http://host.containers.internal:4141/v1"
+    key: "dummy"
+    enable: true
+    tags: ["copilot"]
+    prefix_id: ""
+    model_ids: []
+    connection_type: "external"
+    auth_type: "bearer"
+  - url: "http://host.containers.internal:4141/v1"
+    key: "dummy"
+    enable: true
+    tags: ["copilot", "responses"]
+    prefix_id: ""
+    model_ids: ["gpt-5.5", "gpt-5.4-mini", "gpt-5.3-codex", "gpt-5.2-codex"]
+    connection_type: "external"
+    auth_type: "bearer"
+    api_type: "responses"
