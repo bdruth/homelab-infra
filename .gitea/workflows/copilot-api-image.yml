@@ -40,19 +40,13 @@ jobs:
           echo "ref=$REF" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
-      - name: Checkout upstream copilot-api
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ env.UPSTREAM_REPO }}
-          ref: ${{ steps.inputs.outputs.ref }}
-          path: copilot-api
-          # Force the server URL to GitHub; otherwise actions/checkout defaults
-          # to the Gitea instance running the workflow and looks for the repo
-          # locally (where it doesn't exist).
-          github-server-url: https://github.com
-          # Public repo - no token needed. Empty string disables the default
-          # ${{ github.token }} which is a Gitea token that github.com rejects.
-          token: ""
+      - name: Clone upstream copilot-api
+        # Plain git clone instead of actions/checkout@v4: the action defaults
+        # to the local Gitea instance and requires a token, which we don't need
+        # for a public github.com repo.
+        run: |
+          git clone --depth 1 --branch "${{ steps.inputs.outputs.ref }}" \
+            "https://github.com/${{ env.UPSTREAM_REPO }}.git" copilot-api
 
       - name: Resolve commit SHA
         id: sha
