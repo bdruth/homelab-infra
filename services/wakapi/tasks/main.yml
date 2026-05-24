@@ -97,6 +97,6 @@
 
 - name: Clean up downloaded archive
   ansible.builtin.file:
-    path: "/tmp/wakapi_{{ wakapi_version }}.tar.gz"
+    path: "/tmp/wakapi_{{ wakapi_version }}.zip"
     state: absent
   when: install_wakapi | bool
