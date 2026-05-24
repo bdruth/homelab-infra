@@ -50,6 +50,9 @@ jobs:
           # to the Gitea instance running the workflow and looks for the repo
           # locally (where it doesn't exist).
           github-server-url: https://github.com
+          # Public repo - no token needed. Empty string disables the default
+          # ${{ github.token }} which is a Gitea token that github.com rejects.
+          token: ""
 
       - name: Resolve commit SHA
         id: sha
