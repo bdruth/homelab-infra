@@ -46,6 +46,10 @@ jobs:
           repository: ${{ env.UPSTREAM_REPO }}
           ref: ${{ steps.inputs.outputs.ref }}
           path: copilot-api
+          # Force the server URL to GitHub; otherwise actions/checkout defaults
+          # to the Gitea instance running the workflow and looks for the repo
+          # locally (where it doesn't exist).
+          github-server-url: https://github.com
 
       - name: Resolve commit SHA
         id: sha
