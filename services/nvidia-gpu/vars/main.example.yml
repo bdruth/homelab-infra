@@ -54,12 +54,20 @@ whisper_asr_compute_type: "{% if nvidia_install_gpu_drivers | bool %}float16{% e
 
 # Open WebUI configuration
 open_webui_install_dir: "/opt/open-webui" # Installation directory
+open_webui_image_tag: "main" # Image tag (e.g. "main" for latest, or pin to a release like "v0.9.5")
 open_webui_port: "3000" # Port for Open WebUI
 open_webui_enable_web_search: true # Enable web search
 open_webui_enable_search_query_generation: true # Enable search query generation
 open_webui_web_search_engine: "duckduckgo" # Web search engine to use
 open_webui_web_loader_engine: "playwright" # Web loader engine to use
 open_webui_enable_image_generation: true # Enable image generation integration
+open_webui_enable_api_keys: true # Enable API keys for programmatic access
+open_webui_default_model_metadata: # Default model capability metadata
+  capabilities:
+    vision: true
+    web_search: true
+open_webui_default_model_params: # Default model parameters
+  function_calling: "native"
 
 # Open WebUI OpenAI API configuration
 open_webui_enable_openai_api: true # Enable OpenAI API support

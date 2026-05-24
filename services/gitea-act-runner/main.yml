@@ -36,3 +36,9 @@
     - name: Include Gitea Act Runner tasks
       ansible.builtin.include_tasks: tasks/main.yml
       when: "'gitea-act-runner' in host_roles"
+
+  handlers:
+    - name: Reload systemd
+      become: true
+      ansible.builtin.systemd:
+        daemon_reload: true

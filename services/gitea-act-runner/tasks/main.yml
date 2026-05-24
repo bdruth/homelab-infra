@@ -1,6 +1,32 @@
 ---
 # Tasks for setting up Gitea Act Runner using Docker Compose
 
+# Cleanup of legacy systemd-based act_runner installations.
+# Earlier versions of this role deployed act_runner as a native binary managed
+# by /etc/systemd/system/act-runner.service. The role is now Docker Compose
+# based; the systemd unit, when left behind, restart-loops indefinitely.
+- name: Check for legacy act-runner systemd unit
+  become: true
+  ansible.builtin.stat:
+    path: /etc/systemd/system/act-runner.service
+  register: legacy_act_runner_unit
+
+- name: Stop and disable legacy act-runner systemd service
+  become: true
+  ansible.builtin.systemd:
+    name: act-runner.service
+    state: stopped
+    enabled: false
+  when: legacy_act_runner_unit.stat.exists
+
+- name: Remove legacy act-runner systemd unit file
+  become: true
+  ansible.builtin.file:
+    path: /etc/systemd/system/act-runner.service
+    state: absent
+  when: legacy_act_runner_unit.stat.exists
+  notify: Reload systemd
+
 - name: Ensure directories exist
   become: true
   ansible.builtin.file:

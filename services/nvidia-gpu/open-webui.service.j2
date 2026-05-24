@@ -10,6 +10,7 @@ RestartSec=10
 WorkingDirectory={{ open_webui_install_dir }}
 ExecStartPre=-/usr/bin/docker stop open-webui
 ExecStartPre=-/usr/bin/docker rm open-webui
+ExecStartPre=-/usr/bin/docker pull ghcr.io/open-webui/open-webui:{{ open_webui_image_tag }}
 ExecStart=/usr/bin/docker run --name open-webui \
   -v {{ open_webui_install_dir }}/data:/app/backend/data \
   -e OLLAMA_BASE_URL=http://host.containers.internal:11434 \
@@ -41,9 +42,12 @@ ExecStart=/usr/bin/docker run --name open-webui \
   -e ENABLE_PERSISTENT_CONFIG=false \
   -e WEBUI_SECRET_KEY={{ open_webui_secret_key }} \
   -e OAUTH_CODE_CHALLENGE_METHOD=S256 \
+  -e ENABLE_API_KEYS={{ open_webui_enable_api_keys | string | lower }} \
+  -e DEFAULT_MODEL_METADATA='{{ open_webui_default_model_metadata | to_json }}' \
+  -e DEFAULT_MODEL_PARAMS='{{ open_webui_default_model_params | to_json }}' \
   -p {{ open_webui_port }}:{{ open_webui_port }} \
   {% if nvidia_install_gpu_drivers | bool %}--device nvidia.com/gpu=all --security-opt=label=disable {% endif %} \
-  ghcr.io/open-webui/open-webui:main
+  ghcr.io/open-webui/open-webui:{{ open_webui_image_tag }}
 
 ExecStop=/usr/bin/docker stop open-webui
 
