@@ -38,7 +38,8 @@
       "Bash(tofu fmt:*)",
       "Bash(ansible-lint:*)",
       "mcp__serena__get_symbols_overview",
-      "WebFetch(domain:docs.pi-hole.net)"
+      "WebFetch(domain:docs.pi-hole.net)",
+      "mcp__serena__initial_instructions"
     ],
     "deny": []
   }
