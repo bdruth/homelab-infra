@@ -160,6 +160,47 @@
         - whisper_asr_result.rc is defined and whisper_asr_result.rc == 0
         - whisper_http_check.status is defined and whisper_http_check.status == 200
 
+    - name: Wait for Copilot API container to start
+      ansible.builtin.shell: docker ps | grep copilot-api
+      register: copilot_api_result
+      changed_when: false
+      ignore_errors: true
+      retries: 15
+      delay: 4
+      until: copilot_api_result.rc == 0
+      when: install_copilot_api is defined and install_copilot_api | bool
+
+    - name: Display Copilot API status
+      ansible.builtin.debug:
+        msg: "Copilot API status: {{ 'OK' if copilot_api_result.rc is defined and copilot_api_result.rc == 0 else 'Not properly installed or not running' }}"
+      when: install_copilot_api is defined and install_copilot_api | bool
+
+    - name: Wait for Copilot API HTTP service to become available
+      ansible.builtin.uri:
+        url: "http://localhost:{{ copilot_api_port }}/v1/models"
+        method: GET
+        status_code: 200
+        timeout: 60
+      register: copilot_api_http_check
+      retries: 12
+      delay: 5
+      until: copilot_api_http_check.status == 200
+      ignore_errors: true
+      when:
+        - install_copilot_api is defined and install_copilot_api | bool
+        - copilot_api_result.rc is defined and copilot_api_result.rc == 0
+
+    - name: Display Copilot API HTTP check status
+      ansible.builtin.debug:
+        msg: >-
+          Copilot API HTTP /v1/models: {{
+            'OK - Reachable' if copilot_api_http_check.status is defined and copilot_api_http_check.status == 200
+            else 'Not reachable - check GH_TOKEN and rate-limit settings'
+          }}
+      when:
+        - install_copilot_api is defined and install_copilot_api | bool
+        - copilot_api_result.rc is defined and copilot_api_result.rc == 0
+
     - name: Wait for Open WebUI container to start
       ansible.builtin.shell: docker ps | grep open-webui
       register: open_webui_result
@@ -210,6 +251,30 @@
         - nvidia_install_gpu_drivers is defined and nvidia_install_gpu_drivers | bool
         - open_webui_result.rc is defined and open_webui_result.rc == 0
         - open_webui_http_check.status is defined and open_webui_http_check.status == 200
+
+    - name: Check Open WebUI Copilot API endpoint wiring
+      ansible.builtin.shell: >-
+        docker inspect open-webui | grep -E "OPENAI_API_BASE_URLS" | grep -E ":{{ copilot_api_port }}/v1"
+      register: open_webui_copilot_wiring_result
+      changed_when: false
+      ignore_errors: true
+      when:
+        - install_open_webui is defined and install_open_webui | bool
+        - install_copilot_api is defined and install_copilot_api | bool
+        - open_webui_result.rc is defined and open_webui_result.rc == 0
+
+    - name: Display Open WebUI Copilot API wiring status
+      ansible.builtin.debug:
+        msg: >-
+          Open WebUI Copilot endpoint wiring: {{
+            'OK - Copilot endpoint present in OPENAI_API_BASE_URLS'
+            if open_webui_copilot_wiring_result.rc is defined and open_webui_copilot_wiring_result.rc == 0
+            else 'Not configured - Open WebUI is not pointing at the Copilot sidecar'
+          }}
+      when:
+        - install_open_webui is defined and install_open_webui | bool
+        - install_copilot_api is defined and install_copilot_api | bool
+        - open_webui_result.rc is defined and open_webui_result.rc == 0
 
     - name: Check Open WebUI web search configuration
       ansible.builtin.shell: >-

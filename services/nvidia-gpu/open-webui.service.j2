@@ -21,8 +21,14 @@ ExecStart=/usr/bin/docker run --name open-webui \
   -e WEB_SEARCH_ENGINE={{ open_webui_web_search_engine }} \
   -e WEB_LOADER_ENGINE={{ open_webui_web_loader_engine }} \
   -e ENABLE_OPENAI_API={{ open_webui_enable_openai_api | string | lower }} \
-  -e OPENAI_API_BASE_URL={{ open_webui_openai_api_base_url }} \
-  -e OPENAI_API_KEY={{ open_webui_openai_api_key }} \
+{% set _openai_urls = [open_webui_openai_api_base_url] %}
+{% set _openai_keys = [open_webui_openai_api_key] %}
+{% if install_copilot_api | default(false) | bool %}
+{%   set _ = _openai_urls.append('http://host.containers.internal:' ~ copilot_api_port ~ '/v1') %}
+{%   set _ = _openai_keys.append('dummy') %}
+{% endif %}
+  -e OPENAI_API_BASE_URLS={{ _openai_urls | join(';') }} \
+  -e OPENAI_API_KEYS={{ _openai_keys | join(';') }} \
   {% if open_webui_enable_authelia | default(false) | bool %}\
   -e WEBUI_URL={{ open_webui_url | default('https://' + ansible_facts["fqdn"]) }} \
   -e ENABLE_OAUTH_SIGNUP=true \

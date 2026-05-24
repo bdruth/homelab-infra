@@ -1,0 +1,36 @@
+---
+# Copilot API Tasks
+# Deploys ericc-ch/copilot-api as an OpenAI-compatible proxy for GitHub Copilot.
+# Open WebUI consumes this as an additional OpenAI endpoint via host.containers.internal.
+
+- name: Create Copilot API base directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+    owner: root
+    group: root
+  loop:
+    - "{{ copilot_api_install_dir }}"
+    - "{{ copilot_api_install_dir }}/data"
+
+- name: Create systemd service for Copilot API
+  ansible.builtin.template:
+    src: copilot-api.service.j2
+    dest: /etc/systemd/system/copilot-api.service
+    owner: root
+    group: root
+    mode: "0644"
+  register: copilot_api_service_file
+  notify:
+    - Reload systemd
+    - Restart Copilot API service
+
+- name: Enable and start Copilot API service
+  ansible.builtin.systemd:
+    name: copilot-api
+    enabled: true
+    state: started
+    daemon_reload: true
+  register: copilot_api_service
+  ignore_errors: "{{ ansible_check_mode }}"

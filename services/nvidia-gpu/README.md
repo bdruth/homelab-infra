@@ -17,6 +17,7 @@ This Ansible module configures a system for AI/ML/CUDA workloads with NVIDIA GPU
 - Installs n8n AI workflow platform with NVIDIA GPU acceleration
 - Installs Whisper ASR Webservice with NVIDIA GPU acceleration
 - Installs Open WebUI with NVIDIA GPU acceleration
+- Installs the Copilot API sidecar (OpenAI-compatible proxy for GitHub Copilot)
 - Installs Watchtower for automatic container updates using beatkind/watchtower fork
 
 ## Requirements
@@ -37,6 +38,7 @@ The module is organized into separate task files for better maintainability:
 - `tasks/n8n.yml` - Installs and configures n8n AI workflow platform
 - `tasks/whisper_asr.yml` - Installs and configures Whisper ASR Webservice
 - `tasks/open_webui.yml` - Installs and configures Open WebUI
+- `tasks/copilot_api.yml` - Installs and configures the Copilot API sidecar
 - `tasks/watchtower.yml` - Installs and configures Watchtower for automatic container updates
 
 ## Usage
@@ -61,6 +63,7 @@ Each major component can be enabled or disabled using variables:
 - `install_n8n` - Whether to install n8n AI workflow platform
 - `install_whisper_asr` - Whether to install Whisper ASR Webservice
 - `install_open_webui` - Whether to install Open WebUI
+- `install_copilot_api` - Whether to install the Copilot API sidecar (off by default)
 - `install_watchtower` - Whether to install Watchtower for automatic container updates
 - `install_docker_compose` - Whether to install latest docker-compose
 - `nvidia_configure_egpu` - Whether to configure thunderbolt eGPU support
@@ -126,6 +129,24 @@ After installation, access the Open WebUI interface at `http://localhost:3000/` 
 - GPU acceleration for faster inference when NVIDIA drivers are installed
 - Integration with local Ollama installation
 - User management and conversation history
+
+### Copilot API Sidecar
+
+When `install_copilot_api: true`, this role deploys [ericc-ch/copilot-api](https://github.com/ericc-ch/copilot-api) as a podman/docker systemd unit on the same host as Open WebUI. The proxy translates between an OpenAI/Anthropic-style API and a GitHub Copilot subscription, and it binds to `127.0.0.1:4141` so only co-located services on the host can reach it. When Open WebUI is also enabled, the role appends the Copilot endpoint to `OPENAI_API_BASE_URLS` so both providers show up in the model picker.
+
+**Image source:** the container image is built and published by the dedicated Gitea Actions workflow (`.gitea/workflows/copilot-api-image.yml`) into the homelab Gitea registry. Run that workflow once before the first Ansible deploy, otherwise the host will fail to pull the image.
+
+**One-time auth bootstrap (headless host):**
+
+1. On a workstation with a browser, run `npx copilot-api@latest auth --show-token` and complete the GitHub device-code flow.
+2. Copy the displayed token into the git-crypt-protected `services/nvidia-gpu/vars/main.yml` as `copilot_api_github_token`.
+3. Re-run the role: `./services-pkgx-deploy.sh --playbook=services/nvidia-gpu/main.yml`.
+
+**Operational notes:**
+
+- The README of the upstream project warns that excessive automated requests can trigger GitHub's abuse detection. The defaults (`copilot_api_rate_limit_seconds: 30`, `copilot_api_wait_on_limit: true`) match the upstream recommendation.
+- The token persists at `/opt/copilot-api/data` on the host; back it up if you want to avoid re-running the auth flow.
+- Token rotation is manual — repeat the bootstrap procedure.
 
 ### Watchtower
 

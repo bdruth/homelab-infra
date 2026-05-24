@@ -1,0 +1,27 @@
+[Unit]
+Description=Copilot API (OpenAI-compatible proxy for GitHub Copilot)
+After=network.target podman.service
+Requires=podman.service
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=10
+WorkingDirectory={{ copilot_api_install_dir }}
+ExecStartPre=-/usr/bin/docker stop copilot-api
+ExecStartPre=-/usr/bin/docker rm copilot-api
+ExecStartPre=-/usr/bin/docker pull {{ copilot_api_image }}:{{ copilot_api_image_tag }}
+ExecStart=/usr/bin/docker run --name copilot-api \
+  -v {{ copilot_api_install_dir }}/data:/root/.local/share/copilot-api \
+  -e GH_TOKEN={{ copilot_api_github_token }} \
+  -p 127.0.0.1:{{ copilot_api_port }}:4141 \
+  {{ copilot_api_image }}:{{ copilot_api_image_tag }} \
+  start --port 4141 \
+  --account-type {{ copilot_api_account_type }} \
+  --rate-limit {{ copilot_api_rate_limit_seconds }} \
+  {% if copilot_api_wait_on_limit | bool %}--wait{% endif %}
+
+ExecStop=/usr/bin/docker stop copilot-api
+
+[Install]
+WantedBy=multi-user.target

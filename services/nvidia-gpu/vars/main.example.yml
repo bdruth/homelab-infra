@@ -18,6 +18,7 @@ install_docker_compose: true # Whether to install latest docker-compose
 nvidia_configure_egpu: true # Whether to configure thunderbolt eGPU support
 install_watchtower: true # Whether to install watchtower for automatic container updates
 install_gpt_researcher: true # Whether to install GPT Researcher
+install_copilot_api: false # Whether to install Copilot API sidecar (OpenAI-compatible proxy for GitHub Copilot)
 
 # Package versions and configuration
 nvidia_driver_version: "580-open" # Used in package name (nvidia-driver-580-open)
@@ -125,3 +126,16 @@ gpt_researcher_install_dir: "/opt/gpt-researcher" # Installation directory
 gpt_researcher_port: "7000" # Port for GPT Researcher web interface
 gpt_researcher_ollama_model: "llama3" # Ollama model to use for research
 gpt_researcher_ollama_embed_model: "nomic-embed-text" # Ollama model to use for embeddings
+
+# Copilot API configuration
+# Sidecar proxy that exposes a GitHub Copilot subscription as an OpenAI-compatible API.
+# When install_copilot_api is true and install_open_webui is true, Open WebUI is configured
+# to surface Copilot models via OPENAI_API_BASE_URLS in addition to its primary OpenAI endpoint.
+copilot_api_install_dir: "/opt/copilot-api" # Installation directory (token persists under data/)
+copilot_api_port: "4141" # Host loopback port for the proxy
+copilot_api_image: "gitea.example.com/<owner>/copilot-api" # Image published by Gitea Actions
+copilot_api_image_tag: "latest" # Image tag to pull
+copilot_api_github_token: "" # GitHub token from `npx copilot-api@latest auth --show-token` (store in real vars/main.yml)
+copilot_api_account_type: "individual" # Copilot account type: individual, business, enterprise
+copilot_api_rate_limit_seconds: 30 # Minimum seconds between requests (anti-abuse-detection)
+copilot_api_wait_on_limit: true # Wait during cooldown instead of returning 429

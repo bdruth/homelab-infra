@@ -1,0 +1,85 @@
+---
+name: Copilot API Image Build
+
+# Builds ericc-ch/copilot-api into a container image and pushes it to the
+# Gitea container registry, where the nvidia-gpu Ansible role pulls it from.
+#
+# Trigger manually (workflow_dispatch) when a new upstream release is desired,
+# or rely on the weekly schedule. Pinning is done via the COPILOT_API_REF input;
+# the default tracks the upstream master branch.
+
+"on":
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Upstream git ref to build (branch, tag, or commit SHA)"
+        required: false
+        default: "master"
+      image_tag:
+        description: "Image tag to publish (in addition to the commit SHA tag)"
+        required: false
+        default: "latest"
+  schedule:
+    - cron: "0 5 * * 1" # Weekly on Mondays at 05:00 UTC
+
+env:
+  IMAGE_NAME: copilot-api
+  UPSTREAM_REPO: ericc-ch/copilot-api
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve inputs
+        id: inputs
+        run: |
+          REF="${{ github.event.inputs.ref }}"
+          TAG="${{ github.event.inputs.image_tag }}"
+          if [ -z "$REF" ]; then REF="master"; fi
+          if [ -z "$TAG" ]; then TAG="latest"; fi
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout upstream copilot-api
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.UPSTREAM_REPO }}
+          ref: ${{ steps.inputs.outputs.ref }}
+          path: copilot-api
+
+      - name: Resolve commit SHA
+        id: sha
+        run: |
+          cd copilot-api
+          SHA="$(git rev-parse --short HEAD)"
+          echo "short_sha=$SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Gitea container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.GITEA_REGISTRY }}
+          username: ${{ secrets.GITEA_REGISTRY_USER }}
+          password: ${{ secrets.GITEA_REGISTRY_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./copilot-api
+          push: true
+          tags: |
+            ${{ secrets.GITEA_REGISTRY }}/${{ secrets.GITEA_REGISTRY_OWNER }}/${{ env.IMAGE_NAME }}:${{ steps.inputs.outputs.tag }}
+            ${{ secrets.GITEA_REGISTRY }}/${{ secrets.GITEA_REGISTRY_OWNER }}/${{ env.IMAGE_NAME }}:${{ steps.sha.outputs.short_sha }}
+
+      - name: pushover-actions
+        uses: umahmood/pushover-actions@main
+        if: ${{ vars.isLocal != 'true' && failure() }}
+        env:
+          PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
+          PUSHOVER_USER: ${{ secrets.PUSHOVER_USER }}
+        with:
+          status: ${{ job.status }}
+          title: "${{ github.workflow }}"
+          message: "${{ job.status }} - upstream ref ${{ steps.inputs.outputs.ref }} (${{ steps.sha.outputs.short_sha }})"

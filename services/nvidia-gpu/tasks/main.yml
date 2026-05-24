@@ -28,6 +28,10 @@
   ansible.builtin.import_tasks: whisper_asr.yml
   when: install_whisper_asr | bool
 
+- name: Import Copilot API tasks
+  ansible.builtin.import_tasks: copilot_api.yml
+  when: install_copilot_api | bool
+
 - name: Import Open WebUI tasks
   ansible.builtin.import_tasks: open_webui.yml
   when: install_open_webui | bool

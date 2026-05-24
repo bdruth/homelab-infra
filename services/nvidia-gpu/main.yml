@@ -35,6 +35,10 @@
       ansible.builtin.import_tasks: tasks/whisper_asr.yml
       when: install_whisper_asr | bool
 
+    - name: Import Copilot API tasks
+      ansible.builtin.import_tasks: tasks/copilot_api.yml
+      when: install_copilot_api | bool
+
     - name: Import Open WebUI tasks
       ansible.builtin.import_tasks: tasks/open_webui.yml
       when: install_open_webui | bool
@@ -64,6 +68,11 @@
     - name: Restart Open WebUI service
       ansible.builtin.systemd:
         name: open-webui
+        state: restarted
+
+    - name: Restart Copilot API service
+      ansible.builtin.systemd:
+        name: copilot-api
         state: restarted
 
     - name: Restart ComfyUI service

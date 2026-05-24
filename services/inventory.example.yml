@@ -18,6 +18,12 @@ all:
       # Disk monitoring configuration
       influxdb_url: "http://influxdb.example.com:8086"
       influxdb_database: "disk_monitoring"
+      # Copilot API sidecar (OpenAI-compatible proxy for GitHub Copilot)
+      # Bootstrap GH_TOKEN once via `npx copilot-api@latest auth --show-token`,
+      # then store it in services/nvidia-gpu/vars/main.yml (git-crypt protected).
+      install_copilot_api: true
+      copilot_api_account_type: individual
+      copilot_api_rate_limit_seconds: 30
 
     # Dedicated UPS server
     ups-server.example.com:
