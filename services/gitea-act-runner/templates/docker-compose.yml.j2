@@ -13,7 +13,9 @@ services:
       - GITEA_RUNNER_LABELS={{ gitea_act_runner_labels | default('ubuntu-latest:docker://node:20-bookworm') }}
     volumes:
       - {{ gitea_act_runner_dir }}/data:/data
+      - {{ gitea_act_runner_dir }}/config.yaml:/config.yaml:ro
       - /var/run/docker.sock:/var/run/docker.sock
+    command: ["daemon", "--config", "/config.yaml"]
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
 {% if gitea_act_runner_privileged is defined and gitea_act_runner_privileged %}

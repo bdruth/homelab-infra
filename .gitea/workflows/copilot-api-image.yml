@@ -30,6 +30,18 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     steps:
+      - name: Install docker CLI
+        # The Gitea Act Runner job container (node:20-bookworm) ships git/node
+        # but no docker. The runner config bind-mounts the host docker socket
+        # into the job container; here we just need the CLI to talk to it.
+        run: |
+          set -eux
+          if ! command -v docker >/dev/null 2>&1; then
+            apt-get update
+            apt-get install -y --no-install-recommends docker.io
+          fi
+          docker version
+
       - name: Resolve inputs
         id: inputs
         run: |

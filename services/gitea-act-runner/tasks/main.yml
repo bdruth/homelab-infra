@@ -38,6 +38,14 @@
     - "{{ gitea_act_runner_dir }}/data"
     - "{{ gitea_act_runner_dir }}/docker-compose"
 
+- name: Render act_runner config
+  become: true
+  ansible.builtin.template:
+    src: act_runner-config.yaml.j2
+    dest: "{{ gitea_act_runner_dir }}/config.yaml"
+    mode: "0644"
+  register: act_runner_config_template
+
 - name: Create Docker Compose file for Gitea Act Runner
   become: true
   ansible.builtin.template:
@@ -58,7 +66,7 @@
     chdir: "{{ gitea_act_runner_dir }}/docker-compose"
   register: compose_result
   changed_when: "'Creating' in compose_result.stdout or 'Recreating' in compose_result.stdout or 'Starting' in compose_result.stdout"
-  when: compose_template.changed
+  when: compose_template.changed or act_runner_config_template.changed
 
 - name: Verify container is running
   ansible.builtin.shell: |

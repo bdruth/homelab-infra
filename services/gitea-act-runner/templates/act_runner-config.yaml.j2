@@ -1,0 +1,34 @@
+# Gitea Act Runner configuration
+# Rendered by Ansible. Documentation:
+# https://docs.gitea.com/usage/actions/act-runner
+
+log:
+  level: info
+
+runner:
+  file: /data/.runner
+  capacity: 1
+  timeout: 3h
+  insecure: false
+  fetch_timeout: 5s
+  fetch_interval: 2s
+
+cache:
+  enabled: true
+  dir: /data/cache
+
+container:
+  network: ""
+  privileged: {{ gitea_act_runner_privileged | default(false) | string | lower }}
+  options: "{{ gitea_act_runner_container_options | default('') }}"
+  workdir_parent: ""
+  valid_volumes:
+{% for vol in gitea_act_runner_valid_volumes | default([]) %}
+    - "{{ vol }}"
+{% endfor %}
+  docker_host: "{{ gitea_act_runner_docker_host | default('-') }}"
+  force_pull: false
+  force_rebuild: false
+
+host:
+  workdir_parent: ""
