@@ -6,3 +6,6 @@ ENABLE_LINTERS:
   - MARKDOWN_MARKDOWNLINT
   - BASH_SHELLCHECK
   - ANSIBLE_ANSIBLE_LINT
+
+# Skip tool-managed files we don't author
+FILTER_REGEX_EXCLUDE: '(\.serena/)'
