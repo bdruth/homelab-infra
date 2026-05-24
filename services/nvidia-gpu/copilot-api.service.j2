@@ -14,7 +14,7 @@ ExecStartPre=-/usr/bin/docker pull {{ copilot_api_image }}:{{ copilot_api_image_
 ExecStart=/usr/bin/docker run --name copilot-api \
   -v {{ copilot_api_install_dir }}/data:/root/.local/share/copilot-api \
   -e GH_TOKEN={{ copilot_api_github_token }} \
-  -p 127.0.0.1:{{ copilot_api_port }}:4141 \
+  -p {{ copilot_api_port }}:4141 \
   {{ copilot_api_image }}:{{ copilot_api_image_tag }} \
   start --port 4141 \
   --account-type {{ copilot_api_account_type }} \
