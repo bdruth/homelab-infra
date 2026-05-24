@@ -1,20 +1,23 @@
 ---
 name: Copilot API Image Build
 
-# Builds ericc-ch/copilot-api into a container image and pushes it to the
-# Gitea container registry, where the nvidia-gpu Ansible role pulls it from.
+# Builds the homelab fork of copilot-api into a container image and pushes
+# it to the Gitea container registry, where the nvidia-gpu Ansible role
+# pulls it from. The fork tracks ericc-ch/copilot-api with patches for
+# GPT-5.x model support (max_completion_tokens translation and a /v1/responses
+# route).
 #
-# Trigger manually (workflow_dispatch) when a new upstream release is desired,
-# or rely on the weekly schedule. Pinning is done via the COPILOT_API_REF input;
-# the default tracks the upstream master branch.
+# Trigger manually (workflow_dispatch) when a new release is desired, or
+# rely on the weekly schedule. Pinning is done via the workflow ref input;
+# the default builds the fork's main branch.
 
 "on":
   workflow_dispatch:
     inputs:
       ref:
-        description: "Upstream git ref to build (branch, tag, or commit SHA)"
+        description: "Fork git ref to build (branch, tag, or commit SHA)"
         required: false
-        default: "master"
+        default: "main"
       image_tag:
         description: "Image tag to publish (in addition to the commit SHA tag)"
         required: false
@@ -24,7 +27,8 @@ name: Copilot API Image Build
 
 env:
   IMAGE_NAME: copilot-api
-  UPSTREAM_REPO: ericc-ch/copilot-api
+  # Homelab fork. The original is ericc-ch/copilot-api on github.com.
+  FORK_REPO_PATH: bruth/copilot-api
 
 jobs:
   build-and-push:
@@ -47,18 +51,20 @@ jobs:
         run: |
           REF="${{ github.event.inputs.ref }}"
           TAG="${{ github.event.inputs.image_tag }}"
-          if [ -z "$REF" ]; then REF="master"; fi
+          if [ -z "$REF" ]; then REF="main"; fi
           if [ -z "$TAG" ]; then TAG="latest"; fi
           echo "ref=$REF" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
-      - name: Clone upstream copilot-api
-        # Plain git clone instead of actions/checkout@v4: the action defaults
-        # to the local Gitea instance and requires a token, which we don't need
-        # for a public github.com repo.
+      - name: Clone copilot-api fork
+        # Plain git clone instead of actions/checkout@v4: the action's default
+        # token semantics don't compose with our setup. The fork is public so
+        # no auth is required.
+        env:
+          REGISTRY_HOST: ${{ secrets.REGISTRY_HOST }}
         run: |
           git clone --depth 1 --branch "${{ steps.inputs.outputs.ref }}" \
-            "https://github.com/${{ env.UPSTREAM_REPO }}.git" copilot-api
+            "https://${REGISTRY_HOST}/${{ env.FORK_REPO_PATH }}.git" copilot-api
 
       - name: Resolve commit SHA
         id: sha
