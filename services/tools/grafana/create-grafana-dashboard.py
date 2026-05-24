@@ -768,22 +768,47 @@ class GrafanaDashboardCreator:
             print(f"   Response: {response.text}")
             return False
 
+    def get_existing_dashboard(self, title="Disk Monitoring"):
+        """Get existing dashboard by title."""
+        url = f"{self.grafana_url}/api/search"
+        response = requests.get(url, params={"query": title, "type": "dash-db"}, headers=self.headers)
+
+        if response.status_code == 200:
+            results = response.json()
+            for item in results:
+                if item.get("title") == title:
+                    print(f"Found existing dashboard with UID: {item['uid']}")
+                    return item
+        else:
+            print(f"❌ Failed to search for existing dashboard: {response.status_code}")
+            print(f"   Response: {response.text}")
+
+        return None
+
     def create_dashboard(self):
-        """Create the dashboard in Grafana."""
+        """Create or update the dashboard in Grafana."""
         dashboard_json = self.create_dashboard_json()
-        
+
+        existing = self.get_existing_dashboard()
+        if existing:
+            dashboard_json["dashboard"]["uid"] = existing["uid"]
+            dashboard_json["dashboard"]["id"] = existing["id"]
+            action = "updated"
+        else:
+            action = "created"
+
         url = f"{self.grafana_url}/api/dashboards/db"
         response = requests.post(url, json=dashboard_json, headers=self.headers)
-        
+
         if response.status_code == 200:
             result = response.json()
-            print(f"✅ Dashboard created successfully!")
+            print(f"✅ Dashboard {action} successfully!")
             print(f"   Dashboard URL: {self.grafana_url}/d/{result['uid']}")
         else:
-            print(f"❌ Failed to create dashboard: {response.status_code}")
+            print(f"❌ Failed to {action[:-1]} dashboard: {response.status_code}")
             print(f"   Response: {response.text}")
             return False
-            
+
         return True
 
     def export_alert_config(self):
