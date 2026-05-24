@@ -139,3 +139,5 @@ copilot_api_github_token: "" # GitHub token from `npx copilot-api@latest auth --
 copilot_api_account_type: "individual" # Copilot account type: individual, business, enterprise
 copilot_api_rate_limit_seconds: 30 # Minimum seconds between requests (anti-abuse-detection)
 copilot_api_wait_on_limit: true # Wait during cooldown instead of returning 429
+copilot_api_registry_user: "" # Username for the private container registry (used to write /root/.docker/config.json)
+copilot_api_registry_token: "" # Read-token for the private container registry (leave empty to skip docker login)

@@ -14,6 +14,35 @@
     - "{{ copilot_api_install_dir }}"
     - "{{ copilot_api_install_dir }}/data"
 
+# The systemd unit pulls the image from the homelab Gitea container registry.
+# Authenticate the host docker daemon so `docker pull` succeeds without
+# requiring an interactive login on every host.
+- name: Ensure /root/.docker exists for registry auth
+  ansible.builtin.file:
+    path: /root/.docker
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  when: copilot_api_registry_token | default('') | length > 0
+
+- name: Write docker registry credentials for Gitea
+  ansible.builtin.copy:
+    dest: /root/.docker/config.json
+    owner: root
+    group: root
+    mode: "0600"
+    content: |
+      {
+        "auths": {
+          "{{ copilot_api_image.split('/')[0] }}": {
+            "auth": "{{ (copilot_api_registry_user ~ ':' ~ copilot_api_registry_token) | b64encode }}"
+          }
+        }
+      }
+  when: copilot_api_registry_token | default('') | length > 0
+  no_log: true
+
 - name: Create systemd service for Copilot API
   ansible.builtin.template:
     src: copilot-api.service.j2
