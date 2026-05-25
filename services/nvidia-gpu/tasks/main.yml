@@ -47,3 +47,14 @@
 - name: Import GPT Researcher tasks
   ansible.builtin.import_tasks: gpt_researcher.yml
   when: install_gpt_researcher | bool
+
+# Writes the connection-seed token + payload that the open-webui systemd
+# unit's ExecStartPost hook (templated by tasks/open_webui.yml) consumes.
+# Runs last so the proxy's /v1/models is reachable when we resolve
+# model_ids_from at deploy time.
+- name: Import Open WebUI connection seed-payload tasks
+  ansible.builtin.import_tasks: open_webui_connections.yml
+  when:
+    - install_open_webui | bool
+    - open_webui_connections is defined
+    - open_webui_connections | length > 0

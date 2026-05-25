@@ -148,25 +148,44 @@ copilot_api_registry_token: "" # Read-token for the private container registry (
 # store it as `open_webui_admin_api_token` in vars/main.yml. Leaving the token
 # empty skips provisioning entirely.
 open_webui_admin_api_token: "" # API token from Open WebUI Settings > Account > API Keys
+# GitHub Copilot models that only respond on the Responses API. Driven by
+# both connection #1's allowlist below and connection #0's exclude_ids,
+# so adding a new Responses-only model is a single-line change.
+copilot_api_responses_only_models:
+  - "gpt-5.5"
+  - "gpt-5.4-mini"
+  - "gpt-5.3-codex"
+  - "gpt-5.2-codex"
+
 # Each list item becomes one connection in the UI. Required keys: `url`, `key`.
 # Optional keys forwarded to OPENAI_API_CONFIGS verbatim:
 #   enable, tags, prefix_id, model_ids, connection_type, auth_type, headers,
 #   provider, azure, api_version, api_type ("responses" for the Responses API).
+# `model_ids_from` (mutually exclusive with model_ids) computes the list at
+# deploy time from the proxy's /v1/models, minus exclude_ids and any IDs
+# matching exclude_patterns. Required because empty model_ids means "all
+# models" in Open WebUI, which would let two connections claim the same
+# model and route the request to the wrong one.
 open_webui_connections:
   - url: "http://host.containers.internal:4141/v1"
     key: "dummy"
     enable: true
     tags: ["copilot"]
     prefix_id: ""
-    model_ids: []
     connection_type: "external"
     auth_type: "bearer"
+    model_ids_from:
+      url: "http://localhost:4141/v1/models"
+      exclude_ids: "{{ copilot_api_responses_only_models }}"
+      exclude_patterns:
+        - '^accounts/msft/routers/'
+        - 'embedding'
   - url: "http://host.containers.internal:4141/v1"
     key: "dummy"
     enable: true
     tags: ["copilot", "responses"]
     prefix_id: ""
-    model_ids: ["gpt-5.5", "gpt-5.4-mini", "gpt-5.3-codex", "gpt-5.2-codex"]
+    model_ids: "{{ copilot_api_responses_only_models }}"
     connection_type: "external"
     auth_type: "bearer"
     api_type: "responses"

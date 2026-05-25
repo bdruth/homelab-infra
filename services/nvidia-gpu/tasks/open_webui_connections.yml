@@ -1,74 +1,128 @@
 ---
-# Open WebUI OpenAI-Connection Provisioning
+# Open WebUI OpenAI-Connection Seed (host-side)
 #
-# Open WebUI persists its OpenAI connection list in /app/backend/data/webui.db
-# (PersistentConfig). Environment variables only seed it on first run; after
-# that, the DB takes precedence. To keep the connection list reproducible
-# across redeploys we POST the desired state to /openai/config/update on
-# every Ansible run.
+# Open WebUI runs with ENABLE_PERSISTENT_CONFIG=false: env vars seed the in-DB
+# config every time the container is (re)created. OPENAI_API_BASE_URLS and
+# OPENAI_API_KEYS have env-var equivalents and are seeded directly by the
+# systemd unit; OPENAI_API_CONFIGS (per-connection api_type, model_ids) does
+# not, so we cannot express it as IaC via env vars alone.
 #
-# This requires a one-time admin API token bootstrap. Steps for first deploy:
+# Solution: ship a host-side seed script that the open-webui systemd unit
+# runs as ExecStartPost. The script waits for /ready, then POSTs the desired
+# OPENAI_API_CONFIGS to /openai/config/update. Because the systemd unit fires
+# the script on every container start, the config survives Ansible runs,
+# manual systemctl restart, host reboots, and image bumps.
+#
+# This task templates three files on the host:
+#   * /usr/local/bin/open-webui-seed-connections.sh  (the seed script)
+#   * /etc/open-webui/admin-token                    (0600, root)
+#   * /etc/open-webui/connections.json               (the POST payload)
+# Then notifies the Open WebUI restart handler so the next container start
+# picks up the script + freshly-rendered payload.
+#
+# One-time bootstrap (per host):
 #   1. Log into Open WebUI as an admin (via Authelia OIDC).
 #   2. Click avatar -> Settings -> Account -> API Keys -> Create new key.
 #   3. Store the key in services/nvidia-gpu/vars/main.yml (git-crypt protected)
 #      as `open_webui_admin_api_token`.
 #
-# The task is a no-op when the token is empty, so initial deploys before the
-# bootstrap don't fail.
+# When the token is empty the script + payload are removed and the systemd
+# hook becomes a no-op, so initial deploys before the bootstrap don't fail.
 
-- name: Skip Open WebUI connection provisioning when no admin token configured
+- name: Skip Open WebUI connection seed when no admin token is configured
   ansible.builtin.debug:
     msg: >-
-      Skipping Open WebUI connection provisioning because
-      open_webui_admin_api_token is empty. See
-      services/nvidia-gpu/tasks/open_webui_connections.yml for bootstrap steps.
+      open_webui_admin_api_token is empty; removing seed payload so
+      ExecStartPost is a no-op. See
+      services/nvidia-gpu/tasks/open_webui_connections.yml for bootstrap
+      instructions.
   when: open_webui_admin_api_token | default('') | length == 0
 
-- name: Provision Open WebUI OpenAI connections
+- name: Remove seed payload when no admin token is configured
+  when: open_webui_admin_api_token | default('') | length == 0
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/open-webui/admin-token
+    - /etc/open-webui/connections.json
+
+- name: Provision Open WebUI connection seed payload
   when: open_webui_admin_api_token | default('') | length > 0
   block:
-    # First wait for the TCP port to accept connections. wait_for handles
-    # the "container starting / Playwright install in progress / port not
-    # listening yet" window cleanly without needing failed_when gymnastics
-    # on the uri module. Cold starts can take ~30-60 seconds for
-    # WEB_LOADER_ENGINE=playwright to apt-install Chromium dependencies.
-    - name: Wait for Open WebUI port to accept connections
-      ansible.builtin.wait_for:
-        host: localhost
-        port: "{{ open_webui_port }}"
-        state: started
-        timeout: 300
+    # We need to know which models the proxy currently advertises so the
+    # chat-completions connection's allowlist can be "everything except
+    # responses-only and noise". Resolve any connection that uses
+    # `model_ids_from` instead of a hard-coded `model_ids`.
+    - name: Collect unique model_ids_from source URLs
+      ansible.builtin.set_fact:
+        _open_webui_model_source_urls: >-
+          {{
+            open_webui_connections
+            | selectattr('model_ids_from', 'defined')
+            | map(attribute='model_ids_from.url')
+            | unique
+            | list
+          }}
 
-    # /ready (not /health) is the strict readiness check: only returns 200
-    # after FastAPI startup hooks finish. /health is liveness-only and answers
-    # before the app is fully initialized.
-    - name: Wait for Open WebUI /ready to return 200
+    - name: Wait for Copilot API source URLs to be ready
       ansible.builtin.uri:
-        url: "http://localhost:{{ open_webui_port }}/ready"
+        url: "{{ item }}"
         method: GET
         status_code: 200
-        timeout: 10
-      register: open_webui_ready
-      retries: 30
-      delay: 2
-      until: open_webui_ready.status is defined and open_webui_ready.status == 200
+        timeout: 15
+      loop: "{{ _open_webui_model_source_urls }}"
+      register: _open_webui_model_fetches
+      retries: 12
+      delay: 5
+      until: _open_webui_model_fetches is not failed
+      when: _open_webui_model_source_urls | length > 0
       changed_when: false
-      failed_when: false
 
-    - name: Fail if Open WebUI never became ready
-      ansible.builtin.fail:
-        msg: "Open WebUI did not return 200 from /ready within the wait window"
-      when: open_webui_ready.status is not defined or open_webui_ready.status != 200
+    - name: Index fetched model lists by source URL
+      ansible.builtin.set_fact:
+        _open_webui_model_index: >-
+          {{
+            dict(
+              (_open_webui_model_fetches.results | default([]))
+              | map(attribute='item')
+              | zip(
+                  (_open_webui_model_fetches.results | default([]))
+                  | map(attribute='json')
+                  | map(attribute='data', default=[])
+                  | map('map', attribute='id')
+                  | map('list')
+                )
+            )
+          }}
+      when: _open_webui_model_source_urls | length > 0
 
     - name: Build OPENAI_API_CONFIGS dict (config-only fields, keyed by index)
       ansible.builtin.set_fact:
         _open_webui_openai_configs: >-
           {{
             _open_webui_openai_configs | default({}) | combine({
-              (item_index | string):
-                (item_value | dict2items
-                  | rejectattr('key', 'in', ['url', 'key'])
-                  | items2dict)
+              (item_index | string): (
+                item_value
+                | dict2items
+                | rejectattr('key', 'in', ['url', 'key', 'model_ids_from'])
+                | items2dict
+                | combine(
+                    {
+                      'model_ids':
+                        item_value.model_ids
+                          if (item_value.model_ids is defined and not item_value.model_ids_from is defined)
+                          else (
+                            (
+                              _open_webui_model_index[item_value.model_ids_from.url]
+                              | reject('in', item_value.model_ids_from.exclude_ids | default([]))
+                              | reject('match', item_value.model_ids_from.exclude_patterns | default([]) | join('|'))
+                              | list
+                            ) if item_value.model_ids_from is defined else []
+                          ),
+                    }
+                  )
+              )
             })
           }}
       loop: "{{ open_webui_connections }}"
@@ -77,27 +131,43 @@
         loop_var: item_value
         label: "{{ item_value.url }}"
 
-    - name: POST desired connection config to Open WebUI
-      ansible.builtin.uri:
-        url: "http://localhost:{{ open_webui_port }}/openai/config/update"
-        method: POST
-        headers:
-          Authorization: "Bearer {{ open_webui_admin_api_token }}"
-          Content-Type: "application/json"
-        body_format: json
-        body:
-          ENABLE_OPENAI_API: true
-          OPENAI_API_BASE_URLS: "{{ open_webui_connections | map(attribute='url') | list }}"
-          OPENAI_API_KEYS: "{{ open_webui_connections | map(attribute='key') | list }}"
-          OPENAI_API_CONFIGS: "{{ _open_webui_openai_configs }}"
-        status_code: 200
-        timeout: 15
-      register: open_webui_config_post
+    - name: Write Open WebUI admin token
+      ansible.builtin.copy:
+        dest: /etc/open-webui/admin-token
+        content: "{{ open_webui_admin_api_token }}"
+        owner: root
+        group: root
+        mode: "0600"
       no_log: true
-      changed_when: true
+      notify: Restart Open WebUI service
 
-    - name: Report Open WebUI connection provisioning
+    - name: Write Open WebUI connection seed payload
+      ansible.builtin.copy:
+        dest: /etc/open-webui/connections.json
+        owner: root
+        group: root
+        mode: "0644"
+        content: >-
+          {{
+            {
+              'ENABLE_OPENAI_API': true,
+              'OPENAI_API_BASE_URLS': open_webui_connections | map(attribute='url') | list,
+              'OPENAI_API_KEYS': open_webui_connections | map(attribute='key') | list,
+              'OPENAI_API_CONFIGS': _open_webui_openai_configs,
+            } | to_nice_json
+          }}
+      notify: Restart Open WebUI service
+
+    - name: Report Open WebUI connection seed
       ansible.builtin.debug:
-        msg: >-
-          Provisioned {{ open_webui_connections | length }} OpenAI connection(s)
-          on Open WebUI ({{ open_webui_connections | map(attribute='url') | list }}).
+        msg: "Wrote Open WebUI connection seed, model counts per index: {{ _connection_summary }}"
+      vars:
+        _connection_summary: >-
+          {{
+            _open_webui_openai_configs
+            | dict2items
+            | map(attribute='value')
+            | map(attribute='model_ids')
+            | map('length')
+            | list
+          }}

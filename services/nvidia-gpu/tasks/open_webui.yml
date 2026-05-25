@@ -12,6 +12,26 @@
     - "{{ open_webui_install_dir }}"
     - "{{ open_webui_install_dir }}/data"
 
+# The seed script is referenced by the systemd unit's ExecStartPost line, so
+# it must exist before the unit starts. The actual seed payload (admin token
+# and connection JSON) is written later by open_webui_connections.yml; the
+# script no-ops when those files are missing.
+- name: Ensure /etc/open-webui exists
+  ansible.builtin.file:
+    path: /etc/open-webui
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Template Open WebUI connection seed script
+  ansible.builtin.template:
+    src: open-webui-seed-connections.sh.j2
+    dest: /usr/local/bin/open-webui-seed-connections.sh
+    owner: root
+    group: root
+    mode: "0755"
+
 - name: Create systemd service for Open WebUI
   ansible.builtin.template:
     src: open-webui.service.j2
@@ -33,14 +53,9 @@
   register: open_webui_service
   ignore_errors: "{{ ansible_check_mode }}"
 
-# Trigger any pending handler so the container is restarted before we POST to
-# its API in the next task; avoids posting connection config to the old
-# instance about to be killed.
-- name: Flush Open WebUI handlers before connection provisioning
-  ansible.builtin.meta: flush_handlers
-
-- name: Import Open WebUI connection-provisioning tasks
-  ansible.builtin.import_tasks: open_webui_connections.yml
-  when:
-    - open_webui_connections is defined
-    - open_webui_connections | length > 0
+# The seed payload (admin token + connections.json) is written by
+# tasks/open_webui_connections.yml, imported separately at the end of the
+# role. The systemd unit's ExecStartPost hook reapplies it on every container
+# start, so the connection config (including OPENAI_API_CONFIGS, which has no
+# env-var equivalent in Open WebUI) survives Ansible runs, manual restarts,
+# and host reboots.

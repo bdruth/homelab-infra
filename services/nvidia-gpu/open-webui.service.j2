@@ -55,6 +55,13 @@ ExecStart=/usr/bin/docker run --name open-webui \
   {% if nvidia_install_gpu_drivers | bool %}--device nvidia.com/gpu=all --security-opt=label=disable {% endif %} \
   ghcr.io/open-webui/open-webui:{{ open_webui_image_tag }}
 
+# Re-apply OpenAI connection config (per-connection api_type and model_ids)
+# after every container start. ENABLE_PERSISTENT_CONFIG=false means env vars
+# seed the DB on every container creation, but OPENAI_API_CONFIGS has no
+# env-var equivalent so this hook fills the gap. Script no-ops cleanly when
+# token/payload files are absent.
+ExecStartPost=/usr/local/bin/open-webui-seed-connections.sh
+
 ExecStop=/usr/bin/docker stop open-webui
 
 [Install]
