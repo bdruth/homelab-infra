@@ -1,0 +1,13 @@
+---
+# Node-RED standalone deployment playbook
+# Usage: ansible-playbook -i services/nodered/test-inventory.yml services/nodered/main.yml
+# Uses `roles:` directive so defaults/main.yml and vars/main.yml load automatically.
+# Per-task install_nodered gating inside tasks/main.yml makes this safe on hosts
+# without the toggle (the role becomes a no-op).
+
+- name: Setup Node-RED service
+  hosts: "{{ target_hosts | default('all') }}"
+  become: true
+  gather_facts: true
+  roles:
+    - nodered

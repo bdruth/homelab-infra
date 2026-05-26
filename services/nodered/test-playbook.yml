@@ -1,0 +1,24 @@
+---
+# Test playbook for Node-RED configuration
+# Combined-play pattern: role and test tasks share the same play so role variables
+# are in scope for all assertions (see test_playbook_combined_play_pattern memory).
+
+- name: Define nodered group dynamically
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Add host to nodered_hosts group if it has the role
+      ansible.builtin.group_by:
+        key: "nodered_hosts"
+      when: "'nodered' in hostvars[inventory_hostname].get('host_roles', [])"
+      changed_when: false
+
+- name: Validate Node-RED configuration
+  hosts: nodered_hosts
+  become: true
+  gather_facts: true
+  roles:
+    - nodered
+  tasks:
+    - name: Import Node-RED test tasks
+      ansible.builtin.import_tasks: "tasks/test.yml"

@@ -38,3 +38,6 @@
 
 - name: Test Coder configuration
   import_playbook: coder/test-playbook.yml
+
+- name: Test Node-RED configuration
+  import_playbook: nodered/test-playbook.yml

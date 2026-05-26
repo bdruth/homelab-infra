@@ -1,0 +1,30 @@
+---
+galaxy_info:
+  author: homelab-infra
+  description: Ansible role for managing Node-RED flow-based automation in a podman container
+  company: N/A
+
+  license: MIT
+
+  min_ansible_version: "2.9"
+
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+        - noble
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+
+  galaxy_tags:
+    - docker
+    - podman
+    - containers
+    - nodered
+    - automation
+    - iot
+
+dependencies: []

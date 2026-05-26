@@ -1,0 +1,27 @@
+# Node-RED standalone compose file
+# Managed by Ansible role: services/nodered
+# DO NOT edit manually — changes will be overwritten on next role run.
+#
+# Network strategy: host networking (required for mDNS UDP 5353 / Avahi device discovery)
+# Safe-mode: controlled by nodered_safe_mode (default: false)
+#   When true, NODE_RED_SAFE_MODE=1 is injected — flows load but do NOT execute.
+#   Used during Phase 3 parallel staging to prevent double-triggering automations.
+
+services:
+  nodered:
+    image: {{ nodered_image }}
+    container_name: nodered
+    network_mode: host
+    restart: {{ nodered_restart_policy }}
+    user: "{{ nodered_uid }}:{{ nodered_gid }}"
+    volumes:
+      - {{ nodered_install_dir }}:/data
+      - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
+      - /var/run/dbus:/var/run/dbus
+    environment:
+{% if nodered_safe_mode | bool %}
+      - NODE_RED_SAFE_MODE=1
+{% endif %}
+      - TZ={{ ansible_date_time.tz | default('UTC') }}
+    # NOTE: Watchtower auto-update label intentionally omitted.
+    # Phase 3 will pin a specific image tag instead of relying on :latest auto-pull.

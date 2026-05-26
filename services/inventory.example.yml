@@ -79,3 +79,11 @@ all:
           nats:
             enabled: true
             url: "nats://nats.nats-system.svc.cluster.local:4222"
+
+    # Node-RED automation host (standalone LXC — see services/nodered/README.md)
+    # nodered-host.example.com:
+    #   ansible_host: 192.0.2.10
+    #   host_roles: ['nodered']
+    #   install_nodered: true
+    #   # Set to true during Phase 3 parallel staging to suppress flow execution:
+    #   nodered_safe_mode: false

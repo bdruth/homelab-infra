@@ -1,0 +1,116 @@
+---
+# Node-RED validation tasks
+# Imported by test-playbook.yml in the same play as the role (combined-play pattern).
+
+- name: Check docker compose is available
+  ansible.builtin.command: docker compose version
+  register: nodered_test_compose
+  changed_when: false
+  ignore_errors: true
+  when: install_nodered | bool
+  tags: [nodered-test]
+
+- name: Verify Node-RED compose file exists
+  ansible.builtin.stat:
+    path: "{{ nodered_compose_dir }}/docker-compose.yml"
+  register: nodered_compose_stat
+  when: install_nodered | bool
+  tags: [nodered-test]
+
+- name: Assert compose file is present
+  ansible.builtin.assert:
+    that: nodered_compose_stat.stat.exists
+    fail_msg: "Node-RED compose file not found at {{ nodered_compose_dir }}/docker-compose.yml"
+    success_msg: "Node-RED compose file present"
+  when: install_nodered | bool
+  tags: [nodered-test]
+
+- name: Check Node-RED systemd service status
+  ansible.builtin.systemd:
+    name: nodered
+  register: nodered_service_status
+  ignore_errors: true
+  when: install_nodered | bool
+  tags: [nodered-test]
+
+- name: Display Node-RED service status
+  ansible.builtin.debug:
+    msg: >-
+      Node-RED service: {{
+        'active' if nodered_service_status.status.ActiveState == 'active'
+        else 'FAILED — state: ' + nodered_service_status.status.ActiveState
+      }}
+  when: install_nodered | bool
+  tags: [nodered-test]
+
+- name: Confirm Node-RED container is running
+  ansible.builtin.shell: |
+    set -o pipefail
+    podman ps --format '{{ "{{" }}.Names{{ "}}" }}' | grep -q nodered
+  args:
+    executable: /bin/bash
+  register: nodered_container_running
+  changed_when: false
+  ignore_errors: true
+  when: install_nodered | bool
+  tags: [nodered-test]
+
+- name: Assert container is running
+  ansible.builtin.assert:
+    that: nodered_container_running.rc == 0
+    fail_msg: "nodered container is not running (podman ps shows no match)"
+    success_msg: "nodered container is running"
+  when: install_nodered | bool
+  tags: [nodered-test]
+
+- name: Check Node-RED port 1880 is listening
+  ansible.builtin.wait_for:
+    host: 0.0.0.0
+    port: "{{ nodered_port }}"
+    timeout: 30
+    state: started
+  when: install_nodered | bool
+  tags: [nodered-test]
+
+- name: Check Node-RED HTTP editor responds
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ nodered_port }}/"
+    method: GET
+    status_code: [200, 301, 302]
+    timeout: 15
+  register: nodered_http_check
+  retries: 5
+  delay: 5
+  until: nodered_http_check.status in [200, 301, 302]
+  ignore_errors: true
+  when: install_nodered | bool
+  tags: [nodered-test]
+
+- name: Display HTTP check result
+  ansible.builtin.debug:
+    msg: >-
+      Node-RED HTTP: {{
+        'OK (status ' + nodered_http_check.status | string + ')'
+        if nodered_http_check.status is defined
+        else 'FAILED — could not reach port ' + nodered_port | string
+      }}
+  when: install_nodered | bool
+  tags: [nodered-test]
+
+- name: Check Node-RED workdir exists with correct ownership
+  ansible.builtin.stat:
+    path: "{{ nodered_install_dir }}"
+  register: nodered_workdir_stat
+  when: install_nodered | bool
+  tags: [nodered-test]
+
+- name: Assert workdir exists and is owned by node-red user
+  ansible.builtin.assert:
+    that:
+      - nodered_workdir_stat.stat.exists
+      - nodered_workdir_stat.stat.isdir
+      - nodered_workdir_stat.stat.pw_name == nodered_user
+    fail_msg: "{{ nodered_install_dir }} is missing or not owned by {{ nodered_user }}"
+    success_msg: "{{ nodered_install_dir }} exists with correct ownership"
+  when: install_nodered | bool
+  tags: [nodered-test]

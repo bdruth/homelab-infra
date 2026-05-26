@@ -21,6 +21,7 @@
         _run_nats: "{{ 'nats' in host_roles | default([]) }}"
         _run_coder: "{{ 'coder' in host_roles | default([]) }}"
         _run_matterbridge: "{{ 'matterbridge' in host_roles | default([]) }}"
+        _run_nodered: "{{ 'nodered' in host_roles | default([]) }}"
 
   roles:
     - role: nut
@@ -47,3 +48,5 @@
       when: _run_fission | bool
     - role: coder
       when: _run_coder | bool
+    - role: nodered
+      when: _run_nodered | bool
