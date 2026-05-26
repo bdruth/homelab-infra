@@ -15,6 +15,9 @@ setECSSourcePrefixV4(32)
 setECSSourcePrefixV6(128)
 setLocal("0.0.0.0")
 addLocal("::")
+{% for acl in dnsdist_acls | default([]) %}
+addACL("{{ acl }}")
+{% endfor %}
 controlSocket("{{ ansible_facts.default_ipv4.address }}:5199")
 setConsoleACL("{{ ansible_facts.default_ipv4.address | ansible.utils.ipaddr('network/prefix') }}")
 setKey("{{ dnsdist_console_key }}")

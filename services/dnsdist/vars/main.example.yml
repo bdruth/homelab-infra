@@ -9,3 +9,7 @@ static_dns_ip_addrs:
 remote_syslog_server: "192.168.1.100"
 remote_syslog_server_port: "514"
 tailscale_authkey: "tskey-auth-XXXXX-YYYYY"
+# Extra ACL entries appended to dnsdist's built-in defaults (RFC1918, ULA, loopback, link-local).
+# Add public ranges (e.g. an ISP-assigned IPv6 /64) here.
+dnsdist_acls:
+  - "2001:0db8:85a3::/64"
