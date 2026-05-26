@@ -18,7 +18,7 @@ cache:
   dir: /data/cache
 
 container:
-  network: ""
+  network: "{{ gitea_act_runner_job_network }}"
   privileged: {{ gitea_act_runner_privileged | default(false) | string | lower }}
   options: "{{ gitea_act_runner_container_options | default('') }}"
   workdir_parent: ""

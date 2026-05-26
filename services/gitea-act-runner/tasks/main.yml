@@ -38,6 +38,19 @@
     - "{{ gitea_act_runner_dir }}/data"
     - "{{ gitea_act_runner_dir }}/docker-compose"
 
+- name: Ensure act-runner job network exists
+  become: true
+  ansible.builtin.command:
+    cmd: >-
+      docker network create
+      {% for dns in gitea_act_runner_job_network_dns %} --dns {{ dns }}{% endfor %}
+      {{ gitea_act_runner_job_network }}
+  register: act_runner_network_create
+  changed_when: act_runner_network_create.rc == 0
+  failed_when:
+    - act_runner_network_create.rc != 0
+    - "'already exists' not in act_runner_network_create.stderr"
+
 - name: Render act_runner config
   become: true
   ansible.builtin.template:
