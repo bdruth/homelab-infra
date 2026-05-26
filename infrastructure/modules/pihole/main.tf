@@ -11,7 +11,14 @@ module "pihole_lxc" {
 }
 
 data "http" "pihole_latest_release" {
-  url = "https://api.github.com/repos/pi-hole/pi-hole/releases/latest"
+  url                = "https://api.github.com/repos/pi-hole/pi-hole/releases/latest"
+  request_timeout_ms = 10000
+
+  retry {
+    attempts     = 3
+    min_delay_ms = 2000
+    max_delay_ms = 5000
+  }
 }
 
 data "aws_s3_object" "pihole_teleporter_backup" {

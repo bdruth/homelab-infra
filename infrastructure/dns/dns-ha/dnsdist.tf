@@ -6,6 +6,11 @@ module "dns_ha_lxc" {
   lxc_memory   = "512"
   lxc_onboot   = true
   lxc_hwaddr   = "BC:24:11:27:F6:81"
+  # 127.0.0.1 = local dnsdist; 192.168.7.2 (pihole-blue) is one of dnsdist's
+  # upstreams and covers the brief boot window before dnsdist binds :53. PVE
+  # otherwise inherits 100.100.100.100 (Tailscale MagicDNS) here, which is
+  # unreachable from this LXC (userspace-networking, no tailscale0).
+  lxc_nameserver = "127.0.0.1 192.168.7.2"
 }
 
 locals {
