@@ -68,6 +68,10 @@ locals {
 }
 
 resource "null_resource" "install_dnsdist" {
+  ## The live node converges last: if a dnsdist change breaks the new nodes,
+  ## the apply aborts before reaching the resolver the LAN is currently using.
+  depends_on = [null_resource.install_dnsdist_2]
+
   triggers = {
     ansible_changes  = sha1(join("", [for f in sort(fileset("${path.module}/../../../services/dnsdist", "**")) : filesha1("${path.module}/../../../services/dnsdist/${f}")]))
     container_change = module.dns_ha_lxc.lxc_id
@@ -102,6 +106,17 @@ resource "null_resource" "install_dnsdist_1" {
 }
 
 resource "null_resource" "install_dnsdist_2" {
+  ## Serialized behind node 1. Terraform runs provisioners in parallel by
+  ## default, and concurrent ansible-playbook invocations race on the shared
+  ## pkgx venv (observed: "No such file or directory:
+  ## /root/.pkgx/ansible.com/v2.21.2/venv/bin/python").
+  ##
+  ## Serialization is also the safer rollout: a dnsdist config change applied
+  ## to every resolver at once would take them all down together. Chained, the
+  ## new nodes converge first and a failure aborts the apply before the live
+  ## node at .3 is touched.
+  depends_on = [null_resource.install_dnsdist_1]
+
   triggers = {
     ansible_changes  = sha1(join("", [for f in sort(fileset("${path.module}/../../../services/dnsdist", "**")) : filesha1("${path.module}/../../../services/dnsdist/${f}")]))
     container_change = module.dns_ha_lxc_2.lxc_id
