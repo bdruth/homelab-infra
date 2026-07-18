@@ -14,23 +14,6 @@
       ansible.builtin.shell: timedatectl set-timezone America/Chicago && dpkg-reconfigure -f noninteractive tzdata
       changed_when: false
 
-    - name: Configure tailscaled for userspace networking
-      ansible.builtin.copy:
-        dest: /etc/default/tailscaled
-        content: |
-          # Userspace networking for LXC containers without TUN device access
-          PORT="41641"
-          FLAGS="--tun=userspace-networking"
-        owner: root
-        group: root
-        mode: "0644"
-
-    - name: Install and configure Tailscale
-      ansible.builtin.include_role:
-        name: artis3n.tailscale.machine
-      vars:
-        tailscale_args: "--accept-dns=false"
-
     - name: Update apt cache
       ansible.builtin.apt:
         update_cache: true
@@ -92,6 +75,30 @@
         group: root
         mode: "0644"
       notify: Restart rsyslog
+
+    ## Tailscale runs last, after dnsdist is installed and serving. It used to
+    ## run first, which meant an expired tailscale_authkey aborted the play
+    ## before dnsdist was ever installed -- a dead key took out DNS entirely
+    ## rather than just leaving the node off the tailnet. Tailscale is for
+    ## remote administration here (--accept-dns=false, userspace networking);
+    ## DNS service does not depend on it, so it belongs after the thing that
+    ## actually matters.
+    - name: Configure tailscaled for userspace networking
+      ansible.builtin.copy:
+        dest: /etc/default/tailscaled
+        content: |
+          # Userspace networking for LXC containers without TUN device access
+          PORT="41641"
+          FLAGS="--tun=userspace-networking"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Install and configure Tailscale
+      ansible.builtin.include_role:
+        name: artis3n.tailscale.machine
+      vars:
+        tailscale_args: "--accept-dns=false"
 
   handlers:
     - name: Restart rsyslog
