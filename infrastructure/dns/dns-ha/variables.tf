@@ -8,6 +8,11 @@ variable "dns_ip_addr" {
   type        = string
 }
 
+variable "dns_ip_addr_2" {
+  description = "IP addr for the second DNS HA node"
+  type        = string
+}
+
 variable "ssh_priv_key_path" {
   description = "path to SSH private key"
   type        = string

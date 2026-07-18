@@ -13,6 +13,26 @@ module "dns_ha_lxc" {
   lxc_nameserver = "127.0.0.1 192.168.7.2"
 }
 
+## Second dnsdist node. Deliberately a separate module block rather than
+## converting dns_ha_lxc to for_each: that would change the existing module's
+## address to module.dns_ha_lxc["dns-ha"] and destroy/recreate the container
+## currently serving all LAN DNS. The duplication is the cheaper trade.
+##
+## Phase 1 runs both nodes independently with no VIP -- dns-ha-2 is reachable
+## at its own address and can be set as eero's secondary IPv4 nameserver.
+## Phase 2 moves dns-ha off .3 and hands .3 to keepalived as a VRRP VIP.
+module "dns_ha_lxc_2" {
+  source         = "../../modules/lxc"
+  lxc_hostname   = "dns-ha-2"
+  lxc_ip_addr    = var.dns_ip_addr_2
+  lxc_gw_addr    = var.gw_addr
+  lxc_memory     = "512"
+  lxc_swap       = "0"
+  lxc_onboot     = true
+  lxc_hwaddr     = "BC:24:11:27:F6:82"
+  lxc_nameserver = "127.0.0.1 192.168.7.4"
+}
+
 locals {
   dns_ip_addrs = [
     data.terraform_remote_state.pihole_blue.outputs.pihole_ip,
@@ -37,6 +57,27 @@ resource "null_resource" "install_dnsdist" {
   }
 }
 
+resource "null_resource" "install_dnsdist_2" {
+  triggers = {
+    ansible_changes  = sha1(join("", [for f in sort(fileset("${path.module}/../../../services/dnsdist", "**")) : filesha1("${path.module}/../../../services/dnsdist/${f}")]))
+    container_change = module.dns_ha_lxc_2.lxc_id
+    dns_ip_addrs     = jsonencode(local.dns_ip_addrs)
+  }
+
+  provisioner "local-exec" {
+    command     = "until nc -zv ${module.dns_ha_lxc_2.lxc_ip_addr} 22; do echo 'Waiting for SSH to be available...'; sleep 5; done"
+    working_dir = path.module
+  }
+  provisioner "local-exec" {
+    command     = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${module.dns_ha_lxc_2.lxc_ip_addr},' -u root --private-key ${var.ssh_priv_key_path} ../../../services/dnsdist/main.yml -e '{\"dns_ip_addrs\":${jsonencode(local.dns_ip_addrs)}}' -e 'ansible_python_interpreter=/usr/bin/python3'"
+    working_dir = path.module
+  }
+}
+
 output "dns_ha_ip" {
   value = module.dns_ha_lxc.lxc_ip_addr
+}
+
+output "dns_ha_2_ip" {
+  value = module.dns_ha_lxc_2.lxc_ip_addr
 }
