@@ -611,7 +611,7 @@
   [database.network]
     # Should FTL analyze the local ARP cache? When disabled, client identification and the
     # network table will stop working reliably.
-    parseARPcache = true
+    parseARPcache = {{ parse_arp_cache | default(false) | ternary('true', 'false') }}
 
     # How long should IP addresses be kept in the network_addresses table [days]? IP
     # addresses (and associated host names) older than the specified number of days are

@@ -113,6 +113,42 @@
         state: restarted
       when: pihole_toml.changed or local_ttf_conf.changed
 
+    ## dnsdist fronts both Pi-holes, so every query arrives with dnsdist's MAC.
+    ## With parseARPcache enabled FTL collapses every ECS-derived client onto that
+    ## single device record, and the UI then labels all traffic with whichever
+    ## hostname that record resolved to. Flush the stale rows once the setting flips.
+    - name: Flush stale Pi-hole network tables
+      ansible.builtin.command: pihole networkflush
+      when: pihole_toml.changed and not (parse_arp_cache | default(false) | bool)
+      changed_when: true
+
+    - name: Install managed gravity client/group SQL
+      ansible.builtin.template:
+        src: gravity-clients.sql.j2
+        dest: /etc/pihole/ansible-gravity-clients.sql
+        owner: pihole
+        group: root
+        mode: "0640"
+      register: gravity_clients_sql
+
+    ## Applied inline rather than via handlers: the S3/teleporter tasks later in
+    ## this play are failure-prone, and handlers would silently never fire, leaving
+    ## per-client policy unapplied. Matches the inline restart idiom used above.
+    - name: Apply managed gravity client/group configuration # noqa: no-handler
+      ansible.builtin.shell: >
+        set -o pipefail &&
+        pihole-FTL sqlite3 /etc/pihole/gravity.db
+        < /etc/pihole/ansible-gravity-clients.sql
+      args:
+        executable: /bin/bash
+      when: gravity_clients_sql.changed
+      changed_when: true
+
+    - name: Reload Pi-hole lists to pick up group changes # noqa: no-handler
+      ansible.builtin.command: pihole reloadlists
+      when: gravity_clients_sql.changed
+      changed_when: true
+
     ## Chicken & egg: on initial setup, pihole needs teleporter backup restored to provide these values ...
     ## but to get teleporter backup, needs to lookup local s3 host :/ Hard-coding for now.
     ##

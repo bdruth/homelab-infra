@@ -13,6 +13,24 @@ local_ttl: 120
 upstreams:
   - 8.8.8.8
   - 1.1.1.1
+## Disable FTL's ARP-based device table when Pi-hole sits behind a forwarder
+## (e.g. dnsdist), which would otherwise collapse every client onto one device.
+parse_arp_cache: false
+
+## Per-client policy. Group membership defaults to ['Default'] when omitted.
+pihole_groups:
+  - name: Default
+    enabled: true
+    description: "Default group"
+
+pihole_clients: []
+##   - ip: 192.168.1.50
+##     comment: "example-device"
+##     groups: [Default]
+
+## When true, clients absent from pihole_clients are deleted on every deploy.
+pihole_clients_prune: false
+
 dns_records:
   - hostname: server1.example.com
     address:
