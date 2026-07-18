@@ -8,6 +8,11 @@ variable "dns_ip_addr" {
   type        = string
 }
 
+variable "ssh_public_keys" {
+  description = "SSH public key(s) to install in LXC"
+  type        = string
+}
+
 variable "dns_ip_addr_1" {
   description = "IP addr for the first node of the DNS HA pair"
   type        = string

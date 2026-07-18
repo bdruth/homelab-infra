@@ -38,18 +38,26 @@ module "dns_ha_lxc_1" {
   lxc_onboot     = true
   lxc_hwaddr     = "BC:24:11:27:F6:83"
   lxc_nameserver = "127.0.0.1 192.168.7.2"
+  ## The module default installs only the RSA key. CI authenticates with the
+  ## ed25519 key, which the original dns-ha container has from an out-of-band
+  ## step -- so a freshly built node is unreachable from CI without this.
+  ## Every other stack (pihole, wakapi, matterbridge) already passes it.
+  ## Deliberately NOT set on module.dns_ha_lxc: ssh_public_keys is ForceNew,
+  ## so adding it there would destroy and recreate the live DNS container.
+  ssh_public_keys = var.ssh_public_keys
 }
 
 module "dns_ha_lxc_2" {
-  source         = "../../modules/lxc"
-  lxc_hostname   = "dns-ha-2"
-  lxc_ip_addr    = var.dns_ip_addr_2
-  lxc_gw_addr    = var.gw_addr
-  lxc_memory     = "512"
-  lxc_swap       = "0"
-  lxc_onboot     = true
-  lxc_hwaddr     = "BC:24:11:27:F6:82"
-  lxc_nameserver = "127.0.0.1 192.168.7.4"
+  source          = "../../modules/lxc"
+  lxc_hostname    = "dns-ha-2"
+  lxc_ip_addr     = var.dns_ip_addr_2
+  lxc_gw_addr     = var.gw_addr
+  lxc_memory      = "512"
+  lxc_swap        = "0"
+  lxc_onboot      = true
+  lxc_hwaddr      = "BC:24:11:27:F6:82"
+  lxc_nameserver  = "127.0.0.1 192.168.7.4"
+  ssh_public_keys = var.ssh_public_keys
 }
 
 locals {
