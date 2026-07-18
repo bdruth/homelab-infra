@@ -4,6 +4,7 @@ module "ups_monitoring_lxc" {
   lxc_ip_addr  = var.ups_monitoring_ip_addr
   lxc_gw_addr  = var.gw_addr
   lxc_memory   = "512"
+  lxc_swap     = "512"
   lxc_onboot   = true
 }
 

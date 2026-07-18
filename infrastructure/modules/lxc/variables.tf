@@ -20,9 +20,20 @@ variable "lxc_hostname" {
 }
 
 variable "lxc_memory" {
-  description = "container hostname"
+  description = "container memory in MB"
   type        = string
   default     = null
+}
+
+variable "lxc_swap" {
+  description = "container swap in MB"
+  type        = string
+  # Defaults to "0" to match the provider's own schema default (Default: 0 in
+  # resource_lxc.go -- the provider docs claiming 512 are wrong). Declaring it
+  # explicitly matters: resourceLxcUpdate pushes swap on every in-place update
+  # whether or not it changed, so an unrelated apply would otherwise silently
+  # drive swap to the default. Callers needing swap set it explicitly.
+  default = "0"
 }
 
 variable "ssh_public_keys" {

@@ -19,6 +19,7 @@ resource "proxmox_lxc" "container" {
   }
   hostname = var.lxc_hostname
   memory   = var.lxc_memory
+  swap     = var.lxc_swap
 
   network {
     name   = "eth0"
