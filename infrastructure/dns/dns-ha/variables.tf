@@ -8,8 +8,13 @@ variable "dns_ip_addr" {
   type        = string
 }
 
+variable "dns_ip_addr_1" {
+  description = "IP addr for the first node of the DNS HA pair"
+  type        = string
+}
+
 variable "dns_ip_addr_2" {
-  description = "IP addr for the second DNS HA node"
+  description = "IP addr for the second node of the DNS HA pair"
   type        = string
 }
 
