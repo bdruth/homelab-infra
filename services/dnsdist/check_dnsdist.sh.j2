@@ -1,0 +1,25 @@
+#!/bin/bash
+# Managed by Ansible: services/dnsdist/check_dnsdist.sh.j2
+#
+# keepalived VRRP health check. Exits non-zero when the local dnsdist is not
+# actually resolving, which lowers this node's VRRP priority (see the `weight`
+# in keepalived.conf) so a healthy peer can take the VIP.
+#
+# Deliberately a real resolution, not a liveness probe: a dnsdist that is up
+# but answering SERVFAIL is exactly the failure clients never fail away from,
+# and is the main reason this VIP exists.
+
+set -o pipefail
+
+readonly PROBE="{{ keepalived_check_domain | default('github.com') }}"
+
+# +tries=1 keeps the check well inside keepalived's timeout. A single lookup
+# failing is not decisive; keepalived's `fall` count requires consecutive
+# failures before acting on it.
+answer=$(dig +short +time=1 +tries=1 @127.0.0.1 "${PROBE}" A 2>/dev/null)
+
+if [[ -z "${answer}" ]]; then
+    exit 1
+fi
+
+exit 0

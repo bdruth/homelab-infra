@@ -76,6 +76,46 @@
         mode: "0644"
       notify: Restart rsyslog
 
+    ## keepalived is gated so the same playbook can run unchanged against the
+    ## original single node, which must not claim a VIP. Only the HA pair sets
+    ## keepalived_enabled, via -e from the terraform provisioner.
+    - name: Install keepalived packages
+      ansible.builtin.apt:
+        pkg:
+          - keepalived
+          - bind9-dnsutils
+        state: present
+      when: keepalived_enabled | default(false) | bool
+
+    - name: Install dnsdist health check script
+      ansible.builtin.template:
+        src: check_dnsdist.sh.j2
+        dest: /usr/local/bin/check_dnsdist.sh
+        owner: root
+        group: root
+        mode: "0755"
+      when: keepalived_enabled | default(false) | bool
+      register: keepalived_check_script
+
+    - name: Create keepalived.conf
+      ansible.builtin.template:
+        src: keepalived.conf.j2
+        dest: /etc/keepalived/keepalived.conf
+        owner: root
+        group: root
+        mode: "0644"
+      when: keepalived_enabled | default(false) | bool
+      register: keepalived_conf
+
+    - name: Enable and restart keepalived # noqa: no-handler
+      ansible.builtin.service:
+        name: keepalived
+        state: restarted
+        enabled: true
+      when:
+        - keepalived_enabled | default(false) | bool
+        - keepalived_conf.changed or keepalived_check_script.changed
+
     ## Tailscale runs last, after dnsdist is installed and serving. It used to
     ## run first, which meant an expired tailscale_authkey aborted the play
     ## before dnsdist was ever installed -- a dead key took out DNS entirely

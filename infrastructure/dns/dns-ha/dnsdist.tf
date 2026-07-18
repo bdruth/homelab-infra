@@ -61,6 +61,28 @@ module "dns_ha_lxc_2" {
 }
 
 locals {
+  ## Node 1 is MASTER at 150, node 2 BACKUP at 100. The health check carries
+  ## weight -60, so an unhealthy master drops to 90 and a healthy backup (100)
+  ## takes over -- but if both are unhealthy the master sits at 90 against the
+  ## backup's 40 and keeps the VIP, rather than leaving nothing listening.
+  vrrp_node_1 = jsonencode({
+    keepalived_enabled = true
+    vrrp_state         = "MASTER"
+    vrrp_priority      = 150
+    vrrp_unicast_src   = var.dns_ip_addr_1
+    vrrp_unicast_peer  = var.dns_ip_addr_2
+    vrrp_vip           = var.dns_vip_addr
+  })
+
+  vrrp_node_2 = jsonencode({
+    keepalived_enabled = true
+    vrrp_state         = "BACKUP"
+    vrrp_priority      = 100
+    vrrp_unicast_src   = var.dns_ip_addr_2
+    vrrp_unicast_peer  = var.dns_ip_addr_1
+    vrrp_vip           = var.dns_vip_addr
+  })
+
   dns_ip_addrs = [
     data.terraform_remote_state.pihole_blue.outputs.pihole_ip,
     data.terraform_remote_state.pihole_green.outputs.pihole_ip
@@ -93,6 +115,7 @@ resource "null_resource" "install_dnsdist_1" {
     ansible_changes  = sha1(join("", [for f in sort(fileset("${path.module}/../../../services/dnsdist", "**")) : filesha1("${path.module}/../../../services/dnsdist/${f}")]))
     container_change = module.dns_ha_lxc_1.lxc_id
     dns_ip_addrs     = jsonencode(local.dns_ip_addrs)
+    vrrp             = local.vrrp_node_1
   }
 
   provisioner "local-exec" {
@@ -100,7 +123,7 @@ resource "null_resource" "install_dnsdist_1" {
     working_dir = path.module
   }
   provisioner "local-exec" {
-    command     = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${module.dns_ha_lxc_1.lxc_ip_addr},' -u root --private-key ${var.ssh_priv_key_path} ../../../services/dnsdist/main.yml -e '{\"dns_ip_addrs\":${jsonencode(local.dns_ip_addrs)}}' -e 'ansible_python_interpreter=/usr/bin/python3'"
+    command     = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${module.dns_ha_lxc_1.lxc_ip_addr},' -u root --private-key ${var.ssh_priv_key_path} ../../../services/dnsdist/main.yml -e '{\"dns_ip_addrs\":${jsonencode(local.dns_ip_addrs)}}' -e '${local.vrrp_node_1}' -e 'ansible_python_interpreter=/usr/bin/python3'"
     working_dir = path.module
   }
 }
@@ -121,6 +144,7 @@ resource "null_resource" "install_dnsdist_2" {
     ansible_changes  = sha1(join("", [for f in sort(fileset("${path.module}/../../../services/dnsdist", "**")) : filesha1("${path.module}/../../../services/dnsdist/${f}")]))
     container_change = module.dns_ha_lxc_2.lxc_id
     dns_ip_addrs     = jsonencode(local.dns_ip_addrs)
+    vrrp             = local.vrrp_node_2
   }
 
   provisioner "local-exec" {
@@ -128,7 +152,7 @@ resource "null_resource" "install_dnsdist_2" {
     working_dir = path.module
   }
   provisioner "local-exec" {
-    command     = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${module.dns_ha_lxc_2.lxc_ip_addr},' -u root --private-key ${var.ssh_priv_key_path} ../../../services/dnsdist/main.yml -e '{\"dns_ip_addrs\":${jsonencode(local.dns_ip_addrs)}}' -e 'ansible_python_interpreter=/usr/bin/python3'"
+    command     = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${module.dns_ha_lxc_2.lxc_ip_addr},' -u root --private-key ${var.ssh_priv_key_path} ../../../services/dnsdist/main.yml -e '{\"dns_ip_addrs\":${jsonencode(local.dns_ip_addrs)}}' -e '${local.vrrp_node_2}' -e 'ansible_python_interpreter=/usr/bin/python3'"
     working_dir = path.module
   }
 }

@@ -8,6 +8,11 @@ variable "dns_ip_addr" {
   type        = string
 }
 
+variable "dns_vip_addr" {
+  description = "VRRP virtual IP floated across the dns-ha pair. Starts as a scratch address so failover can be validated without .3 depending on it; becomes 192.168.7.3 at cutover."
+  type        = string
+}
+
 variable "ssh_public_keys" {
   description = "SSH public key(s) to install in LXC"
   type        = string

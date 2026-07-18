@@ -1,0 +1,58 @@
+! Managed by Ansible: services/dnsdist/keepalived.conf.j2
+!
+! Unicast VRRP across the dnsdist pair. Unicast rather than multicast on
+! purpose: multicast VRRP in unprivileged LXC on a Proxmox bridge is the
+! configuration with reported split-brain (both nodes claiming the VIP), and
+! unicast sidesteps bridge multicast snooping entirely for a two-node pair.
+!
+! vrrp_instance only -- no virtual_server / lvs_sync_daemon. IPVS cannot
+! initialise in an unprivileged container ("Can't initialize ipvs: Permission
+! denied"), and avoiding it keeps this inside what the container can do
+! without loosening AppArmor or adding raw lxc.* keys.
+
+global_defs {
+    router_id {{ inventory_hostname }}
+    enable_script_security
+    script_user root
+}
+
+vrrp_script chk_dnsdist {
+    script "/usr/local/bin/check_dnsdist.sh"
+    interval 2
+    timeout 3
+    fall 2
+    rise 2
+    ! weight, not a binary fault: on failure this node's priority drops rather
+    ! than the VIP being released outright. If BOTH nodes are unhealthy -- an
+    ! upstream outage rather than a node problem -- the current master keeps
+    ! the VIP. Releasing it would turn "DNS answering badly" into "nothing
+    ! listening on the VIP at all", which is strictly worse for clients.
+    weight -60
+}
+
+vrrp_instance DNS {
+    state {{ vrrp_state }}
+    interface {{ vrrp_interface | default('eth0') }}
+    virtual_router_id {{ vrrp_router_id | default(51) }}
+    priority {{ vrrp_priority }}
+    advert_int 1
+
+    unicast_src_ip {{ vrrp_unicast_src }}
+    unicast_peer {
+        {{ vrrp_unicast_peer }}
+    }
+
+    authentication {
+        auth_type PASS
+        ! VRRP PASS auth is truncated to 8 characters by the protocol.
+        auth_pass {{ vrrp_auth_pass }}
+    }
+
+    virtual_ipaddress {
+        {{ vrrp_vip }}/{{ vrrp_vip_prefix | default(24) }} dev {{ vrrp_interface | default('eth0') }}
+    }
+
+    track_script {
+        chk_dnsdist
+    }
+}
