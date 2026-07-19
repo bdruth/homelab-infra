@@ -24,3 +24,46 @@
     - name: Show pihole.toml content
       ansible.builtin.debug:
         var: pihole_toml_content.stdout_lines
+
+    ## The gravity templates emit SQL applied straight to gravity.db, so a
+    ## templating error surfaces as a failed deploy rather than a bad render.
+    ## Render both and check the SQL parses before that can happen.
+    - name: Test gravity SQL templating
+      ansible.builtin.template:
+        src: "{{ item }}.sql.j2"
+        dest: "/tmp/{{ item }}.sql.test"
+        mode: "0644"
+      loop:
+        - gravity-config
+        - gravity-adlists
+      check_mode: false
+
+    - name: Verify generated gravity SQL parses
+      ansible.builtin.command: "sqlite3 :memory: '.read /tmp/{{ item }}.sql.test'"
+      loop:
+        - gravity-config
+        - gravity-adlists
+      register: gravity_sql_parse
+      changed_when: false
+      check_mode: false
+      ## The statements reference Pi-hole's schema, which an empty in-memory DB
+      ## lacks; "no such table" means the SQL parsed, which is what is under test.
+      failed_when: >
+        gravity_sql_parse.rc != 0 and
+        'no such table' not in (gravity_sql_parse.stderr | default(''))
+
+    - name: Show generated gravity SQL
+      ansible.builtin.command: "cat /tmp/{{ item }}.sql.test"
+      loop:
+        - gravity-config
+        - gravity-adlists
+      register: gravity_sql_content
+      changed_when: false
+      check_mode: false
+
+    - name: Show gravity SQL content
+      ansible.builtin.debug:
+        var: item.stdout_lines
+      loop: "{{ gravity_sql_content.results }}"
+      loop_control:
+        label: "{{ item.item }}"

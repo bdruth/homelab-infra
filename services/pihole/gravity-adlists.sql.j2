@@ -1,0 +1,36 @@
+-- Managed by Ansible: services/pihole/gravity-adlists.sql.j2
+-- Reconciles the Pi-hole adlist table from vars/main.yml, identically on blue
+-- and green so both backends block the same set regardless of which one dnsdist
+-- picks for a given query.
+--
+-- Kept separate from gravity-config.sql.j2 because a change here has to be
+-- followed by `pihole -g`, which re-downloads every list. Everything cheap to
+-- apply lives in the other template.
+--
+-- Do not edit on the host; changes will be overwritten on the next deploy.
+
+BEGIN TRANSACTION;
+
+-- The tr_adlist_add trigger files every new adlist under group 0 (Default),
+-- which is the intended placement for all of them today. Per-group adlist
+-- assignment would go here if a future group ever needs a different set.
+{% for adlist in pihole_adlists | default([]) %}
+INSERT INTO adlist (address, enabled, comment)
+VALUES ('{{ adlist.address | replace("'", "''") }}',
+        {{ 1 if adlist.enabled | default(true) else 0 }},
+        '{{ adlist.comment | default('') | replace("'", "''") }}')
+ON CONFLICT(address, type) DO UPDATE SET
+    enabled = excluded.enabled,
+    comment = excluded.comment;
+
+{% endfor %}
+{% if pihole_adlists_prune | default(false) and pihole_adlists | default([]) | length > 0 %}
+-- pihole_adlists_prune is enabled: adlists absent from vars/main.yml are removed.
+DELETE FROM adlist WHERE address NOT IN (
+{% for adlist in pihole_adlists %}
+    '{{ adlist.address | replace("'", "''") }}'{{ "," if not loop.last else "" }}
+{% endfor %}
+);
+{% endif %}
+
+COMMIT;

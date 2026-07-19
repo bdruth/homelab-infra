@@ -168,31 +168,66 @@
       when: pihole_toml.changed and not (parse_arp_cache | default(false) | bool)
       changed_when: true
 
-    - name: Install managed gravity client/group SQL
+    ## Superseded by ansible-gravity-config.sql when the template's scope widened
+    ## from clients to all cheap-to-apply gravity state.
+    - name: Remove superseded gravity client SQL
+      ansible.builtin.file:
+        path: /etc/pihole/ansible-gravity-clients.sql
+        state: absent
+
+    - name: Install managed gravity group/client/domainlist SQL
       ansible.builtin.template:
-        src: gravity-clients.sql.j2
-        dest: /etc/pihole/ansible-gravity-clients.sql
+        src: gravity-config.sql.j2
+        dest: /etc/pihole/ansible-gravity-config.sql
         owner: pihole
         group: root
         mode: "0640"
-      register: gravity_clients_sql
+      register: gravity_config_sql
+
+    - name: Install managed gravity adlist SQL
+      ansible.builtin.template:
+        src: gravity-adlists.sql.j2
+        dest: /etc/pihole/ansible-gravity-adlists.sql
+        owner: pihole
+        group: root
+        mode: "0640"
+      register: gravity_adlists_sql
 
     ## Applied inline rather than via handlers: the S3/teleporter tasks later in
     ## this play are failure-prone, and handlers would silently never fire, leaving
     ## per-client policy unapplied. Matches the inline restart idiom used above.
-    - name: Apply managed gravity client/group configuration # noqa: no-handler
+    - name: Apply managed gravity group/client/domainlist configuration # noqa: no-handler
       ansible.builtin.shell: >
         set -o pipefail &&
         pihole-FTL sqlite3 /etc/pihole/gravity.db
-        < /etc/pihole/ansible-gravity-clients.sql
+        < /etc/pihole/ansible-gravity-config.sql
       args:
         executable: /bin/bash
-      when: gravity_clients_sql.changed
+      when: gravity_config_sql.changed
       changed_when: true
 
-    - name: Reload Pi-hole lists to pick up group changes # noqa: no-handler
+    - name: Apply managed gravity adlist configuration # noqa: no-handler
+      ansible.builtin.shell: >
+        set -o pipefail &&
+        pihole-FTL sqlite3 /etc/pihole/gravity.db
+        < /etc/pihole/ansible-gravity-adlists.sql
+      args:
+        executable: /bin/bash
+      when: gravity_adlists_sql.changed
+      changed_when: true
+
+    ## Adding an adlist row only records the URL; the domains do not exist until
+    ## gravity downloads them. Gated on the adlist template alone because this
+    ## re-downloads every list and takes minutes.
+    - name: Rebuild gravity to fetch adlist changes # noqa: no-handler
+      ansible.builtin.command: pihole -g
+      when: gravity_adlists_sql.changed
+      changed_when: true
+
+    ## `pihole -g` reloads lists itself, so this only runs when gravity did not.
+    - name: Reload Pi-hole lists to pick up group/domainlist changes # noqa: no-handler
       ansible.builtin.command: pihole reloadlists
-      when: gravity_clients_sql.changed
+      when: gravity_config_sql.changed and not gravity_adlists_sql.changed
       changed_when: true
 
     ## Chicken & egg: on initial setup, pihole needs teleporter backup restored to provide these values ...

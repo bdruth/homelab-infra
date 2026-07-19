@@ -31,6 +31,32 @@ pihole_clients: []
 ## When true, clients absent from pihole_clients are deleted on every deploy.
 pihole_clients_prune: false
 
+## Blocklists. Any change here forces a `pihole -g` rebuild on the next deploy,
+## which re-downloads every list and takes minutes.
+pihole_adlists:
+  - address: "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"
+    comment: "StevenBlack unified hosts (Pi-hole default)"
+##   - address: "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/multi.txt"
+##     comment: "HaGeZi Multi Normal"
+
+## When true, adlists absent from pihole_adlists are deleted on every deploy.
+pihole_adlists_prune: false
+
+## Allow/deny entries. `type`: 0 = exact allow, 1 = exact deny,
+## 2 = regex allow, 3 = regex deny.
+pihole_domainlist: []
+##   - { type: 1, domain: "ads.example.com", comment: "example deny" }
+##   - { type: 3, domain: "(^|\\.)ads\\.example\\.com$", comment: "example regex deny" }
+##   - { type: 0, domain: "needed.example.com", enabled: false, comment: "example allow, disabled" }
+
+## Entries to remove, by (domain, type). Use this to retire an entry deliberately
+## while pihole_domainlist_prune stays off.
+pihole_domainlist_absent: []
+##   - { type: 1, domain: "retired.example.com" }
+
+## When true, entries absent from pihole_domainlist are deleted on every deploy.
+pihole_domainlist_prune: false
+
 dns_records:
   - hostname: server1.example.com
     address:

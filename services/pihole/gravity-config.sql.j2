@@ -1,0 +1,83 @@
+-- Managed by Ansible: services/pihole/gravity-config.sql.j2
+-- Reconciles Pi-hole group / client / client_by_group / domainlist state from
+-- vars/main.yml. Applied identically to blue and green so policy does not depend
+-- on which backend dnsdist happens to select for a given query.
+--
+-- Adlists live in gravity-adlists.sql.j2 instead: applying them needs a full
+-- `pihole -g` rebuild (minutes, re-downloads every list), while everything here
+-- only needs `pihole reloadlists`. Splitting by cost keeps allowlisting a false
+-- positive from forcing a gravity rebuild on both hosts.
+--
+-- Do not edit on the host; changes will be overwritten on the next deploy.
+
+BEGIN TRANSACTION;
+
+{% for group in pihole_groups | default([]) %}
+INSERT INTO "group" (name, enabled, description)
+VALUES ('{{ group.name | replace("'", "''") }}',
+        {{ 1 if group.enabled | default(true) else 0 }},
+        '{{ group.description | default('') | replace("'", "''") }}')
+ON CONFLICT(name) DO UPDATE SET
+    enabled     = excluded.enabled,
+    description = excluded.description;
+
+{% endfor %}
+{% for client in pihole_clients | default([]) %}
+INSERT INTO client (ip, comment)
+VALUES ('{{ client.ip | replace("'", "''") }}',
+        '{{ client.comment | default('') | replace("'", "''") }}')
+ON CONFLICT(ip) DO UPDATE SET comment = excluded.comment;
+
+-- The tr_client_add trigger force-adds every new client to group 0 (Default),
+-- so memberships are cleared and rebuilt rather than merged.
+DELETE FROM client_by_group
+WHERE client_id = (SELECT id FROM client WHERE ip = '{{ client.ip | replace("'", "''") }}');
+
+{% for group_name in client.groups | default(['Default']) %}
+INSERT OR IGNORE INTO client_by_group (client_id, group_id)
+SELECT c.id, g.id
+FROM client c, "group" g
+WHERE c.ip = '{{ client.ip | replace("'", "''") }}'
+  AND g.name = '{{ group_name | replace("'", "''") }}';
+{% endfor %}
+
+{% endfor %}
+{% if pihole_clients_prune | default(false) and pihole_clients | default([]) | length > 0 %}
+-- pihole_clients_prune is enabled: clients absent from vars/main.yml are removed.
+DELETE FROM client WHERE ip NOT IN (
+{% for client in pihole_clients %}
+    '{{ client.ip | replace("'", "''") }}'{{ "," if not loop.last else "" }}
+{% endfor %}
+);
+{% endif %}
+
+-- Allow/deny entries. `type` follows Pi-hole's encoding:
+--   0 = exact allow   1 = exact deny   2 = regex allow   3 = regex deny
+-- UNIQUE(domain, type) means the same string may exist under several types;
+-- retiring an entry therefore has to name its type, hence pihole_domainlist_absent.
+{% for entry in pihole_domainlist | default([]) %}
+INSERT INTO domainlist (type, domain, enabled, comment)
+VALUES ({{ entry.type }},
+        '{{ entry.domain | replace("'", "''") }}',
+        {{ 1 if entry.enabled | default(true) else 0 }},
+        '{{ entry.comment | default('') | replace("'", "''") }}')
+ON CONFLICT(domain, type) DO UPDATE SET
+    enabled = excluded.enabled,
+    comment = excluded.comment;
+
+{% endfor %}
+{% for entry in pihole_domainlist_absent | default([]) %}
+DELETE FROM domainlist
+WHERE domain = '{{ entry.domain | replace("'", "''") }}' AND type = {{ entry.type }};
+
+{% endfor %}
+{% if pihole_domainlist_prune | default(false) and pihole_domainlist | default([]) | length > 0 %}
+-- pihole_domainlist_prune is enabled: entries absent from vars/main.yml are removed.
+DELETE FROM domainlist WHERE (domain, type) NOT IN (
+{% for entry in pihole_domainlist %}
+    ('{{ entry.domain | replace("'", "''") }}', {{ entry.type }}){{ "," if not loop.last else "" }}
+{% endfor %}
+);
+{% endif %}
+
+COMMIT;
