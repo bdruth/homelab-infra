@@ -1,6 +1,17 @@
 
-dofile('/etc/dnsdist/orderedwrandom.lua')
-setServerPolicyLua("orderedwrandom", orderedwrandom)
+-- Built-in equivalent of the custom orderedwrandom policy this replaced:
+-- selects the lowest-`order` tier of servers that can accept queries, then
+-- weighted-random within it. The "Untag" filtering is inert here -- it only
+-- excludes backends tagged by a previous DNSResponse:restart(), and no tags
+-- are set. Available since 2.0.0.
+--
+-- Using the built-in removes the 2.1 breaking change, where custom Lua
+-- policies must return an index into the servers array rather than a server
+-- object. The old policy delegated to wrandom over a *filtered subset*, so
+-- under 2.1 it would have returned an index into that subset while dnsdist
+-- read it as an index into the full array -- selecting a down backend
+-- precisely when the fallback tier was needed.
+setServerPolicy(orderedWrandUntag)
 {% for addr in dns_ip_addrs %}
 newServer({address="{{ addr }}", name="dns{{ loop.index }}", order=1, mustResolve=true, tcpRecvTimeout=10, tcpSendTimeout=10, retries=5, useClientSubnet=true, healthCheckMode="lazy"})
 {% endfor %}

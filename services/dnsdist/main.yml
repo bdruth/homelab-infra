@@ -8,27 +8,76 @@
     dnsdist_conf_path: /etc/dnsdist/dnsdist.conf
     custom_lua_path: /etc/dnsdist
     dnsdist_console_key: "{{ lookup('env', 'DNSDIST_CONSOLE_KEY') }}"
+    dnsdist_repo_suite: "{{ ansible_facts.distribution_release }}-dnsdist-{{ dnsdist_repo_version }}"
 
   tasks:
     - name: Reconfigure Timezone Data
       ansible.builtin.shell: timedatectl set-timezone America/Chicago && dpkg-reconfigure -f noninteractive tzdata
       changed_when: false
 
-    - name: Update apt cache
-      ansible.builtin.apt:
-        update_cache: true
-
-    - name: Install APT packages
+    - name: Install packages needed before the PowerDNS repo can be added
       ansible.builtin.apt:
         pkg:
-          - dnsdist
-          - net-tools
-          - rsyslog
+          - ca-certificates
+          - gnupg
           # dig is used by the VRRP health check and the rolling-restart
           # probes, so it must be present regardless of keepalived being
           # enabled on this node.
           - bind9-dnsutils
+          - net-tools
+          - rsyslog
         state: present
+
+    ## Debian bookworm ships dnsdist 1.7.3, which is EOL and old enough that
+    ## healthCheckMode/lazyHealthCheckMode are silently ignored -- the backends
+    ## have been on active health checks despite the config asking for lazy.
+    ## There is no dnsdist in bookworm-backports, so the upstream PowerDNS repo
+    ## is the only supported path. Repos are per-major, so moving to a later
+    ## major means changing dnsdist_repo_version, not just an apt upgrade.
+    - name: Create apt keyrings directory
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install the PowerDNS repository signing key
+      ansible.builtin.get_url:
+        url: https://repo.powerdns.com/FD380FBB-pub.asc
+        dest: /etc/apt/keyrings/dnsdist.asc
+        owner: root
+        group: root
+        mode: "0644"
+      register: pdns_repo_key
+
+    - name: Configure the PowerDNS dnsdist repository
+      ansible.builtin.copy:
+        dest: /etc/apt/sources.list.d/dnsdist.list
+        content: |
+          deb [signed-by=/etc/apt/keyrings/dnsdist.asc] http://repo.powerdns.com/debian {{ dnsdist_repo_suite }} main
+        owner: root
+        group: root
+        mode: "0644"
+      register: pdns_repo_list
+
+    ## Without the pin, apt would prefer Debian's older dnsdist on some
+    ## resolutions and could silently downgrade the package.
+    - name: Pin dnsdist to the PowerDNS repository
+      ansible.builtin.copy:
+        dest: /etc/apt/preferences.d/dnsdist
+        content: |
+          Package: dnsdist*
+          Pin: origin repo.powerdns.com
+          Pin-Priority: 600
+        owner: root
+        group: root
+        mode: "0644"
+      register: pdns_repo_pin
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
 
     - name: Make sure dnsdist.conf destination dir exists
       ansible.builtin.file:
@@ -36,34 +85,30 @@
         state: directory
         mode: "0755"
 
-    - name: Create dnsdist.conf
+    ## Everything below decides whether this converge will disrupt dnsdist, and
+    ## drains the VIP first if so. A package upgrade restarts dnsdist as part of
+    ## dpkg, so draining only on config change -- as this used to -- would leave
+    ## the upgrade itself as an uncontrolled outage on the node holding the VIP.
+    # noqa package-latest: check_mode only -- previews whether the pinned
+    # major has a newer package, it never installs anything.
+    - name: Check whether a dnsdist package change is pending # noqa: package-latest
+      ansible.builtin.apt:
+        name: dnsdist
+        state: latest
+        update_cache: false
+      check_mode: true
+      register: dnsdist_pkg_preview
+
+    - name: Determine whether dnsdist.conf would change
       ansible.builtin.template:
         src: dnsdist.conf.j2
         dest: "{{ dnsdist_conf_path }}"
         owner: root
         group: root
         mode: "0644"
-      register: dnsdist_conf
+      check_mode: true
+      register: dnsdist_conf_preview
 
-    - name: Make sure custom lua path dir exists
-      ansible.builtin.file:
-        path: "{{ custom_lua_path }}"
-        state: directory
-        mode: "0755"
-
-    - name: Create orderedwrandom Lua policy
-      ansible.builtin.copy:
-        src: orderedwrandom.lua
-        dest: "{{ custom_lua_path }}/orderedwrandom.lua"
-        owner: root
-        group: root
-        mode: "0644"
-      register: orderedwrandom_lua
-
-    ## Rolling restart. Restarting dnsdist on the node holding the VIP is an
-    ## uncontrolled outage: the VIP stays put while dnsdist is down, and the
-    ## health check only reacts after `fall` consecutive failures (~4s). Moving
-    ## the VIP off this node first turns that into a controlled ~0.6s handover.
     - name: Determine whether this node currently holds the VIP
       ansible.builtin.command: ip -4 addr show dev {{ vrrp_interface | default('eth0') }}
       register: vip_addr_check
@@ -72,7 +117,8 @@
 
     - name: Set rolling-restart facts
       ansible.builtin.set_fact:
-        dnsdist_needs_restart: "{{ dnsdist_conf.changed or orderedwrandom_lua.changed }}"
+        dnsdist_needs_restart: >-
+          {{ dnsdist_pkg_preview.changed or dnsdist_conf_preview.changed }}
         holds_vip: >-
           {{ (keepalived_enabled | default(false) | bool)
              and (vrrp_vip | default('') in (vip_addr_check.stdout | default(''))) }}
@@ -88,7 +134,7 @@
       failed_when: peer_health.stdout is not search('\d+\.\d+\.\d+\.\d+')
       when: holds_vip | bool and dnsdist_needs_restart | bool
 
-    - name: Drain the VIP to the peer before restarting dnsdist
+    - name: Drain the VIP to the peer before disrupting dnsdist
       ansible.builtin.service:
         name: keepalived
         state: stopped
@@ -104,11 +150,48 @@
       until: vip_drained.stdout is search('\d+\.\d+\.\d+\.\d+')
       when: holds_vip | bool and dnsdist_needs_restart | bool
 
+    ## state=latest within the pinned major, so security patches land without
+    ## needing a repo change. Moving major is a deliberate dnsdist_repo_version
+    ## edit.
+    ## noqa package-latest: intentional. The apt pin constrains this to the
+    ## dnsdist_repo_version major, so `latest` only ever moves within a train --
+    ## it cannot jump majors. 2.0.x has shipped several CVE fixes, and a
+    ## resolver on the network edge should pick those up without waiting for
+    ## someone to bump a version pin. The rolling-drain above makes the
+    ## resulting restart safe.
+    ##
+    ## Accepted trade-off: if a patch release lands between converging node 1
+    ## and node 2, the pair can sit on different patch versions until the next
+    ## run. Same train, and preferable to delaying security fixes.
+    - name: Install/upgrade dnsdist from the PowerDNS repository # noqa: package-latest
+      ansible.builtin.apt:
+        name: dnsdist
+        state: latest
+        update_cache: false
+      register: dnsdist_pkg
+
+    - name: Create dnsdist.conf
+      ansible.builtin.template:
+        src: dnsdist.conf.j2
+        dest: "{{ dnsdist_conf_path }}"
+        owner: root
+        group: root
+        mode: "0644"
+      register: dnsdist_conf
+
+    ## The custom orderedwrandom.lua policy was replaced by the built-in
+    ## orderedWrandUntag; remove the stale file so it cannot be dofile'd by an
+    ## older config left behind on the host.
+    - name: Remove the superseded custom Lua policy
+      ansible.builtin.file:
+        path: "{{ custom_lua_path }}/orderedwrandom.lua"
+        state: absent
+
     - name: Restart dnsdist
       ansible.builtin.service:
         name: dnsdist
         state: restarted
-      when: dnsdist_needs_restart | bool
+      when: dnsdist_needs_restart | bool or dnsdist_conf.changed
 
     - name: Wait for dnsdist to resolve again before taking the VIP back
       ansible.builtin.command: >-
