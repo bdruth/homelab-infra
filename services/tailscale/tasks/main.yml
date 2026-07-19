@@ -1,0 +1,11 @@
+---
+# Main tasks for installing Tailscale
+
+## No userspace-networking override here, unlike dnsdist's copy of this role:
+## this is a real host with a real TUN device, not an LXC container, so the
+## default kernel networking mode applies.
+- name: Install and configure Tailscale
+  ansible.builtin.include_role:
+    name: artis3n.tailscale.machine
+  vars:
+    tailscale_args: "--accept-dns=false"

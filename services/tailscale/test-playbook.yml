@@ -1,0 +1,22 @@
+---
+# Test playbook for Tailscale configuration
+
+- name: Define tailscale group dynamically
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Add host to tailscale_hosts group if it has the role
+      ansible.builtin.group_by:
+        key: "tailscale_hosts"
+      when: "'tailscale' in hostvars[inventory_hostname].get('host_roles', [])"
+      changed_when: false
+
+- name: Validate Tailscale deployment
+  hosts: tailscale_hosts
+  become: true
+  gather_facts: true
+  roles:
+    - tailscale
+  tasks:
+    - name: Import Tailscale test tasks
+      ansible.builtin.import_tasks: "tasks/test.yml"

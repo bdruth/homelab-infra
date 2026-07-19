@@ -1,0 +1,13 @@
+---
+# Test tasks for Tailscale
+
+- name: Check tailscaled service status
+  ansible.builtin.systemd:
+    name: tailscaled
+  register: tailscaled_status
+
+- name: Assert tailscaled service is active
+  ansible.builtin.assert:
+    that:
+      - tailscaled_status.status.ActiveState == "active"
+    fail_msg: "tailscaled.service is not active"

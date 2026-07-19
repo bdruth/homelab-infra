@@ -92,8 +92,8 @@ jobs:
             # no-op. Roles owned by infrastructure-deploy.yml (pihole, dnsdist)
             # legitimately match nothing here.
             git diff --name-only "$DIFF_RANGE" \
-              | { grep -E "^services/(disk-monitoring|drone|fission|gitea|microk8s|nats|nut|nvidia-gpu|watchtower|coder)" || true; } \
-              | sed -E 's#^services/(disk-monitoring|drone-runner-exec|drone|fission|gitea-act-runner|gitea|microk8s|nats|nut|nvidia-gpu|watchtower|coder).*#services/\1/test-playbook.yml#' \
+              | { grep -E "^services/(disk-monitoring|drone-runner-exec|drone|fission|gitea-act-runner|gitea|microk8s|nats|nut|nvidia-gpu|tailscale|watchtower|coder)" || true; } \
+              | sed -E 's#^services/(disk-monitoring|drone-runner-exec|drone|fission|gitea-act-runner|gitea|microk8s|nats|nut|nvidia-gpu|tailscale|watchtower|coder).*#services/\1/test-playbook.yml#' \
               | sort -u > .deploy_playbooks
 
             # Count how many playbooks will be deployed

@@ -1,0 +1,22 @@
+[PARSER]
+    Name        containerd_plain
+    Format      regex
+    Regex       ^(?<time>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{9}[+-]\d{2}:\d{2})\s(?<stream>stdout|stderr)\s[F|P]\s(?<log>.*)$
+    Time_Key    time
+    Time_Format %Y-%m-%dT%H:%M:%S.%L%z
+    Time_Keep   On
+
+[PARSER]
+    Name        docker
+    Format      json
+    Time_Key    time
+    Time_Format %Y-%m-%dT%H:%M:%S.%NZ
+    Time_Keep   On
+    Decode_Field_as   json   log
+
+[PARSER]
+    Name        syslog
+    Format      regex
+    Regex       ^(?<time>[^ ]* [^ ]* [^ ]*) (?<host>[^ ]*) (?<ident>[a-zA-Z0-9_\.\/\-]*)(?:\[(?<pid>[0-9]+)\])?(?:<(?<priority>[0-9]+)>)?(?:[^:]*): *(?<message>.*)$
+    Time_Key    time
+    Time_Format %b %d %H:%M:%S

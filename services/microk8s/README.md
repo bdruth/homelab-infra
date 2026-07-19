@@ -44,6 +44,16 @@ This Ansible role installs and configures MicroK8s, a lightweight Kubernetes dis
 | `microk8s_syslog_port` | `514` | Syslog server port |
 | `microk8s_syslog_protocol` | `"udp"` | Syslog protocol |
 
+### Fluent Bit Logging
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `microk8s_fluentbit_enabled` | `false` | Deploy the fluent-bit DaemonSet |
+| `microk8s_fluentbit_namespace` | `"logging"` | Namespace for fluent-bit resources |
+| `microk8s_fluentbit_image` | `"fluent/fluent-bit:4.0.5"` | Container image for fluent-bit |
+| `microk8s_fluentbit_gelf_host` | `"graylog-direct.cusack-ruth.name"` | GELF output host |
+| `microk8s_fluentbit_gelf_port` | `12201` | GELF output port |
+
 ### Network Configuration
 
 | Variable | Default | Description |

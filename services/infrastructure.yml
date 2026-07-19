@@ -21,6 +21,7 @@
         _run_nats: "{{ 'nats' in host_roles | default([]) }}"
         _run_coder: "{{ 'coder' in host_roles | default([]) }}"
         _run_matterbridge: "{{ 'matterbridge' in host_roles | default([]) }}"
+        _run_tailscale: "{{ 'tailscale' in host_roles | default([]) }}"
 
   roles:
     - role: nut
@@ -47,3 +48,7 @@
       when: _run_fission | bool
     - role: coder
       when: _run_coder | bool
+    # Runs last: an expired/invalid tailscale_authkey should not block any
+    # other role's provisioning on this host.
+    - role: tailscale
+      when: _run_tailscale | bool

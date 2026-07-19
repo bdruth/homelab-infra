@@ -91,6 +91,23 @@ fission_chart_values:
 
 This configures Fission to use NATS for message queue triggers, enabling event-driven serverless functions.
 
+## KEDA Integration
+
+KEDA is installed alongside Fission when `fission_keda_enabled` is `true`, because it backs `mqtrigger-keda`'s autoscaling for Fission's message queue triggers.
+
+```yaml
+fission_keda_enabled: true
+keda_chart_repo_name: kedacore
+keda_chart_repo_url: https://kedacore.github.io/charts
+keda_chart_name: keda
+keda_chart_version: "2.17.2"
+keda_release_name: keda
+keda_namespace: keda
+keda_chart_values: {}
+```
+
+`keda_chart_version` is pinned rather than left empty: KEDA was adopted from a pre-existing manual `helm install`, so it tracks the version already running instead of silently upgrading.
+
 ## Usage Example
 
 ### Basic Installation
