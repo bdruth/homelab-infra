@@ -23,7 +23,7 @@
   until: base_package_install is success
   retries: 3
   delay: 5
-  ignore_errors: "{{ ansible_facts['check_mode'] }}"
+  ignore_errors: "{{ ansible_check_mode }}"
 
 - name: Remove docker-compose package from apt
   ansible.builtin.apt:
