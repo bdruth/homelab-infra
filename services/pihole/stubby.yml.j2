@@ -1,0 +1,49 @@
+# Managed by Ansible: services/pihole/stubby.yml.j2
+#
+# Local DNS-over-TLS forwarder. Pi-hole is dnsmasq-derived and has no native
+# DoT/DoH, so without this the Pi-hole -> NextDNS hop -- which carries all
+# normal query traffic -- travels in cleartext.
+#
+# stubby rather than cloudflared or dnscrypt-proxy:
+#   - cloudflared's proxy-dns was deprecated in Nov 2025 and stopped working
+#     for installations updated after 2026-02-02.
+#   - dnscrypt-proxy is only packaged from Debian 13; on bookworm it would be a
+#     manually managed binary.
+#   - stubby is in bookworm, and crucially has no bootstrap dependency (below).
+
+resolution_type: GETDNS_RESOLUTION_STUB
+
+dns_transport_list:
+  - GETDNS_TRANSPORT_TLS
+
+# Refuse to fall back to cleartext. Without this a handshake failure would
+# silently downgrade to plain 53, which is the failure mode this whole change
+# exists to remove.
+tls_authentication: GETDNS_AUTHENTICATION_REQUIRED
+
+# Pad queries so on-path observers cannot infer domains from query size.
+tls_query_padding_blocksize: 128
+
+# Do not forward client subnet upstream. ECS has already done its job by this
+# point -- dnsdist attaches it and FTL consumes it for client identification
+# one hop earlier -- so sending it on would only publish internal RFC1918
+# addresses and LAN topology to the upstream resolver.
+edns_client_subnet_private: 1
+
+round_robin_upstreams: 1
+idle_timeout: 10000
+
+listen_addresses:
+{% for addr in stubby_listen_addresses %}
+  - {{ addr }}@{{ stubby_listen_port }}
+{% endfor %}
+
+# address_data is a literal IP and tls_auth_name is a certificate-validation
+# input, NOT a lookup. stubby therefore starts with no working DNS available,
+# which matters because these Pi-holes are the only resolvers on the network --
+# a forwarder needing to resolve its own upstream would deadlock at boot.
+upstream_recursive_servers:
+{% for up in stubby_upstreams %}
+  - address_data: {{ up.address }}
+    tls_auth_name: "{{ up.tls_auth_name }}"
+{% endfor %}

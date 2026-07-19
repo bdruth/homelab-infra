@@ -98,6 +98,49 @@
         mode: "0644"
       register: local_ttf_conf
 
+    ## stubby must be installed, configured and listening BEFORE pihole.toml is
+    ## templated, since that template points Pi-hole's upstream at it. Reversing
+    ## the order would leave Pi-hole forwarding to a closed port.
+    - name: Install stubby (local DNS-over-TLS forwarder)
+      ansible.builtin.apt:
+        pkg:
+          - stubby
+        state: present
+      when: stubby_enabled | default(false) | bool
+
+    - name: Configure stubby
+      ansible.builtin.template:
+        src: stubby.yml.j2
+        dest: /etc/stubby/stubby.yml
+        owner: root
+        group: root
+        mode: "0644"
+      when: stubby_enabled | default(false) | bool
+      register: stubby_conf
+
+    ## The packaged default listens on 127.0.0.1@53, which pihole-FTL already
+    ## holds, so the service fails to bind until our config lands. Restart
+    ## unconditionally on config change and ensure it is enabled.
+    - name: Enable and restart stubby # noqa: no-handler
+      ansible.builtin.service:
+        name: stubby
+        state: restarted
+        enabled: true
+      when:
+        - stubby_enabled | default(false) | bool
+        - stubby_conf.changed
+
+    - name: Verify stubby resolves over TLS before Pi-hole depends on it
+      ansible.builtin.command: >-
+        dig +short +timeout=3 +tries=2
+        @127.0.0.1 -p {{ stubby_listen_port }} github.com A
+      register: stubby_probe
+      changed_when: false
+      retries: 5
+      delay: 3
+      until: stubby_probe.stdout | regex_search('^\d+\.\d+\.\d+\.\d+$', multiline=True)
+      when: stubby_enabled | default(false) | bool
+
     - name: Install /etc/pihole/pihole.toml
       ansible.builtin.template:
         src: pihole.toml.j2
