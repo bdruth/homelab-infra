@@ -19,6 +19,7 @@ name: Services Deployment Workflow
       # service still triggers this workflow.
       - "!services/pihole/**"
       - "!services/dnsdist/**"
+      - "!services/matterbridge/**"
       - "setup-ansible.sh"
       - "services-deploy.sh"
       - "services-pkgx-deploy.sh"
@@ -56,7 +57,14 @@ jobs:
         id: check_changes
         run: |
           echo "Checking for relevant file changes..."
-          if git diff --name-only HEAD~1 | grep -E "^(services/|setup-services\.sh|services-deploy\.sh|services-pkgx-deploy\.sh|services-deploy\.yml)"; then
+          BEFORE_SHA="${{ github.event.before }}"
+          AFTER_SHA="${{ github.event.after || github.sha }}"
+          if [ -z "$BEFORE_SHA" ] || [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            DIFF_RANGE="HEAD~1"
+          else
+            DIFF_RANGE="$BEFORE_SHA..$AFTER_SHA"
+          fi
+          if git diff --name-only "$DIFF_RANGE" | grep -E "^(services/|setup-ansible\.sh|services-deploy\.sh|services-pkgx-deploy\.sh|services-deploy\.yml)"; then
             echo "✅ Services files changed, proceeding with deployment"
             # Create a file to track which playbooks should be deployed
             rm -f .deploy_playbooks 2>/dev/null || true
@@ -65,11 +73,11 @@ jobs:
             echo "Detecting which roles were changed..."
 
             # Check for changes in common files that should trigger full deployment
-            if git diff --name-only HEAD~1 | \
-               grep -E "^(services/inventory\.yml|services/infrastructure(-test)?\.yml|services/ansible\.cfg|setup-services\.sh|services-deploy\.sh)"; then
+            if git diff --name-only "$DIFF_RANGE" | \
+               grep -E "^(services/inventory\.yml|services/infrastructure(-test)?\.yml|services/ansible\.cfg|setup-ansible\.sh|services-deploy\.sh)"; then
               echo "✅ Common services files changed, will run full deployment"
               echo "FULL_DEPLOYMENT" > .deploy_playbooks
-              echo "::set-output name=deploy_full::yes"
+              echo "deploy_full=yes" >> "$GITHUB_OUTPUT"
               exit 0
             fi
             # This list must stay in sync with the roles imported by
@@ -83,7 +91,7 @@ jobs:
             # fail the step before the PLAYBOOK_COUNT check below can report the
             # no-op. Roles owned by infrastructure-deploy.yml (pihole, dnsdist)
             # legitimately match nothing here.
-            git diff --name-only HEAD~1 \
+            git diff --name-only "$DIFF_RANGE" \
               | { grep -E "^services/(disk-monitoring|drone|fission|gitea|microk8s|nats|nut|nvidia-gpu|watchtower|coder)" || true; } \
               | sed -E 's#^services/(disk-monitoring|drone-runner-exec|drone|fission|gitea-act-runner|gitea|microk8s|nats|nut|nvidia-gpu|watchtower|coder).*#services/\1/test-playbook.yml#' \
               | sort -u > .deploy_playbooks
@@ -92,7 +100,7 @@ jobs:
             PLAYBOOK_COUNT=$(wc -l < .deploy_playbooks)
             if [ "$PLAYBOOK_COUNT" -gt 0 ]; then
               echo "✅ Will deploy ${PLAYBOOK_COUNT} role(s)"
-              echo "::set-output name=deploy_partial::yes"
+              echo "deploy_partial=yes" >> "$GITHUB_OUTPUT"
             else
               echo "ℹ️ No specific roles changed"
             fi
