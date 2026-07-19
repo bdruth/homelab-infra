@@ -62,6 +62,15 @@
         state: restarted
       when: dnsdist_conf.changed or orderedwrandom_lua.changed
 
+    ## The restart above is conditional on config change, so a dnsdist that is
+    ## stopped for any other reason stays stopped through a converge. On a node
+    ## holding the DNS VIP that is precisely the state we cannot leave behind.
+    - name: Ensure dnsdist is enabled and running
+      ansible.builtin.service:
+        name: dnsdist
+        state: started
+        enabled: true
+
     # - name: Print all available facts
     #   ansible.builtin.debug:
     #     var: ansible_facts

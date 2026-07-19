@@ -17,8 +17,24 @@ readonly PROBE="{{ keepalived_check_domain | default('github.com') }}"
 # failing is not decisive; keepalived's `fall` count requires consecutive
 # failures before acting on it.
 answer=$(dig +short +time=1 +tries=1 @127.0.0.1 "${PROBE}" A 2>/dev/null)
+rc=$?
 
-if [[ -z "${answer}" ]]; then
+# Two checks, because neither alone is sufficient:
+#
+#   1. dig's exit code. Catches "nothing listening" (rc=9). Testing the output
+#      alone does NOT catch this: `dig +short` writes "communications error to
+#      127.0.0.1#53: connection refused" to STDOUT, not stderr, so a dead
+#      dnsdist yields a non-empty answer and reads as healthy.
+#
+#   2. That the output actually contains an A record. dig exits 0 whenever it
+#      received a response at all, including SERVFAIL -- which is the exact
+#      failure this check exists to detect, since clients never fail away
+#      from a resolver that answers SERVFAIL.
+if ((rc != 0)); then
+    exit 1
+fi
+
+if ! grep -Eq '^[0-9]{1,3}(\.[0-9]{1,3}){3}$' <<<"${answer}"; then
     exit 1
 fi
 
