@@ -24,6 +24,10 @@
           - dnsdist
           - net-tools
           - rsyslog
+          # dig is used by the VRRP health check and the rolling-restart
+          # probes, so it must be present regardless of keepalived being
+          # enabled on this node.
+          - bind9-dnsutils
         state: present
 
     - name: Make sure dnsdist.conf destination dir exists
@@ -56,11 +60,75 @@
         mode: "0644"
       register: orderedwrandom_lua
 
+    ## Rolling restart. Restarting dnsdist on the node holding the VIP is an
+    ## uncontrolled outage: the VIP stays put while dnsdist is down, and the
+    ## health check only reacts after `fall` consecutive failures (~4s). Moving
+    ## the VIP off this node first turns that into a controlled ~0.6s handover.
+    - name: Determine whether this node currently holds the VIP
+      ansible.builtin.command: ip -4 addr show dev {{ vrrp_interface | default('eth0') }}
+      register: vip_addr_check
+      changed_when: false
+      when: keepalived_enabled | default(false) | bool
+
+    - name: Set rolling-restart facts
+      ansible.builtin.set_fact:
+        dnsdist_needs_restart: "{{ dnsdist_conf.changed or orderedwrandom_lua.changed }}"
+        holds_vip: >-
+          {{ (keepalived_enabled | default(false) | bool)
+             and (vrrp_vip | default('') in (vip_addr_check.stdout | default(''))) }}
+
+    ## Refuse to drain into a void. If the peer cannot resolve, moving the VIP
+    ## there would convert a brief restart into a real outage -- better to fail
+    ## the deploy loudly and leave the working resolver alone.
+    - name: Verify the peer is serving before draining the VIP to it
+      ansible.builtin.command: >-
+        dig +short +time=2 +tries=2 @{{ vrrp_unicast_peer }} {{ keepalived_check_domain | default('github.com') }} A
+      register: peer_health
+      changed_when: false
+      failed_when: peer_health.stdout is not search('\d+\.\d+\.\d+\.\d+')
+      when: holds_vip | bool and dnsdist_needs_restart | bool
+
+    - name: Drain the VIP to the peer before restarting dnsdist
+      ansible.builtin.service:
+        name: keepalived
+        state: stopped
+      when: holds_vip | bool and dnsdist_needs_restart | bool
+
+    - name: Wait for the peer to answer on the VIP
+      ansible.builtin.command: >-
+        dig +short +time=2 +tries=2 @{{ vrrp_vip }} {{ keepalived_check_domain | default('github.com') }} A
+      register: vip_drained
+      changed_when: false
+      retries: 10
+      delay: 2
+      until: vip_drained.stdout is search('\d+\.\d+\.\d+\.\d+')
+      when: holds_vip | bool and dnsdist_needs_restart | bool
+
     - name: Restart dnsdist
       ansible.builtin.service:
         name: dnsdist
         state: restarted
-      when: dnsdist_conf.changed or orderedwrandom_lua.changed
+      when: dnsdist_needs_restart | bool
+
+    - name: Wait for dnsdist to resolve again before taking the VIP back
+      ansible.builtin.command: >-
+        dig +short +time=2 +tries=2 @127.0.0.1 {{ keepalived_check_domain | default('github.com') }} A
+      register: local_dnsdist
+      changed_when: false
+      retries: 10
+      delay: 2
+      until: local_dnsdist.stdout is search('\d+\.\d+\.\d+\.\d+')
+      when: dnsdist_needs_restart | bool
+
+    ## keepalived carries nopreempt, so restarting it here does not snatch the
+    ## VIP back from the peer -- this node rejoins as backup and the VIP stays
+    ## put. That is what keeps a full rolling update to a single handover
+    ## rather than one per node.
+    - name: Restore keepalived after the rolling restart
+      ansible.builtin.service:
+        name: keepalived
+        state: started
+      when: holds_vip | bool and dnsdist_needs_restart | bool
 
     ## The restart above is conditional on config change, so a dnsdist that is
     ## stopped for any other reason stays stopped through a converge. On a node
@@ -92,7 +160,6 @@
       ansible.builtin.apt:
         pkg:
           - keepalived
-          - bind9-dnsutils
         state: present
       when: keepalived_enabled | default(false) | bool
 

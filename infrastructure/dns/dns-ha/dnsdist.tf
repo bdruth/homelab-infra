@@ -46,13 +46,14 @@ module "dns_ha_lxc_2" {
 }
 
 locals {
-  ## Node 1 is MASTER at 150, node 2 BACKUP at 100. The health check carries
+  ## Node 1 takes the VIP at priority 150, node 2 backs it up at 100. Both run
+  ## keepalived in BACKUP state with nopreempt, so whichever node holds the VIP
+  ## keeps it until it actually fails -- see keepalived.conf.j2. The health check carries
   ## weight -60, so an unhealthy master drops to 90 and a healthy backup (100)
   ## takes over -- but if both are unhealthy the master sits at 90 against the
   ## backup's 40 and keeps the VIP, rather than leaving nothing listening.
   vrrp_node_1 = jsonencode({
     keepalived_enabled = true
-    vrrp_state         = "MASTER"
     vrrp_priority      = 150
     vrrp_unicast_src   = var.dns_ip_addr_1
     vrrp_unicast_peer  = var.dns_ip_addr_2
@@ -61,7 +62,6 @@ locals {
 
   vrrp_node_2 = jsonencode({
     keepalived_enabled = true
-    vrrp_state         = "BACKUP"
     vrrp_priority      = 100
     vrrp_unicast_src   = var.dns_ip_addr_2
     vrrp_unicast_peer  = var.dns_ip_addr_1

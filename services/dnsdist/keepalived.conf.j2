@@ -31,11 +31,20 @@ vrrp_script chk_dnsdist {
 }
 
 vrrp_instance DNS {
-    state {{ vrrp_state }}
+    ! Both nodes start as BACKUP and the higher priority one takes the VIP after
+    ! the initial election. nopreempt is only honoured in BACKUP state, hence
+    ! not using state MASTER here.
+    state BACKUP
     interface {{ vrrp_interface | default('eth0') }}
     virtual_router_id {{ vrrp_router_id | default(51) }}
     priority {{ vrrp_priority }}
     advert_int 1
+
+    ! Whoever holds the VIP keeps it until they actually fail. Without this the
+    ! higher-priority node snatches it back the moment it returns, so every
+    ! rolling update costs two handovers instead of one -- and a flapping node
+    ! would drag the VIP with it each time it recovered.
+    nopreempt
 
     unicast_src_ip {{ vrrp_unicast_src }}
     unicast_peer {
