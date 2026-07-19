@@ -39,7 +39,11 @@
       "Bash(ansible-lint:*)",
       "mcp__serena__get_symbols_overview",
       "WebFetch(domain:docs.pi-hole.net)",
-      "mcp__serena__initial_instructions"
+      "mcp__serena__initial_instructions",
+      "Bash(git checkout *)",
+      "Bash(git pull *)",
+      "Bash(git push *)",
+      "Bash(git *)"
     ],
     "deny": []
   }
