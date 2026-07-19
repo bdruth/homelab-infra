@@ -6,6 +6,19 @@ name: Services Deployment Workflow
     branches: [main]
     paths:
       - "services/**"
+      # pihole and dnsdist live under services/ but are deployed by
+      # infrastructure-deploy.yml (via terraform), not by this workflow --
+      # neither appears in infrastructure-test.yml or the services inventory.
+      # Without these exclusions every DNS change produced two runs, one of
+      # which was always a no-op, which makes it easy to misread a red/green
+      # status as belonging to the deploy that mattered.
+      #
+      # Negated patterns are supported by Gitea's workflow pattern engine
+      # (gitea.com/gitea/act, since Gitea 1.19.1) and follow GitHub semantics:
+      # last matching pattern wins, so a commit touching pihole AND another
+      # service still triggers this workflow.
+      - "!services/pihole/**"
+      - "!services/dnsdist/**"
       - "setup-ansible.sh"
       - "services-deploy.sh"
       - "services-pkgx-deploy.sh"
@@ -59,14 +72,20 @@ jobs:
               echo "::set-output name=deploy_full::yes"
               exit 0
             fi
+            # This list must stay in sync with the roles imported by
+            # services/infrastructure-test.yml. fission, microk8s and nats were
+            # missing: they deploy in full runs but a change confined to one of
+            # them matched nothing here, so the run went green having deployed
+            # nothing at all.
+            #
             # Check for each role directory and add to deploy list if changed.
             # grep exits 1 when nothing matches, which under `-e -o pipefail` would
             # fail the step before the PLAYBOOK_COUNT check below can report the
             # no-op. Roles owned by infrastructure-deploy.yml (pihole, dnsdist)
             # legitimately match nothing here.
             git diff --name-only HEAD~1 \
-              | { grep -E "^services/(disk-monitoring|drone|gitea|nut|nvidia-gpu|watchtower|coder)" || true; } \
-              | sed -E 's#^services/(disk-monitoring|drone-runner-exec|drone|gitea-act-runner|gitea|nut|nvidia-gpu|watchtower|coder).*#services/\1/test-playbook.yml#' \
+              | { grep -E "^services/(disk-monitoring|drone|fission|gitea|microk8s|nats|nut|nvidia-gpu|watchtower|coder)" || true; } \
+              | sed -E 's#^services/(disk-monitoring|drone-runner-exec|drone|fission|gitea-act-runner|gitea|microk8s|nats|nut|nvidia-gpu|watchtower|coder).*#services/\1/test-playbook.yml#' \
               | sort -u > .deploy_playbooks
 
             # Count how many playbooks will be deployed
