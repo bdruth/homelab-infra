@@ -45,12 +45,14 @@ set -x
 tofu init -backend-config=config.s3.tfbackend -upgrade -reconfigure
 # tofu plan
 tofu apply --auto-approve
-dns_ha_ip=$(tofu output -raw dns_ha_ip | tail -n 1)
-test_dns "$dns_ha_ip" "api.github.com"
 dns_ha_1_ip=$(tofu output -raw dns_ha_1_ip | tail -n 1)
 test_dns "$dns_ha_1_ip" "api.github.com"
 dns_ha_2_ip=$(tofu output -raw dns_ha_2_ip | tail -n 1)
 test_dns "$dns_ha_2_ip" "api.github.com"
+# Gate on the VIP last: both nodes can be healthy while nobody holds the VIP,
+# and the VIP is the address every client is pointed at.
+dns_vip=$(tofu output -raw dns_vip | tail -n 1)
+test_dns "$dns_vip" "api.github.com"
 
 cd "${SCRIPT_DIR}/infrastructure/matterbridge"
 tofu init -backend-config=config.s3.tfbackend -upgrade -reconfigure

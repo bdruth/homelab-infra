@@ -3,11 +3,6 @@ variable "gw_addr" {
   type        = string
 }
 
-variable "dns_ip_addr" {
-  description = "IP addr for DNS HA node"
-  type        = string
-}
-
 variable "dns_vip_addr" {
   description = "VRRP virtual IP floated across the dns-ha pair. Starts as a scratch address so failover can be validated without .3 depending on it; becomes 192.168.7.3 at cutover."
   type        = string
