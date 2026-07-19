@@ -138,7 +138,10 @@
       changed_when: false
       retries: 5
       delay: 3
-      until: stubby_probe.stdout | regex_search('^\d+\.\d+\.\d+\.\d+$', multiline=True)
+      # `is search(...)` is a test and yields a boolean. The regex_search filter
+      # returns the matched string, which ansible-core 2.21 rejects: "Conditional
+      # result (True) was derived from value of type 'str'".
+      until: stubby_probe.stdout is search('\d+\.\d+\.\d+\.\d+')
       when: stubby_enabled | default(false) | bool
 
     - name: Install /etc/pihole/pihole.toml
