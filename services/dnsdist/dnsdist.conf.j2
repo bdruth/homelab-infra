@@ -4,8 +4,8 @@ setServerPolicyLua("orderedwrandom", orderedwrandom)
 {% for addr in dns_ip_addrs %}
 newServer({address="{{ addr }}", name="dns{{ loop.index }}", order=1, mustResolve=true, tcpRecvTimeout=10, tcpSendTimeout=10, retries=5, useClientSubnet=true, healthCheckMode="lazy"})
 {% endfor %}
-{% for server in static_dns_ip_addrs  %}
-newServer({address="{{ server.address }}", name="{{ server.name }}", order={{ server.order }}, useClientSubnet=true, healthCheckMode="lazy", lazyHealthCheckMode='TimeoutOnly', })
+{% for server in static_dns_ip_addrs %}
+newServer({address="{{ server.address }}", name="{{ server.name }}", order={{ server.order }}, useClientSubnet={{ 'true' if server.use_client_subnet | default(false) else 'false' }}, healthCheckMode="lazy", lazyHealthCheckMode='TimeoutOnly'{% if server.tls | default(false) %}, tls="openssl", subjectName="{{ server.subject_name }}", validateCertificates=true{% endif %}})
 {% endfor %}
 
 pc = newPacketCache(10000, {maxTTL=3600, minTTL=0, temporaryFailureTTL=15, staleTTL=900, dontAge=false})
