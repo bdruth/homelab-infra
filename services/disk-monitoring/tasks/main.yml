@@ -39,12 +39,23 @@
     removes: /etc/apt/sources.list.d/repos_influxdata_com_debian.list
   when: ansible_facts["os_family"] == "Debian"
 
+## The apt_key module shells out to the apt-key binary itself, which newer
+## Debian/Ubuntu releases (e.g. asrock-nuc's) have removed entirely. That
+## produces an "[ERROR]: Task failed: Module failed" pre-execution error
+## that ignore_errors does not reliably suppress, unlike a normal task
+## failure -- so the module must not even be invoked where apt-key is gone.
+- name: Check if apt-key command exists
+  ansible.builtin.command: which apt-key
+  register: apt_key_check
+  changed_when: false
+  failed_when: false
+  when: ansible_facts["os_family"] == "Debian"
+
 - name: Remove old InfluxData apt key
   ansible.builtin.apt_key:
     id: 9D539D90D3328DC7D6C8D3B9D8FF8E1F7DF8B07E
     state: absent
-  ignore_errors: true
-  when: ansible_facts["os_family"] == "Debian"
+  when: ansible_facts["os_family"] == "Debian" and apt_key_check.rc == 0
 
 - name: Add InfluxData repository (signed-by keyring)
   ansible.builtin.copy:
