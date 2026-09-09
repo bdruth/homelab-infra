@@ -32,12 +32,27 @@
     - "{{ wakapi_install_dir }}/bin"
   when: install_wakapi | bool
 
+# check_mode: false so a --check run still reports version drift; the
+# command is read-only and rc != 0 (binary absent) means fresh install.
+- name: Check installed wakapi version
+  ansible.builtin.command: "{{ wakapi_install_dir }}/bin/wakapi --version"
+  register: wakapi_installed_version
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: install_wakapi | bool
+
+- name: Determine whether the wakapi binary needs install/upgrade
+  ansible.builtin.set_fact:
+    wakapi_needs_update: "{{ (wakapi_installed_version.stdout | default('') | trim) != wakapi_version }}"
+  when: install_wakapi | bool
+
 - name: Download wakapi binary
   ansible.builtin.get_url:
     url: "{{ wakapi_download_url }}"
     dest: "/tmp/wakapi_{{ wakapi_version }}.zip"
     mode: "0644"
-  when: install_wakapi | bool
+  when: install_wakapi | bool and wakapi_needs_update | bool
 
 - name: Ensure `unzip` is installed
   ansible.builtin.package:
@@ -45,6 +60,23 @@
     state: present
   when: install_wakapi | bool
 
+- name: Check for existing wakapi service unit
+  ansible.builtin.stat:
+    path: /etc/systemd/system/wakapi.service
+  register: wakapi_service_unit
+  when: install_wakapi | bool
+
+# Overwriting the binary while the service runs fails with ETXTBSY, so an
+# upgrade must stop the unit first; the final systemd task starts it again.
+- name: Stop wakapi before replacing its binary
+  ansible.builtin.systemd:
+    name: wakapi
+    state: stopped
+  when: install_wakapi | bool and wakapi_needs_update | bool
+    and wakapi_service_unit.stat.exists and not ansible_check_mode
+
+# Skipped in check mode: get_url cannot download there, so the archive this
+# task needs never exists and unarchive would abort the dry run.
 - name: Extract wakapi binary
   ansible.builtin.unarchive:
     src: "/tmp/wakapi_{{ wakapi_version }}.zip"
@@ -53,7 +85,7 @@
     owner: "{{ wakapi_user }}"
     group: "{{ wakapi_group }}"
     mode: "0755"
-  when: install_wakapi | bool
+  when: install_wakapi | bool and wakapi_needs_update | bool and not ansible_check_mode
 
 - name: Create wakapi configuration file
   ansible.builtin.template:
@@ -84,7 +116,7 @@
   ansible.builtin.systemd:
     name: wakapi
     enabled: true
-    state: "{{ 'restarted' if service_file_updated is changed or wakapi_config_updated is changed else 'started' }}"
+    state: "{{ 'restarted' if (service_file_updated is changed or wakapi_config_updated is changed or wakapi_needs_update | bool) else 'started' }}"
   when: install_wakapi | bool
 
 - name: Wait for wakapi to start

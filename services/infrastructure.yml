@@ -21,6 +21,7 @@
         _run_nats: "{{ 'nats' in host_roles | default([]) }}"
         _run_coder: "{{ 'coder' in host_roles | default([]) }}"
         _run_matterbridge: "{{ 'matterbridge' in host_roles | default([]) }}"
+        _run_wakapi: "{{ 'wakapi' in host_roles | default([]) }}"
         _run_tailscale: "{{ 'tailscale' in host_roles | default([]) }}"
 
   roles:
@@ -48,6 +49,8 @@
       when: _run_fission | bool
     - role: coder
       when: _run_coder | bool
+    - role: wakapi
+      when: _run_wakapi | bool
     # Runs last: an expired/invalid tailscale_authkey should not block any
     # other role's provisioning on this host.
     - role: tailscale

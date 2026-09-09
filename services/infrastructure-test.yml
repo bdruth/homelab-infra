@@ -39,5 +39,8 @@
 - name: Test Coder configuration
   import_playbook: coder/test-playbook.yml
 
+- name: Test Wakapi configuration
+  import_playbook: wakapi/test-playbook.yml
+
 - name: Test Tailscale configuration
   import_playbook: tailscale/test-playbook.yml
