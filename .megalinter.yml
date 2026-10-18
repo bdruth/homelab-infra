@@ -7,6 +7,5 @@ ENABLE_LINTERS:
   - BASH_SHELLCHECK
   - ANSIBLE_ANSIBLE_LINT
 
-# Skip tool-managed files we don't author, and the Authelia configs kept
-# byte-for-byte identical to live on beelink (reformatting breaks parity)
-FILTER_REGEX_EXCLUDE: '(\.serena/|services/authelia-proxy/files/secrets/)'
+# Skip tool-managed files we don't author
+FILTER_REGEX_EXCLUDE: '(\.serena/)'

@@ -8,16 +8,29 @@
 #
 # Not wired into services-deploy CI: run manually from the workstation.
 
+# validate runs authelia's own parser inside the running container against
+# the candidate file, so a bad config never replaces the live one.
 - name: Copy Authelia configuration
   ansible.builtin.copy:
-    src: "secrets/{{ item }}"
-    dest: "{{ authelia_proxy_root }}/authelia/{{ item }}"
+    src: secrets/configuration.yml
+    dest: "{{ authelia_proxy_root }}/authelia/configuration.yml"
     owner: root
     group: root
     mode: "0644"
-  loop:
-    - configuration.yml
-    - users_database.yml
+    validate: >-
+      sh -c 'docker cp %s authelia:/tmp/validate.yml
+      && docker exec authelia authelia validate-config --config /tmp/validate.yml;
+      rc=$?; docker exec authelia rm -f /tmp/validate.yml; exit $rc'
+  diff: false
+  notify: Restart Authelia
+
+- name: Copy Authelia users database
+  ansible.builtin.copy:
+    src: secrets/users_database.yml
+    dest: "{{ authelia_proxy_root }}/authelia/users_database.yml"
+    owner: root
+    group: root
+    mode: "0644"
   diff: false
   notify: Restart Authelia
 
