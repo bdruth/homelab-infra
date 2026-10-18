@@ -57,3 +57,13 @@ test_dns "$dns_vip" "api.github.com"
 cd "${SCRIPT_DIR}/infrastructure/matterbridge"
 tofu init -backend-config=config.s3.tfbackend -upgrade -reconfigure
 tofu apply --auto-approve
+
+cd "${SCRIPT_DIR}/infrastructure/wakapi"
+tofu init -backend-config=config.s3.tfbackend -upgrade -reconfigure
+tofu apply --auto-approve
+
+# Track-only: LXC 105 (the NUT server) has prevent_destroy and
+# ignore_changes = all, so this apply never updates or replaces it.
+cd "${SCRIPT_DIR}/infrastructure/ups-monitoring"
+tofu init -backend-config=config.s3.tfbackend -upgrade -reconfigure
+tofu apply --auto-approve
