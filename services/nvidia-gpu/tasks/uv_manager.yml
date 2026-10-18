@@ -1,12 +1,15 @@
 ---
 # NVIDIA GPU UV Package Manager Installation Tasks
 
+# check_mode: false so --check sees what's installed; the command is
+# read-only and rc != 0 means not installed.
 - name: Check if uv is already installed
   ansible.builtin.command:
     cmd: bash -i -c "uv --version"
   register: uv_version_check
   changed_when: false
   failed_when: false
+  check_mode: false
   when: install_uv | bool
 
 - name: Create temp directory for uv installation

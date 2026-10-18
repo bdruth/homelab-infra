@@ -30,10 +30,13 @@
     name: docker-compose
     state: absent
 
+# check_mode: false so --check can resolve docker_compose_version; the
+# request is a read-only GET.
 - name: Get latest docker-compose release version
   ansible.builtin.uri:
     url: https://api.github.com/repos/docker/compose/releases/latest
     return_content: true
+  check_mode: false
   register: compose_latest_release
   until: compose_latest_release is success
   retries: 3

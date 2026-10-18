@@ -65,12 +65,15 @@
             | list
           }}
 
+    # check_mode: false so --check diffs the real model lists instead of an
+    # empty model_ids; the request is a read-only GET.
     - name: Wait for Copilot API source URLs to be ready
       ansible.builtin.uri:
         url: "{{ item }}"
         method: GET
         status_code: 200
         timeout: 15
+      check_mode: false
       loop: "{{ _open_webui_model_source_urls }}"
       register: _open_webui_model_fetches
       retries: 12

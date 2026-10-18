@@ -1,6 +1,9 @@
 [Unit]
 Description=Open WebUI
-After=network.target podman.service
+# network-online: the image pull and function requirement installs (e.g.
+# google-genai for the Gemini pipe) need DNS, which isn't up at network.target.
+After=network-online.target podman.service nvidia-persistenced.service
+Wants=network-online.target
 Requires=podman.service
 
 [Service]
@@ -8,6 +11,9 @@ Type=simple
 Restart=always
 RestartSec=10
 WorkingDirectory={{ open_webui_install_dir }}
+# At boot nvidia_uvm loads without creating /dev/nvidia-uvm, and the CDI
+# injection of nvidia.com/gpu=all fails until it exists.
+ExecStartPre=-/usr/bin/nvidia-modprobe -u -c=0
 ExecStartPre=-/usr/bin/docker stop open-webui
 ExecStartPre=-/usr/bin/docker rm open-webui
 ExecStartPre=-/usr/bin/docker pull ghcr.io/open-webui/open-webui:{{ open_webui_image_tag }}
