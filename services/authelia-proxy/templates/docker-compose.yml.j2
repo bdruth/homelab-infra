@@ -1,0 +1,99 @@
+---
+version: '3'
+
+networks:
+  net:
+    driver: bridge
+    enable_ipv6: true
+
+services:
+  authelia:
+    image: authelia/authelia
+    container_name: authelia
+    volumes:
+      - /opt/authelia-lite/authelia:/config
+      - /opt/authelia-lite/data/certbot/conf/live/cusack-ruth.name/privkey.pem:/config/secrets/oidc/jwks/rsa.2048.key
+      - /opt/authelia-lite/data/certbot/conf/live/cusack-ruth.name/fullchain.pem:/config/secrets/oidc/jwks/fullchain.pem
+    networks:
+      - net
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.authelia.rule=Host(`authelia.cusack-ruth.name`)'
+      - 'traefik.http.routers.authelia.entrypoints=https'
+      - 'traefik.http.routers.authelia.tls=true'
+      - 'traefik.http.routers.authelia.tls.certresolver=letsencrypt'
+      - 'traefik.http.middlewares.authelia.forwardauth.address=http://authelia:9091/api/verify?rd=https://authelia.cusack-ruth.name'  # yamllint disable-line rule:line-length
+      - 'traefik.http.middlewares.authelia.forwardauth.trustForwardHeader=true'
+      - 'traefik.http.middlewares.authelia.forwardauth.authResponseHeaders=Remote-User,Remote-Groups,Remote-Name,Remote-Email'  # yamllint disable-line rule:line-length
+      - "com.centurylinklabs.watchtower.enable=true"
+    expose:
+      - 9091
+    restart: unless-stopped
+    healthcheck:
+      disable: true
+    environment:
+      - TZ=America/Chicago
+      - X_AUTHELIA_CONFIG_FILTERS=template
+    logging:
+      driver: journald
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    volumes:
+      - /opt/authelia-lite/redis:/data
+    networks:
+      - net
+    expose:
+      - 6379
+    restart: unless-stopped
+    environment:
+      - TZ=America/Chicago
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  nginx:
+    restart: unless-stopped
+    image: nginx
+    container_name: nginx
+    volumes:
+      - /opt/authelia-lite/data/nginx:/etc/nginx/conf.d:ro
+      - /opt/authelia-lite/data/nginx-proxy.conf:/etc/nginx/proxy.conf:ro
+      - /opt/authelia-lite/data/authelia.conf:/etc/nginx/authelia.conf:ro
+      - /opt/authelia-lite/data/auth.conf:/etc/nginx/auth.conf:ro
+      - /var/www/weather.cusack-ruth.name:/var/www/weather.cusack-ruth.name:ro
+      - /opt/authelia-lite/data/certbot/conf:/etc/letsencrypt:ro
+      - /opt/authelia-lite/data/certbot/www:/var/www/certbot:ro
+      - /opt/authelia-lite/log:/var/log
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+    networks:
+      - net
+    ports:
+      - 80:80
+      - 443:443
+      - "[::]:80:80"
+      - "[::]:443:443"
+    environment:
+      - TZ=America/Chicago
+      - ENABLE_IPV6=true
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  certbot:
+    restart: unless-stopped
+    image: certbot/dns-cloudflare
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --force-renewal --dns-cloudflare --dns-cloudflare-credentials /root/cloudflare.ini --dns-cloudflare-propagation-seconds 15 --email bdruth@gmail.com --agree-tos --no-eff-email; tar chf - -C /etc/letsencrypt/live/cusack-ruth.name $$(cd /etc/letsencrypt/live/cusack-ruth.name && ls *.pem) | base64 | openssl enc -aes-256-cbc -a -pbkdf2 -iter 100000 -pass env:CERT_ENC_PASS > /etc/letsencrypt/current-certs.zip.enc; sleep 48h & wait $${!}; done;'"
+    volumes:
+      - /opt/authelia-lite/data/certbot/conf:/etc/letsencrypt
+      - /opt/authelia-lite/data/certbot/www:/var/www/certbot
+      - /opt/authelia-lite/log:/var/log
+      - /opt/authelia-lite/data/certbot/conf/credentials.ini:/root/cloudflare.ini
+    environment:
+      - CERT_ENC_PASS={{ authelia_proxy_cert_enc_pass }}
+    networks:
+      - net
+    logging:
+      driver: journald
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+

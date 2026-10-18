@@ -6,3 +6,4 @@
 **/host_vars/*.yml filter=git-crypt diff=git-crypt
 **/defaults/*.yml filter=git-crypt diff=git-crypt
 *.example.* !filter !diff
+services/authelia-proxy/files/secrets/** filter=git-crypt diff=git-crypt

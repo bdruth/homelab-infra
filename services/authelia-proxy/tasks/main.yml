@@ -1,0 +1,79 @@
+---
+# Reverse proxy (nginx) + Authelia + certbot stack on beelink.
+#
+# Imported from the live host on 2026-10-18; live was the source of truth.
+# Manages config files only. Runtime state (Authelia db.sqlite3, redis,
+# logs, issued certs/accounts under data/certbot/conf) and the shared
+# docker-compose@.service unit are deliberately left alone.
+#
+# Not wired into services-deploy CI: run manually from the workstation.
+
+- name: Copy Authelia configuration
+  ansible.builtin.copy:
+    src: "secrets/{{ item }}"
+    dest: "{{ authelia_proxy_root }}/authelia/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - configuration.yml
+    - users_database.yml
+  diff: false
+  notify: Restart Authelia
+
+- name: Copy certbot Cloudflare credentials
+  ansible.builtin.copy:
+    src: secrets/credentials.ini
+    dest: "{{ authelia_proxy_root }}/data/certbot/conf/credentials.ini"
+    owner: "{{ authelia_proxy_owner }}"
+    group: "{{ authelia_proxy_owner }}"
+    mode: "0644"
+  diff: false
+
+- name: Copy certbot-provided nginx TLS settings
+  ansible.builtin.copy:
+    src: "certbot/{{ item }}"
+    dest: "{{ authelia_proxy_root }}/data/certbot/conf/{{ item }}"
+    owner: "{{ authelia_proxy_owner }}"
+    group: "{{ authelia_proxy_owner }}"
+    mode: "0644"
+  loop:
+    - options-ssl-nginx.conf
+    - ssl-dhparams.pem
+  notify: Reload nginx
+
+- name: Copy shared nginx includes
+  ansible.builtin.copy:
+    src: "nginx/{{ item }}"
+    dest: "{{ authelia_proxy_root }}/data/{{ item }}"
+    owner: "{{ authelia_proxy_owner }}"
+    group: "{{ authelia_proxy_owner }}"
+    mode: "0644"
+  loop:
+    - auth.conf
+    - authelia.conf
+    - nginx-proxy.conf
+  notify: Reload nginx
+
+- name: Copy nginx site configs
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ authelia_proxy_root }}/data/nginx/{{ item | basename }}"
+    owner: "{{ authelia_proxy_owner }}"
+    group: "{{ authelia_proxy_owner }}"
+    mode: "0644"
+  with_fileglob:
+    - nginx/conf.d/*.conf
+  loop_control:
+    label: "{{ item | basename }}"
+  notify: Reload nginx
+
+- name: Template compose file
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ authelia_proxy_compose_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  diff: false
+  notify: Apply compose changes
