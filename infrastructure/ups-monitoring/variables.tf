@@ -8,11 +8,6 @@ variable "ups_monitoring_ip_addr" {
   type        = string
 }
 
-variable "ssh_priv_key_path" {
-  description = "path to SSH private key"
-  type        = string
-}
-
 variable "s3_backend_endpoint" {
   description = "endpoint URL to alternative s3 backend"
   type        = string
