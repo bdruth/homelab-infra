@@ -1,0 +1,8 @@
+FROM n8nio/n8n:{{ n8n_version }}
+USER root
+RUN mkdir -p /opt/extra && \
+    npm --prefix /opt/extra install @langchain/ollama@1.0.3 && \
+    cp /opt/extra/node_modules/@langchain/ollama/dist/utils.* $(dirname $(find /usr/local/lib/ -name utils.js | grep ollama)) && \
+    chown -R node:node /opt/extra
+USER node
+
