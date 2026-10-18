@@ -116,7 +116,7 @@
                             (
                               _open_webui_model_index[item_value.model_ids_from.url]
                               | reject('in', item_value.model_ids_from.exclude_ids | default([]))
-                              | reject('match', item_value.model_ids_from.exclude_patterns | default([]) | join('|'))
+                              | reject('search', item_value.model_ids_from.exclude_patterns | default([]) | join('|'))
                               | list
                             ) if item_value.model_ids_from is defined else []
                           ),

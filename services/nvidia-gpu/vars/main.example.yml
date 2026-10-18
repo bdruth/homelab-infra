@@ -69,6 +69,9 @@ open_webui_default_model_metadata: # Default model capability metadata
     web_search: true
 open_webui_default_model_params: # Default model parameters
   function_calling: "native"
+open_webui_default_models: "" # Model preselected for new chats (comma-separated IDs)
+open_webui_default_pinned_models: [] # Models pinned to the top of the picker
+open_webui_task_model_external: "" # Model for titles/tags/search queries (empty = current chat model)
 
 # Open WebUI OpenAI API configuration
 open_webui_enable_openai_api: true # Enable OpenAI API support

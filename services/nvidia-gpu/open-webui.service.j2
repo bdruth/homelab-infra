@@ -51,6 +51,9 @@ ExecStart=/usr/bin/docker run --name open-webui \
   -e ENABLE_API_KEYS={{ open_webui_enable_api_keys | string | lower }} \
   -e DEFAULT_MODEL_METADATA='{{ open_webui_default_model_metadata | to_json }}' \
   -e DEFAULT_MODEL_PARAMS='{{ open_webui_default_model_params | to_json }}' \
+  -e DEFAULT_MODELS='{{ open_webui_default_models | default('') }}' \
+  -e DEFAULT_PINNED_MODELS='{{ open_webui_default_pinned_models | default([]) | join(',') }}' \
+  -e TASK_MODEL_EXTERNAL='{{ open_webui_task_model_external | default('') }}' \
   -p {{ open_webui_port }}:{{ open_webui_port }} \
   {% if nvidia_install_gpu_drivers | bool %}--device nvidia.com/gpu=all --security-opt=label=disable {% endif %} \
   ghcr.io/open-webui/open-webui:{{ open_webui_image_tag }}
