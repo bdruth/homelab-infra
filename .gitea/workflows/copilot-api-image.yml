@@ -103,7 +103,7 @@ jobs:
           docker push "$REPO:$SHORT_SHA"
 
       - name: pushover-actions
-        uses: umahmood/pushover-actions@main
+        uses: umahmood/pushover-actions@0582cb24dccd1fe77aeb35e6fb8027ddbca8af35 # main as of 2024-07-13 (newer than v1.1.0)
         if: ${{ vars.isLocal != 'true' && failure() }}
         env:
           PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
