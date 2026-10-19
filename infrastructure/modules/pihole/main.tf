@@ -21,23 +21,20 @@ data "http" "pihole_latest_release" {
   }
 }
 
-data "aws_s3_object" "pihole_teleporter_backup" {
-  bucket = "homelab-configurations"
-  key    = "pihole/pi-hole-pihole-teleporter.zip"
-}
-
 locals {
   pihole_latest_release = jsondecode(data.http.pihole_latest_release.response_body).name
   install_backup        = var.install_backup_crontab ? "-e '{\"install_backup_crontab\": true}'" : ""
 }
 
 resource "null_resource" "run_ansible_playbook" {
+  # No trigger on the S3 teleporter backup: blue's backup cron re-uploads it
+  # every 15 minutes, so its ETag changed on every deploy and re-provisioned
+  # both nodes each time, while the playbook's restore step is disabled anyway.
   triggers = {
-    pihole_version         = local.pihole_latest_release
-    teleporter_backup_hash = data.aws_s3_object.pihole_teleporter_backup.etag
-    container_change       = module.pihole_lxc.lxc_id
-    ansible_changes        = sha1(join("", [for f in sort(fileset("${path.module}/../../../services/pihole", "**")) : filesha1("${path.module}/../../../services/pihole/${f}")]))
-    install_backup         = local.install_backup
+    pihole_version   = local.pihole_latest_release
+    container_change = module.pihole_lxc.lxc_id
+    ansible_changes  = sha1(join("", [for f in sort(fileset("${path.module}/../../../services/pihole", "**")) : filesha1("${path.module}/../../../services/pihole/${f}")]))
+    install_backup   = local.install_backup
   }
 
   provisioner "local-exec" {
