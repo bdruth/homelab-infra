@@ -44,7 +44,9 @@
 
 - name: Determine whether the wakapi binary needs install/upgrade
   ansible.builtin.set_fact:
-    wakapi_needs_update: "{{ (wakapi_installed_version.stdout | default('') | trim) != wakapi_version }}"
+    # wakapi prints --version to stderr, not stdout
+    wakapi_needs_update: >-
+      {{ ((wakapi_installed_version.stdout | default('')) ~ (wakapi_installed_version.stderr | default(''))) | trim != wakapi_version }}
   when: install_wakapi | bool
 
 - name: Download wakapi binary
