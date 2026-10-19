@@ -3,7 +3,7 @@
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-"${SCRIPT_DIR}"/setup-ansible.sh
+"${SCRIPT_DIR}"/setup-ansible.sh || exit 1
 
 tofu --version
 

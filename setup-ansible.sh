@@ -1,5 +1,8 @@
 #!/bin/bash
 # shellcheck disable=SC2154
+# Fail fast: callers (deploy.sh, services-deploy.sh) go straight into tofu
+# apply / ansible-playbook, which fail confusingly on missing dependencies.
+set -euo pipefail
 
 ansible --version
 ansible-galaxy collection install -r requirements.yml
