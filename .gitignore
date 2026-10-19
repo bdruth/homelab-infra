@@ -2,6 +2,7 @@
 .terraform
 .terraform*
 .env
+.env.secrets
 
 *ed25519*
 

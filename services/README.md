@@ -36,7 +36,7 @@ docker run --rm -it \
   --dns <DNS_IP> \ # Useful when running the playbooks for DNS
   -v "<PATH_TO_SSH_KEY>:/root/.ssh/id_rsa" \ # SSH key to use
   -v "$PWD:/opt/app" --workdir=/opt/app \ # mount the workspace into the container
-  --env-file .env \ # load secrets from .env file
+  --env-file .env --env-file .env.secrets \ # config, then secrets (kept apart so MegaLinter never sees them)
   pkgxdev/pkgx:v1 \ # this is the container we're running
   bash -c 'apt-get update && apt-get install -y dnsutils netcat-traditional; \ # container deps to install that aren't in pkgx
     pkgx +tofu +pip +ansible +ssh /bin/bash' # setup pkgx environment
