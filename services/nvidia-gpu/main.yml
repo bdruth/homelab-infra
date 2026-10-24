@@ -49,6 +49,10 @@
       ansible.builtin.import_tasks: tasks/searxng.yml
       when: install_searxng | default(false) | bool
 
+    - name: Import ChatGPT proxy tasks
+      ansible.builtin.import_tasks: tasks/chatgpt_proxy.yml
+      when: install_chatgpt_proxy | default(false) | bool
+
     - name: Import Open WebUI tasks
       ansible.builtin.import_tasks: tasks/open_webui.yml
       when: install_open_webui | bool

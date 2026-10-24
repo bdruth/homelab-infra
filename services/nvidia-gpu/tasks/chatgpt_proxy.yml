@@ -1,0 +1,134 @@
+---
+# ChatGPT subscription proxy Tasks
+# One ChatMock container per ChatGPT seat plus a Caddy router that sends each
+# Open WebUI user to their own seat's login (matched on the user email Open
+# WebUI forwards in X-OpenWebUI-User-Email). Open WebUI consumes the router as
+# one more OpenAI connection, so every user sees the same models and the same
+# behavior without API billing.
+#
+# Each seat needs a one-time login on the host, as that seat's ChatGPT user:
+#   sudo chatmock-login <seat>
+# The seat's unit stays inactive until its auth.json exists.
+
+- name: Validate ChatGPT proxy configuration
+  ansible.builtin.assert:
+    that:
+      - chatgpt_proxy_router_key | default('') | length > 0
+      - chatgpt_proxy_seats | default([]) | length > 0
+      - chatgpt_proxy_seats | map(attribute='name') | unique | list | length == chatgpt_proxy_seats | length
+      - chatgpt_proxy_seats | map(attribute='emails') | map('length') | min > 0
+    fail_msg: >-
+      chatgpt_proxy_router_key must be set (`openssl rand -hex 24`) and
+      chatgpt_proxy_seats needs at least one seat, each with a unique `name`
+      and a non-empty `emails` list.
+    quiet: true
+
+- name: Create ChatGPT proxy base directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+    owner: root
+    group: root
+  loop:
+    - "{{ chatgpt_proxy_install_dir }}"
+    - "{{ chatgpt_proxy_install_dir }}/router"
+
+# The seat directories hold OAuth tokens, so keep them private. The container
+# runs as root, so there is no ownership change to fight with on each run.
+- name: Create ChatGPT seat directories
+  ansible.builtin.file:
+    path: "{{ chatgpt_proxy_install_dir }}/seats/{{ item.name }}"
+    state: directory
+    mode: "0700"
+    owner: root
+    group: root
+  loop: "{{ chatgpt_proxy_seats }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Check out ChatMock at the pinned commit
+  ansible.builtin.git:
+    repo: "{{ chatgpt_proxy_chatmock_repo }}"
+    dest: "{{ chatgpt_proxy_install_dir }}/src"
+    version: "{{ chatgpt_proxy_chatmock_ref }}"
+    force: true
+
+# Built on the host from the pinned source (the published Docker image is older
+# than the GPT-6 support). The tag is the first 12 characters of the commit, so
+# bumping the ref builds a new image and the units pick it up.
+- name: Check whether the ChatMock image is already built
+  ansible.builtin.command: docker image inspect localhost/chatmock:{{ chatgpt_proxy_image_tag }}
+  register: chatgpt_proxy_image_check
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Build the ChatMock image
+  ansible.builtin.command: >-
+    docker build -t localhost/chatmock:{{ chatgpt_proxy_image_tag }}
+    {{ chatgpt_proxy_install_dir }}/src
+  when: chatgpt_proxy_image_check.rc != 0
+  changed_when: true
+
+- name: Template ChatGPT seat login helper
+  ansible.builtin.template:
+    src: chatmock-login.sh.j2
+    dest: /usr/local/bin/chatmock-login
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Template ChatGPT router Caddyfile
+  ansible.builtin.template:
+    src: chatgpt-router.Caddyfile.j2
+    dest: "{{ chatgpt_proxy_install_dir }}/router/Caddyfile"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+  notify: Restart ChatGPT router service
+
+- name: Create systemd services for ChatGPT seats
+  ansible.builtin.template:
+    src: chatmock-seat.service.j2
+    dest: "/etc/systemd/system/chatmock-{{ item.name }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ chatgpt_proxy_seats }}"
+  loop_control:
+    label: "{{ item.name }}"
+  notify:
+    - Reload systemd
+    - Restart ChatGPT seat services
+
+- name: Create systemd service for the ChatGPT router
+  ansible.builtin.template:
+    src: chatgpt-router.service.j2
+    dest: /etc/systemd/system/chatgpt-router.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart ChatGPT router service
+
+- name: Enable and start ChatGPT seat services
+  ansible.builtin.systemd:
+    name: "chatmock-{{ item.name }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+  loop: "{{ chatgpt_proxy_seats }}"
+  loop_control:
+    label: "{{ item.name }}"
+  ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Enable and start ChatGPT router service
+  ansible.builtin.systemd:
+    name: chatgpt-router
+    enabled: true
+    state: started
+    daemon_reload: true
+  ignore_errors: "{{ ansible_check_mode }}"

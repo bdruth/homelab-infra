@@ -1,0 +1,31 @@
+[Unit]
+Description=ChatMock (ChatGPT subscription proxy) for seat {{ item.name }}
+After=network-online.target podman.service
+Wants=network-online.target
+Requires=podman.service
+# Stays inactive until `chatmock-login {{ item.name }}` has stored a login.
+ConditionPathExists={{ chatgpt_proxy_install_dir }}/seats/{{ item.name }}/auth.json
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=10
+WorkingDirectory={{ chatgpt_proxy_install_dir }}
+ExecStartPre=-/usr/bin/docker network create {{ chatgpt_proxy_network }}
+ExecStartPre=-/usr/bin/docker stop chatmock-{{ item.name }}
+ExecStartPre=-/usr/bin/docker rm chatmock-{{ item.name }}
+# No published ports: ChatMock has no authentication of its own, so the only
+# way in is the router, which shares this network.
+ExecStart=/usr/bin/docker run --name chatmock-{{ item.name }} \
+  --network {{ chatgpt_proxy_network }} \
+  -v {{ chatgpt_proxy_install_dir }}/seats/{{ item.name }}:/data \
+  -e CHATGPT_LOCAL_HOME=/data \
+  -e PORT=8000 \
+  -e CHATGPT_LOCAL_REASONING_EFFORT={{ chatgpt_proxy_reasoning_effort }} \
+  -e CHATGPT_LOCAL_REASONING_COMPAT=think-tags \
+  localhost/chatmock:{{ chatgpt_proxy_image_tag }} serve
+
+ExecStop=/usr/bin/docker stop chatmock-{{ item.name }}
+
+[Install]
+WantedBy=multi-user.target

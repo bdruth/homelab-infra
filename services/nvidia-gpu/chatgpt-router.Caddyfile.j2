@@ -1,0 +1,41 @@
+# Managed by Ansible (nvidia-gpu role).
+#
+# Open WebUI sends the signed-in user's email in X-OpenWebUI-User-Email (a
+# per-connection custom header). Each request goes to the ChatMock container
+# for that user's own ChatGPT seat. A user with no seat is refused; there is
+# deliberately no fallback to another seat's login.
+{
+	admin off
+	auto_https off
+}
+
+:8090 {
+	handle /healthz {
+		respond "ok" 200
+	}
+
+	@unauthorized not header Authorization "Bearer {{ chatgpt_proxy_router_key }}"
+	handle @unauthorized {
+		respond "unauthorized" 401
+	}
+{% for seat in chatgpt_proxy_seats %}
+
+	@seat_{{ seat.name }} header X-OpenWebUI-User-Email "{{ seat.emails | join('" "') }}"
+	handle @seat_{{ seat.name }} {
+		reverse_proxy chatmock-{{ seat.name }}:8000 {
+			flush_interval -1
+		}
+	}
+{% endfor %}
+
+	# Model listings can arrive without a user (for example at startup); the
+	# catalog is the same for every seat, so serve it from the first one.
+	handle /v1/models* {
+		reverse_proxy chatmock-{{ chatgpt_proxy_seats[0].name }}:8000
+	}
+
+	handle {
+		header Content-Type application/json
+		respond `{"error":{"message":"No ChatGPT seat is set up for this Open WebUI account. Ask the admin to add one.","type":"permission_error","code":"no_chatgpt_seat"}}` 403
+	}
+}

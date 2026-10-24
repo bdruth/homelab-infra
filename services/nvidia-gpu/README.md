@@ -41,6 +41,7 @@ The module is organized into separate task files for better maintainability:
 - `tasks/copilot_api.yml` - Installs and configures the Copilot API sidecar
 - `tasks/open_terminal.yml` - Installs the Open Terminal sandbox that Open WebUI agents drive
 - `tasks/searxng.yml` - Installs the SearXNG search backend for Open WebUI
+- `tasks/chatgpt_proxy.yml` - Installs the per-seat ChatGPT subscription proxy and router for Open WebUI
 - `tasks/watchtower.yml` - Installs and configures Watchtower for automatic container updates
 
 ## Usage
@@ -68,6 +69,7 @@ Each major component can be enabled or disabled using variables:
 - `install_copilot_api` - Whether to install the Copilot API sidecar (off by default)
 - `install_open_terminal` - Whether to install Open Terminal and connect Open WebUI to it (off by default)
 - `install_searxng` - Whether to install SearXNG and use it for Open WebUI web search (off by default)
+- `install_chatgpt_proxy` - Whether to install the per-seat ChatGPT subscription proxy (off by default)
 - `install_watchtower` - Whether to install Watchtower for automatic container updates
 - `install_docker_compose` - Whether to install latest docker-compose
 - `nvidia_configure_egpu` - Whether to configure thunderbolt eGPU support
@@ -154,6 +156,17 @@ When `install_open_terminal: true`, this role runs [open-webui/open-terminal](ht
 ### SearXNG
 
 When `install_searxng: true`, this role runs [SearXNG](https://github.com/searxng/searxng) and points Open WebUI at it (`WEB_SEARCH_ENGINE=searxng`), overriding `open_webui_web_search_engine`. The templated `settings.yml` adds `json` to `search.formats`, which Open WebUI requires. Generate `searxng_secret_key` with `openssl rand -hex 32`.
+
+### ChatGPT subscription proxy
+
+When `install_chatgpt_proxy: true`, this role lets Open WebUI use ChatGPT/Codex seats instead of API billing. It runs one [ChatMock](https://github.com/RayBytes/ChatMock) container per seat and a Caddy router in front. Open WebUI sends the signed-in user's email in a per-connection header, and the router sends the request to the container holding that user's own login. Every user sees the same models and behavior. A user with no seat gets a clear 403 and is never routed to someone else's login.
+
+- **Not an approved integration.** OpenAI has said third-party clients using Sign in with ChatGPT are not an approved use, so it can stop working or draw account action at any time. Keep other model providers available.
+- **Unofficial image.** The published ChatMock image predates GPT-6 support, so the role builds an image on the host from the commit in `chatgpt_proxy_chatmock_ref`. Bumping the ref builds a new image.
+- **Seats** are listed in `chatgpt_proxy_seats` (a `name` slug and the Open WebUI login `emails` for each). Add a connection to `open_webui_connections` as shown in `vars/main.example.yml`.
+- **One-time login per seat**, as that seat's ChatGPT user, after the first deploy: `sudo chatmock-login <seat>`. It prints a URL to open in a browser; paste back the address of the localhost page that the browser lands on. A seat's service stays inactive until its login exists. Logins are stored in `/opt/chatgpt-proxy/seats/<seat>/auth.json`; treat them like passwords.
+- **Network.** ChatMock has no authentication of its own, so the seat containers publish no ports. Only the router is reachable, and it requires the shared key (`chatgpt_proxy_router_key`).
+- **Billing.** Usage counts against each seat's included allowance. Make sure the workspace is not set to buy extra credits automatically.
 
 ### Copilot API Sidecar
 

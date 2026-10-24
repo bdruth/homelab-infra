@@ -20,6 +20,22 @@
     name: open-terminal
     state: restarted
 
+- name: Restart ChatGPT seat services
+  ansible.builtin.systemd:
+    name: "chatmock-{{ item.name }}"
+    state: restarted
+  loop: "{{ chatgpt_proxy_seats }}"
+  loop_control:
+    label: "{{ item.name }}"
+  # A seat with no login yet has its unit skipped by ConditionPathExists, so a
+  # restart request is a harmless no-op rather than a failure.
+  failed_when: false
+
+- name: Restart ChatGPT router service
+  ansible.builtin.systemd:
+    name: chatgpt-router
+    state: restarted
+
 - name: Restart SearXNG service
   ansible.builtin.systemd:
     name: searxng

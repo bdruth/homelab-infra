@@ -201,6 +201,66 @@
         - install_copilot_api is defined and install_copilot_api | bool
         - copilot_api_result.rc is defined and copilot_api_result.rc == 0
 
+    - name: Wait for the ChatGPT router to become available
+      ansible.builtin.uri:
+        url: "http://localhost:{{ chatgpt_proxy_router_port }}/healthz"
+        method: GET
+        status_code: 200
+        timeout: 30
+      register: chatgpt_router_check
+      retries: 12
+      delay: 5
+      until: chatgpt_router_check.status == 200
+      ignore_errors: true
+      when: install_chatgpt_proxy is defined and install_chatgpt_proxy | bool
+
+    - name: Check which ChatGPT seats have a stored login
+      ansible.builtin.stat:
+        path: "{{ chatgpt_proxy_install_dir }}/seats/{{ item.name }}/auth.json"
+      register: chatgpt_seat_auth
+      loop: "{{ chatgpt_proxy_seats | default([]) }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: install_chatgpt_proxy is defined and install_chatgpt_proxy | bool
+
+    # End to end per seat: key + that user's email header, through the router.
+    # A seat with no login yet is reported, not treated as a failure, because
+    # the one-time `chatmock-login <seat>` happens after the first deploy.
+    - name: List models through the router for each logged-in seat
+      ansible.builtin.uri:
+        url: "http://localhost:{{ chatgpt_proxy_router_port }}/v1/models"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ chatgpt_proxy_router_key }}"
+          X-OpenWebUI-User-Email: "{{ item.item.emails[0] }}"
+        status_code: 200
+        timeout: 30
+      register: chatgpt_seat_models
+      loop: "{{ chatgpt_seat_auth.results | default([]) }}"
+      loop_control:
+        label: "{{ item.item.name }}"
+      ignore_errors: true
+      no_log: true
+      when:
+        - install_chatgpt_proxy is defined and install_chatgpt_proxy | bool
+        - item.stat is defined and item.stat.exists
+
+    - name: Display ChatGPT proxy status
+      ansible.builtin.debug:
+        msg: >-
+          ChatGPT seat {{ item.item.item.name }}: {{
+            'not logged in yet - run: sudo chatmock-login ' ~ item.item.item.name
+            if item.skipped | default(false)
+            else (
+              'OK - models listed' if item.status | default(0) == 200
+              else 'logged in but the proxy did not answer - check docker logs chatmock-' ~ item.item.item.name
+            )
+          }}
+      loop: "{{ chatgpt_seat_models.results | default([]) }}"
+      loop_control:
+        label: "{{ item.item.item.name }}"
+      when: install_chatgpt_proxy is defined and install_chatgpt_proxy | bool
+
     - name: Wait for Open Terminal API to become available
       ansible.builtin.uri:
         url: "http://localhost:{{ open_terminal_port }}/docs"

@@ -1,0 +1,27 @@
+[Unit]
+Description=ChatGPT seat router (maps Open WebUI users to their own ChatMock login)
+After=network-online.target podman.service
+Wants=network-online.target
+Requires=podman.service
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=10
+WorkingDirectory={{ chatgpt_proxy_install_dir }}
+ExecStartPre=-/usr/bin/docker network create {{ chatgpt_proxy_network }}
+ExecStartPre=-/usr/bin/docker stop chatgpt-router
+ExecStartPre=-/usr/bin/docker rm chatgpt-router
+ExecStartPre=-/usr/bin/docker pull docker.io/library/caddy:{{ chatgpt_proxy_router_image_tag }}
+# Open WebUI reaches this through host.containers.internal. The Caddyfile
+# holds the shared key, so it is mounted read-only from a 0600 file.
+ExecStart=/usr/bin/docker run --name chatgpt-router \
+  --network {{ chatgpt_proxy_network }} \
+  -v {{ chatgpt_proxy_install_dir }}/router/Caddyfile:/etc/caddy/Caddyfile:ro \
+  -p {{ chatgpt_proxy_router_port }}:8090 \
+  docker.io/library/caddy:{{ chatgpt_proxy_router_image_tag }}
+
+ExecStop=/usr/bin/docker stop chatgpt-router
+
+[Install]
+WantedBy=multi-user.target

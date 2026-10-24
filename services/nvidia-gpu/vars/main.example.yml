@@ -21,6 +21,7 @@ install_gpt_researcher: true # Whether to install GPT Researcher
 install_copilot_api: false # Whether to install Copilot API sidecar (OpenAI-compatible proxy for GitHub Copilot)
 install_open_terminal: false # Whether to install Open Terminal (sandboxed shell for Open WebUI agents)
 install_searxng: false # Whether to install SearXNG (self-hosted search backend for Open WebUI)
+install_chatgpt_proxy: false # Whether to install the per-seat ChatGPT subscription proxy for Open WebUI
 
 # Package versions and configuration
 nvidia_driver_version: "580-open" # Used in package name (nvidia-driver-580-open)
@@ -169,6 +170,26 @@ searxng_port: "8888" # Host port for SearXNG
 searxng_image_tag: "2026.10.24-ef0ec03da" # Image tag
 searxng_secret_key: "" # Generate with `openssl rand -hex 32` (store in real vars/main.yml)
 
+# ChatGPT subscription proxy configuration
+# One ChatMock container per ChatGPT seat behind a router that sends each Open WebUI
+# user to their own seat, matched on the user email. A user with no seat gets a 403,
+# never another seat's login. Log each seat in once: sudo chatmock-login <seat>
+# Add a connection to open_webui_connections (see the example at the end of this file).
+chatgpt_proxy_install_dir: "/opt/chatgpt-proxy" # Installation directory (seat logins live under seats/)
+chatgpt_proxy_network: "chatgpt-proxy" # Private container network shared by the router and seats
+chatgpt_proxy_router_port: "8090" # Host port Open WebUI uses to reach the router
+chatgpt_proxy_router_image_tag: "2.11.7" # Caddy image tag
+chatgpt_proxy_chatmock_repo: "https://github.com/RayBytes/ChatMock.git" # ChatMock source, built into an image on the host
+chatgpt_proxy_chatmock_ref: "be9e8e62864c83953dc9c7b9e307c4ec61825f32" # Pinned commit (the published image predates GPT-6 support)
+chatgpt_proxy_image_tag: "{{ chatgpt_proxy_chatmock_ref[:12] }}" # Local image tag derived from the commit
+chatgpt_proxy_reasoning_effort: "medium" # none, minimal, low, medium, high, xhigh, max, ultra
+chatgpt_proxy_router_key: "" # Shared key Open WebUI sends to the router (`openssl rand -hex 24`, store in real vars/main.yml)
+chatgpt_proxy_seats: # One entry per ChatGPT seat
+  - name: "alice" # Short slug used in container and unit names
+    emails: ["alice@example.com"] # Open WebUI login emails served by this seat
+  - name: "bob"
+    emails: ["bob@example.com"]
+
 # Open WebUI: declarative OpenAI connection list
 # Provisions OPENAI_API_BASE_URLS / KEYS / CONFIGS via Open WebUI's admin API
 # on each deploy. One-time bootstrap: log in as admin, generate an API token,
@@ -219,3 +240,15 @@ open_webui_connections:
     connection_type: "external"
     auth_type: "bearer"
     api_type: "responses"
+  # GPT models through each user's own ChatGPT seat (needs install_chatgpt_proxy: true).
+  # The header carries the signed-in user's email; `!unsafe` stops Ansible from
+  # templating Open WebUI's own {{USER_EMAIL}} placeholder.
+  # - url: "http://host.containers.internal:{{ chatgpt_proxy_router_port }}/v1"
+  #   key: "{{ chatgpt_proxy_router_key }}"
+  #   enable: true
+  #   tags: ["chatgpt"]
+  #   prefix_id: "chatgpt"
+  #   connection_type: "external"
+  #   auth_type: "bearer"
+  #   headers:
+  #     X-OpenWebUI-User-Email: !unsafe "{{USER_EMAIL}}"
