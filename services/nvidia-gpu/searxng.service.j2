@@ -1,0 +1,28 @@
+[Unit]
+Description=SearXNG (self-hosted metasearch for Open WebUI)
+After=network-online.target podman.service
+Wants=network-online.target
+Requires=podman.service
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=10
+WorkingDirectory={{ searxng_install_dir }}
+ExecStartPre=-/usr/bin/docker stop searxng
+ExecStartPre=-/usr/bin/docker rm searxng
+ExecStartPre=-/usr/bin/docker pull docker.io/searxng/searxng:{{ searxng_image_tag }}
+# SEARXNG_LIMITER=false: the bot limiter would throttle Open WebUI, which is
+# the only client and reaches this over the container bridge.
+ExecStart=/usr/bin/docker run --name searxng \
+  -v {{ searxng_install_dir }}/config:/etc/searxng \
+  -v {{ searxng_install_dir }}/data:/var/cache/searxng \
+  -e SEARXNG_SECRET={{ searxng_secret_key }} \
+  -e SEARXNG_LIMITER=false \
+  -p {{ searxng_port }}:8080 \
+  docker.io/searxng/searxng:{{ searxng_image_tag }}
+
+ExecStop=/usr/bin/docker stop searxng
+
+[Install]
+WantedBy=multi-user.target

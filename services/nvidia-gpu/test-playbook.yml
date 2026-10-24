@@ -201,6 +201,52 @@
         - install_copilot_api is defined and install_copilot_api | bool
         - copilot_api_result.rc is defined and copilot_api_result.rc == 0
 
+    - name: Wait for Open Terminal API to become available
+      ansible.builtin.uri:
+        url: "http://localhost:{{ open_terminal_port }}/docs"
+        method: GET
+        status_code: 200
+        timeout: 60
+      register: open_terminal_http_check
+      retries: 12
+      delay: 5
+      until: open_terminal_http_check.status == 200
+      ignore_errors: true
+      when: install_open_terminal is defined and install_open_terminal | bool
+
+    - name: Display Open Terminal status
+      ansible.builtin.debug:
+        msg: >-
+          Open Terminal API: {{
+            'OK - Reachable' if open_terminal_http_check.status is defined and open_terminal_http_check.status == 200
+            else 'Not reachable - check docker logs open-terminal'
+          }}
+      when: install_open_terminal is defined and install_open_terminal | bool
+
+    # format=json is rejected (403) unless settings.yml lists json under
+    # search.formats, which is exactly what Open WebUI depends on.
+    - name: Wait for SearXNG JSON search to become available
+      ansible.builtin.uri:
+        url: "http://localhost:{{ searxng_port }}/search?q=test&format=json"
+        method: GET
+        status_code: 200
+        timeout: 60
+      register: searxng_http_check
+      retries: 12
+      delay: 5
+      until: searxng_http_check.status == 200
+      ignore_errors: true
+      when: install_searxng is defined and install_searxng | bool
+
+    - name: Display SearXNG status
+      ansible.builtin.debug:
+        msg: >-
+          SearXNG JSON search: {{
+            'OK - Reachable' if searxng_http_check.status is defined and searxng_http_check.status == 200
+            else 'Not reachable - check docker logs searxng and settings.yml formats'
+          }}
+      when: install_searxng is defined and install_searxng | bool
+
     - name: Wait for Open WebUI container to start
       ansible.builtin.shell: docker ps | grep open-webui
       register: open_webui_result

@@ -19,6 +19,8 @@ nvidia_configure_egpu: true # Whether to configure thunderbolt eGPU support
 install_watchtower: true # Whether to install watchtower for automatic container updates
 install_gpt_researcher: true # Whether to install GPT Researcher
 install_copilot_api: false # Whether to install Copilot API sidecar (OpenAI-compatible proxy for GitHub Copilot)
+install_open_terminal: false # Whether to install Open Terminal (sandboxed shell for Open WebUI agents)
+install_searxng: false # Whether to install SearXNG (self-hosted search backend for Open WebUI)
 
 # Package versions and configuration
 nvidia_driver_version: "580-open" # Used in package name (nvidia-driver-580-open)
@@ -69,6 +71,9 @@ open_webui_default_model_metadata: # Default model capability metadata
     web_search: true
 open_webui_default_model_params: # Default model parameters
   function_calling: "native"
+open_webui_enable_subagents: false # Let models delegate work via delegate_task (extra model calls per delegation)
+open_webui_enable_tool_search: false # Defer large tool sets behind search_tools / call_tool (experimental)
+open_webui_enable_tool_permissions: false # Adds an "Ask for approval" mode per user (experimental)
 open_webui_default_models: "" # Model preselected for new chats (comma-separated IDs)
 open_webui_default_pinned_models: [] # Models pinned to the top of the picker
 open_webui_task_model_external: "" # Model for titles/tags/search queries (empty = current chat model)
@@ -145,6 +150,22 @@ copilot_api_rate_limit_seconds: 30 # Minimum seconds between requests (anti-abus
 copilot_api_wait_on_limit: true # Wait during cooldown instead of returning 429
 copilot_api_registry_user: "" # Username for the private container registry (used to write /root/.docker/config.json)
 copilot_api_registry_token: "" # Read-token for the private container registry (leave empty to skip docker login)
+
+# Open Terminal configuration
+# Sandboxed shell + filesystem that Open WebUI's native-mode agent loop can drive.
+# When install_open_terminal is true, Open WebUI gets it via TERMINAL_SERVER_CONNECTIONS.
+# Models use it once it is selected from the cloud icon in a chat.
+open_terminal_install_dir: "/opt/open-terminal" # Installation directory (user files persist under data/)
+open_terminal_port: "8000" # Host port for the Open Terminal API
+open_terminal_image_tag: "0.14.4" # Image tag, optionally with @sha256:<digest> to pin
+open_terminal_api_key: "" # Generate with `openssl rand -hex 24` (store in real vars/main.yml)
+
+# SearXNG configuration
+# When install_searxng is true, Open WebUI uses it instead of open_webui_web_search_engine.
+searxng_install_dir: "/opt/searxng" # Installation directory (settings.yml is templated here)
+searxng_port: "8888" # Host port for SearXNG
+searxng_image_tag: "2026.10.24-ef0ec03da" # Image tag
+searxng_secret_key: "" # Generate with `openssl rand -hex 32` (store in real vars/main.yml)
 
 # Open WebUI: declarative OpenAI connection list
 # Provisions OPENAI_API_BASE_URLS / KEYS / CONFIGS via Open WebUI's admin API

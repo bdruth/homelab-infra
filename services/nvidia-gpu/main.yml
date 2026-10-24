@@ -39,6 +39,16 @@
       ansible.builtin.import_tasks: tasks/copilot_api.yml
       when: install_copilot_api | bool
 
+    # Sidecars Open WebUI depends on at startup: it fetches the terminal's
+    # OpenAPI spec when it boots, so these must be defined before its unit.
+    - name: Import Open Terminal tasks
+      ansible.builtin.import_tasks: tasks/open_terminal.yml
+      when: install_open_terminal | default(false) | bool
+
+    - name: Import SearXNG tasks
+      ansible.builtin.import_tasks: tasks/searxng.yml
+      when: install_searxng | default(false) | bool
+
     - name: Import Open WebUI tasks
       ansible.builtin.import_tasks: tasks/open_webui.yml
       when: install_open_webui | bool

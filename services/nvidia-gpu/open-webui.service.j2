@@ -2,8 +2,8 @@
 Description=Open WebUI
 # network-online: the image pull and function requirement installs (e.g.
 # google-genai for the Gemini pipe) need DNS, which isn't up at network.target.
-After=network-online.target podman.service nvidia-persistenced.service
-Wants=network-online.target
+After=network-online.target podman.service nvidia-persistenced.service open-terminal.service searxng.service
+Wants=network-online.target{{ ' open-terminal.service' if install_open_terminal | default(false) | bool else '' }}{{ ' searxng.service' if install_searxng | default(false) | bool else '' }}
 Requires=podman.service
 
 [Service]
@@ -24,7 +24,12 @@ ExecStart=/usr/bin/docker run --name open-webui \
   -e PORT={{ open_webui_port }} \
   -e ENABLE_WEB_SEARCH={{ open_webui_enable_web_search | string | lower }} \
   -e ENABLE_SEARCH_QUERY_GENERATION={{ open_webui_enable_search_query_generation | string | lower }} \
+{% if install_searxng | default(false) | bool %}
+  -e WEB_SEARCH_ENGINE=searxng \
+  -e SEARXNG_QUERY_URL=http://host.containers.internal:{{ searxng_port }}/search \
+{% else %}
   -e WEB_SEARCH_ENGINE={{ open_webui_web_search_engine }} \
+{% endif %}
   -e WEB_LOADER_ENGINE={{ open_webui_web_loader_engine }} \
   -e ENABLE_OPENAI_API={{ open_webui_enable_openai_api | string | lower }} \
 {% set _openai_urls = [open_webui_openai_api_base_url] %}
@@ -61,6 +66,12 @@ ExecStart=/usr/bin/docker run --name open-webui \
   -e DEFAULT_PINNED_MODELS='{{ open_webui_default_pinned_models | default([]) | join(',') }}' \
   -e TASK_MODEL_EXTERNAL='{{ open_webui_task_model_external | default('') }}' \
   -e BYPASS_MODEL_ACCESS_CONTROL={{ open_webui_bypass_model_access_control | default(false) | string | lower }} \
+  -e ENABLE_SUBAGENTS={{ open_webui_enable_subagents | default(false) | string | lower }} \
+  -e ENABLE_TOOL_SEARCH={{ open_webui_enable_tool_search | default(false) | string | lower }} \
+  -e ENABLE_TOOL_PERMISSIONS={{ open_webui_enable_tool_permissions | default(false) | string | lower }} \
+{% if install_open_terminal | default(false) | bool %}
+  -e TERMINAL_SERVER_CONNECTIONS='{{ [{'id': 'open-terminal', 'name': 'Open Terminal', 'url': 'http://host.containers.internal:' ~ open_terminal_port, 'key': open_terminal_api_key, 'auth_type': 'bearer', 'enabled': true}] | to_json }}' \
+{% endif %}
   -p {{ open_webui_port }}:{{ open_webui_port }} \
   {% if nvidia_install_gpu_drivers | bool %}--device nvidia.com/gpu=all --security-opt=label=disable {% endif %} \
   ghcr.io/open-webui/open-webui:{{ open_webui_image_tag }}

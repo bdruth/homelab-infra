@@ -15,6 +15,16 @@
     name: copilot-api
     state: restarted
 
+- name: Restart Open Terminal service
+  ansible.builtin.systemd:
+    name: open-terminal
+    state: restarted
+
+- name: Restart SearXNG service
+  ansible.builtin.systemd:
+    name: searxng
+    state: restarted
+
 - name: Restart ComfyUI service
   ansible.builtin.systemd:
     name: comfyui

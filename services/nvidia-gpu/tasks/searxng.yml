@@ -1,0 +1,55 @@
+---
+# SearXNG Tasks
+# Self-hosted metasearch backing Open WebUI's search_web / fetch_url agent
+# tools (WEB_SEARCH_ENGINE=searxng). Aggregates many engines, so multi-query
+# agentic research isn't bound to a single scraped upstream like DuckDuckGo.
+
+- name: Fail when no SearXNG secret key is configured
+  ansible.builtin.assert:
+    that: searxng_secret_key | default('') | length > 0
+    fail_msg: >-
+      searxng_secret_key is empty. Generate one with `openssl rand -hex 32`
+      and store it in the git-crypt-protected vars/main.yml.
+    quiet: true
+
+- name: Create SearXNG base directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+    owner: root
+    group: root
+  loop:
+    - "{{ searxng_install_dir }}"
+    - "{{ searxng_install_dir }}/config"
+    - "{{ searxng_install_dir }}/data"
+
+- name: Template SearXNG settings
+  ansible.builtin.template:
+    src: searxng-settings.yml.j2
+    dest: "{{ searxng_install_dir }}/config/settings.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart SearXNG service
+
+- name: Create systemd service for SearXNG
+  ansible.builtin.template:
+    src: searxng.service.j2
+    dest: /etc/systemd/system/searxng.service
+    owner: root
+    group: root
+    mode: "0644"
+  register: searxng_service_file
+  notify:
+    - Reload systemd
+    - Restart SearXNG service
+
+- name: Enable and start SearXNG service
+  ansible.builtin.systemd:
+    name: searxng
+    enabled: true
+    state: started
+    daemon_reload: true
+  register: searxng_service
+  ignore_errors: "{{ ansible_check_mode }}"

@@ -1,0 +1,47 @@
+---
+# Open Terminal Tasks
+# Deploys open-webui/open-terminal: a sandboxed shell + filesystem that Open
+# WebUI's native-mode agent loop can drive (run commands, edit files, run code,
+# preview servers). Open WebUI is pointed at it via TERMINAL_SERVER_CONNECTIONS
+# in open-webui.service.j2.
+
+- name: Fail when no Open Terminal API key is configured
+  ansible.builtin.assert:
+    that: open_terminal_api_key | default('') | length > 0
+    fail_msg: >-
+      open_terminal_api_key is empty. Generate one with `openssl rand -hex 24`
+      and store it in the git-crypt-protected vars/main.yml (hex avoids
+      characters systemd treats specially in unit files).
+    quiet: true
+
+- name: Create Open Terminal base directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+    owner: root
+    group: root
+  loop:
+    - "{{ open_terminal_install_dir }}"
+    - "{{ open_terminal_install_dir }}/data"
+
+- name: Create systemd service for Open Terminal
+  ansible.builtin.template:
+    src: open-terminal.service.j2
+    dest: /etc/systemd/system/open-terminal.service
+    owner: root
+    group: root
+    mode: "0644"
+  register: open_terminal_service_file
+  notify:
+    - Reload systemd
+    - Restart Open Terminal service
+
+- name: Enable and start Open Terminal service
+  ansible.builtin.systemd:
+    name: open-terminal
+    enabled: true
+    state: started
+    daemon_reload: true
+  register: open_terminal_service
+  ignore_errors: "{{ ansible_check_mode }}"

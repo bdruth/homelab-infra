@@ -1,0 +1,9 @@
+# Managed by Ansible (nvidia-gpu role). SearXNG starts from its built-in
+# defaults; only the overrides below are set.
+use_default_settings: true
+
+search:
+  # Open WebUI requests format=json, which SearXNG rejects (403) unless listed.
+  formats:
+    - html
+    - json

@@ -1,0 +1,28 @@
+[Unit]
+Description=Open Terminal (sandboxed shell and filesystem for Open WebUI agents)
+After=network-online.target podman.service
+Wants=network-online.target
+Requires=podman.service
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=10
+WorkingDirectory={{ open_terminal_install_dir }}
+ExecStartPre=-/usr/bin/docker stop open-terminal
+ExecStartPre=-/usr/bin/docker rm open-terminal
+ExecStartPre=-/usr/bin/docker pull ghcr.io/open-webui/open-terminal:{{ open_terminal_image_tag }}
+# The image entrypoint chowns /home/user to its unprivileged user, so the
+# bind mount needs no pre-set ownership. Open WebUI reaches this through
+# host.containers.internal, proxied server-side, so the key never reaches a
+# browser.
+ExecStart=/usr/bin/docker run --name open-terminal \
+  -v {{ open_terminal_install_dir }}/data:/home/user \
+  -e OPEN_TERMINAL_API_KEY={{ open_terminal_api_key }} \
+  -p {{ open_terminal_port }}:8000 \
+  ghcr.io/open-webui/open-terminal:{{ open_terminal_image_tag }}
+
+ExecStop=/usr/bin/docker stop open-terminal
+
+[Install]
+WantedBy=multi-user.target

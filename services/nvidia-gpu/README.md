@@ -39,6 +39,8 @@ The module is organized into separate task files for better maintainability:
 - `tasks/whisper_asr.yml` - Installs and configures Whisper ASR Webservice
 - `tasks/open_webui.yml` - Installs and configures Open WebUI
 - `tasks/copilot_api.yml` - Installs and configures the Copilot API sidecar
+- `tasks/open_terminal.yml` - Installs the Open Terminal sandbox that Open WebUI agents drive
+- `tasks/searxng.yml` - Installs the SearXNG search backend for Open WebUI
 - `tasks/watchtower.yml` - Installs and configures Watchtower for automatic container updates
 
 ## Usage
@@ -64,6 +66,8 @@ Each major component can be enabled or disabled using variables:
 - `install_whisper_asr` - Whether to install Whisper ASR Webservice
 - `install_open_webui` - Whether to install Open WebUI
 - `install_copilot_api` - Whether to install the Copilot API sidecar (off by default)
+- `install_open_terminal` - Whether to install Open Terminal and connect Open WebUI to it (off by default)
+- `install_searxng` - Whether to install SearXNG and use it for Open WebUI web search (off by default)
 - `install_watchtower` - Whether to install Watchtower for automatic container updates
 - `install_docker_compose` - Whether to install latest docker-compose
 - `nvidia_configure_egpu` - Whether to configure thunderbolt eGPU support
@@ -129,6 +133,27 @@ After installation, access the Open WebUI interface at `http://localhost:3000/` 
 - GPU acceleration for faster inference when NVIDIA drivers are installed
 - Integration with local Ollama installation
 - User management and conversation history
+
+#### Agentic features
+
+Open WebUI runs with native function calling, so models can chain tool calls on their own. The role enables the extras below with env vars, because `ENABLE_PERSISTENT_CONFIG=false` resets anything set in the admin UI on restart:
+
+- `open_webui_enable_subagents` - `ENABLE_SUBAGENTS`: lets a model hand focused work to a parallel agent with `delegate_task`. Each delegation costs a full extra model call.
+- `open_webui_enable_tool_search` - `ENABLE_TOOL_SEARCH` (experimental): keeps large tool definitions out of the context until the model asks for them.
+- `open_webui_enable_tool_permissions` - `ENABLE_TOOL_PERMISSIONS` (experimental): adds an "Ask for approval" mode, chosen per user. The default stays "Full access".
+
+### Open Terminal
+
+When `install_open_terminal: true`, this role runs [open-webui/open-terminal](https://github.com/open-webui/open-terminal) as a systemd-managed container and passes `TERMINAL_SERVER_CONNECTIONS` to Open WebUI. The model gets a shell and a persistent home directory (`/opt/open-terminal/data`) where it can run commands, write and run code, process documents, and start servers with previews.
+
+- Generate the key with `openssl rand -hex 24` and store it as `open_terminal_api_key` in the git-crypt-protected `vars/main.yml`.
+- Open WebUI proxies requests server-side, so the key never reaches a browser.
+- In a chat, pick the terminal from the cloud icon in the message box. Use a model that is reliable at multi-step tool calls.
+- The container has unrestricted network egress and root-equivalent control of its own filesystem only. It is not given the Docker socket. Turn on "Ask for approval" if you want to review commands.
+
+### SearXNG
+
+When `install_searxng: true`, this role runs [SearXNG](https://github.com/searxng/searxng) and points Open WebUI at it (`WEB_SEARCH_ENGINE=searxng`), overriding `open_webui_web_search_engine`. The templated `settings.yml` adds `json` to `search.formats`, which Open WebUI requires. Generate `searxng_secret_key` with `openssl rand -hex 32`.
 
 ### Copilot API Sidecar
 
