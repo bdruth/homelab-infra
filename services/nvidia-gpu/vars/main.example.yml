@@ -69,6 +69,8 @@ open_webui_default_model_metadata: # Default model capability metadata
   capabilities:
     vision: true
     web_search: true
+  defaultFeatureIds: # Features switched on at the start of every chat
+    - web_search
 open_webui_default_model_params: # Default model parameters
   function_calling: "native"
 open_webui_enable_subagents: false # Let models delegate work via delegate_task (extra model calls per delegation)
