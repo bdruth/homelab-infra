@@ -12,13 +12,14 @@
       and store it in the git-crypt-protected vars/main.yml.
     quiet: true
 
+# No owner/group on these paths: the container chowns its bind mounts to its
+# own user on start, so forcing root:root here would report a change (and
+# restart the container) on every run.
 - name: Create SearXNG base directories
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
     mode: "0755"
-    owner: root
-    group: root
   loop:
     - "{{ searxng_install_dir }}"
     - "{{ searxng_install_dir }}/config"
@@ -28,8 +29,6 @@
   ansible.builtin.template:
     src: searxng-settings.yml.j2
     dest: "{{ searxng_install_dir }}/config/settings.yml"
-    owner: root
-    group: root
     mode: "0644"
   notify: Restart SearXNG service
 

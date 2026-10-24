@@ -14,13 +14,13 @@
       characters systemd treats specially in unit files).
     quiet: true
 
+# No owner/group: the image entrypoint chowns /home/user to its own user, so
+# forcing root:root here would report a change on every run.
 - name: Create Open Terminal base directories
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
     mode: "0755"
-    owner: root
-    group: root
   loop:
     - "{{ open_terminal_install_dir }}"
     - "{{ open_terminal_install_dir }}/data"
