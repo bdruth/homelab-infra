@@ -52,8 +52,12 @@
   block:
     # We need to know which models the proxy currently advertises so the
     # chat-completions connection's allowlist can be "everything except
-    # responses-only and noise". Resolve any connection that uses
-    # `model_ids_from` instead of a hard-coded `model_ids`.
+    # responses-only and noise", and the Responses connection's allowlist can
+    # be "the responses-only models upstream still lists" (include_ids), so a
+    # model Copilot withdraws drops out instead of lingering in the picker.
+    # Resolve any connection that uses `model_ids_from` instead of a
+    # hard-coded `model_ids`. The '(?!)' fallback regex matches nothing: an
+    # empty exclude_patterns would otherwise join to '' and match every id.
     - name: Collect unique model_ids_from source URLs
       ansible.builtin.set_fact:
         _open_webui_model_source_urls: >-
@@ -118,8 +122,9 @@
                           else (
                             (
                               _open_webui_model_index[item_value.model_ids_from.url]
+                              | select('in', item_value.model_ids_from.include_ids | default(_open_webui_model_index[item_value.model_ids_from.url]))
                               | reject('in', item_value.model_ids_from.exclude_ids | default([]))
-                              | reject('search', item_value.model_ids_from.exclude_patterns | default([]) | join('|'))
+                              | reject('search', (item_value.model_ids_from.exclude_patterns | default([]) | join('|')) or '(?!)')
                               | list
                             ) if item_value.model_ids_from is defined else []
                           ),

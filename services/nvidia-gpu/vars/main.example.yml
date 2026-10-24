@@ -166,8 +166,9 @@ copilot_api_responses_only_models:
 #   enable, tags, prefix_id, model_ids, connection_type, auth_type, headers,
 #   provider, azure, api_version, api_type ("responses" for the Responses API).
 # `model_ids_from` (mutually exclusive with model_ids) computes the list at
-# deploy time from the proxy's /v1/models, minus exclude_ids and any IDs
-# matching exclude_patterns. Required because empty model_ids means "all
+# deploy time from the proxy's /v1/models, restricted to include_ids when set
+# (so withdrawn models drop out), minus exclude_ids and any IDs matching
+# exclude_patterns. Required because empty model_ids means "all
 # models" in Open WebUI, which would let two connections claim the same
 # model and route the request to the wrong one.
 open_webui_connections:
@@ -189,7 +190,9 @@ open_webui_connections:
     enable: true
     tags: ["copilot", "responses"]
     prefix_id: ""
-    model_ids: "{{ copilot_api_responses_only_models }}"
+    model_ids_from:
+      url: "http://localhost:4141/v1/models"
+      include_ids: "{{ copilot_api_responses_only_models }}"
     connection_type: "external"
     auth_type: "bearer"
     api_type: "responses"
