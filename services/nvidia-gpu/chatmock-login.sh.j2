@@ -18,11 +18,14 @@ esac
 
 SEAT_DIR="{{ chatgpt_proxy_install_dir }}/seats/${SEAT}"
 
+# Calling `chatmock` directly skips the image entrypoint's own `login` branch,
+# which drops extra arguments such as --headless.
 docker run --rm -it \
     --name "chatmock-login-${SEAT}" \
     -v "${SEAT_DIR}:/data" \
     -e CHATGPT_LOCAL_HOME=/data \
-    localhost/chatmock:{{ chatgpt_proxy_image_tag }} login --headless
+    -e PYTHONUNBUFFERED=1 \
+    localhost/chatmock:{{ chatgpt_proxy_image_tag }} chatmock login --headless
 
 chmod 600 "${SEAT_DIR}/auth.json"
 systemctl restart "chatmock-${SEAT}.service"
