@@ -66,3 +66,5 @@
 # - github.token    → use GITHUB_TOKEN env var instead
 
 sync.remote: "git+ssh://git@synology1:222/bruth/homelab-infra.git"
+audit:
+    enabled: false

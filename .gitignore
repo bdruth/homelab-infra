@@ -25,3 +25,6 @@ certs/
 *.db
 .beads-credential-key
 .beads/proxieddb/
+
+# bd runtime lock
+.beads.gate.lock
