@@ -3,9 +3,9 @@
 #
 # Usage: sudo chatmock-login <seat>   (seats: {{ chatgpt_proxy_seats | map(attribute='name') | join(', ') }})
 #
-# It prints a sign-in URL. Open it in a browser as that seat's ChatGPT user.
-# The browser then lands on a localhost page that will not load; copy the full
-# address from the address bar and paste it back here when prompted.
+# It uses ChatGPT's device-code sign-in: it prints a short code and a URL. Open
+# the URL in any browser (on any device), sign in as that seat's ChatGPT user,
+# and enter the code. Nothing needs to be pasted back here.
 set -eu
 
 SEAT="${1:-}"
@@ -20,11 +20,9 @@ SEAT_DIR="{{ chatgpt_proxy_install_dir }}/seats/${SEAT}"
 
 docker run --rm -it \
     --name "chatmock-login-${SEAT}" \
-    -p 127.0.0.1:1455:1455 \
     -v "${SEAT_DIR}:/data" \
     -e CHATGPT_LOCAL_HOME=/data \
-    -e CHATGPT_LOCAL_LOGIN_BIND=0.0.0.0 \
-    localhost/chatmock:{{ chatgpt_proxy_image_tag }} login
+    localhost/chatmock:{{ chatgpt_proxy_image_tag }} login --headless
 
 chmod 600 "${SEAT_DIR}/auth.json"
 systemctl restart "chatmock-${SEAT}.service"
