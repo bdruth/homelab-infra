@@ -20,7 +20,7 @@
 [[outputs.influxdb]]
   urls = ["http://{{ influxdb_host | default('localhost') }}:{{ influxdb_port | default(8086) }}"]
   database = "{{ influxdb_database | default('telegraf') }}"
-  skip_database_creation = false
+  skip_database_creation = {{ influxdb_skip_database_creation | default(false) | bool | lower }}
   timeout = "5s"
 {% if influxdb_username | default('') != '' and influxdb_password | default('') != '' %}
   username = "{{ influxdb_username }}"
