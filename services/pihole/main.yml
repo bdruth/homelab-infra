@@ -144,20 +144,57 @@
       until: stubby_probe.stdout is search('\d+\.\d+\.\d+\.\d+')
       when: stubby_enabled | default(false) | bool
 
-    - name: Install /etc/pihole/pihole.toml
+    # FTL rewrites comments and formatting when it saves pihole.toml. Compare
+    # parsed values so those cosmetic differences do not restart both DNS nodes.
+    - name: Render desired Pi-hole configuration for semantic comparison
       ansible.builtin.template:
         src: pihole.toml.j2
-        dest: "/etc/pihole/pihole.toml"
+        dest: /tmp/ansible-pihole.toml
+        owner: root
+        group: root
+        mode: "0600"
+      check_mode: false
+      diff: false
+      tags: pihole-config
+
+    - name: Compare desired and live Pi-hole settings
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/python3
+          - -c
+          - >-
+            import sys, tomllib;
+            a, b = sys.argv[1:];
+            desired = tomllib.load(open(a, 'rb'));
+            live = tomllib.load(open(b, 'rb'));
+            print('same' if desired == live else 'changed')
+          - /tmp/ansible-pihole.toml
+          - /etc/pihole/pihole.toml
+      register: pihole_toml_comparison
+      check_mode: false
+      changed_when: false
+      tags: pihole-config
+
+    - name: Install /etc/pihole/pihole.toml when settings differ
+      ansible.builtin.copy:
+        src: /tmp/ansible-pihole.toml
+        dest: /etc/pihole/pihole.toml
+        remote_src: true
         owner: pihole
         group: root
         mode: "0644"
+        backup: true
+      when: pihole_toml_comparison.stdout == 'changed'
       register: pihole_toml
+      diff: false
+      tags: pihole-config
 
     - name: Restart pihole-FTL
       ansible.builtin.service:
         name: pihole-FTL
         state: restarted
-      when: pihole_toml.changed or local_ttf_conf.changed
+      when: pihole_toml.changed or (local_ttf_conf.changed | default(false))
+      tags: pihole-config
 
     ## dnsdist fronts both Pi-holes, so every query arrives with dnsdist's MAC.
     ## With parseARPcache enabled FTL collapses every ECS-derived client onto that
@@ -167,6 +204,7 @@
       ansible.builtin.command: pihole networkflush
       when: pihole_toml.changed and not (parse_arp_cache | default(false) | bool)
       changed_when: true
+      tags: pihole-config
 
     ## Superseded by ansible-gravity-config.sql when the template's scope widened
     ## from clients to all cheap-to-apply gravity state.

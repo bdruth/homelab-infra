@@ -1,0 +1,29 @@
+services:
+  agentsview:
+    image: ghcr.io/kenn-io/agentsview:0.46.1
+    user: "1026:100"
+    restart: unless-stopped
+    ports:
+      # NAS management interface; INPUT and DOCKER-USER admit only beelink.
+      - "192.168.7.211:18080:8080"
+    mem_limit: 4g
+    memswap_limit: 6g
+    cpu_shares: 256
+    environment:
+      AGENTSVIEW_MODE: serve
+      HOME: /data
+      AGENTSVIEW_DATA_DIR: /data
+      AGENTSVIEW_HOST: 0.0.0.0
+      AGENTSVIEW_REQUIRE_AUTH: "true"
+      AGENTSVIEW_NO_BROWSER: "true"
+      AGENTSVIEW_AUTH_TOKEN_FILE: /run/secrets/agentsview_token
+      AGENTSVIEW_TELEMETRY_ENABLED: "0"
+    volumes:
+      - ./data:/data
+      - ./sources:/sources:ro
+      - ./secrets/token:/run/secrets/agentsview_token:ro
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

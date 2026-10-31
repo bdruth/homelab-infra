@@ -1,0 +1,6 @@
+---
+- name: Manage existing beelink reverse proxy
+  hosts: beelink
+  become: true
+  roles:
+    - authelia-proxy

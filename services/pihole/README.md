@@ -36,7 +36,11 @@ adlist row on its own blocks nothing until gravity runs.
 
 ## Changes
 
-- Updated to support Pi-hole v6.0+ by switching from generating custom.list to writing directly to pihole.toml hosts array
+- Updated the full pihole.toml template to the live FTL v6.8 schema on both nodes.
+- The playbook compares parsed TOML values before replacing the live file, so
+  FTL's regenerated comments and formatting do not cause a restart on every run.
+- `--tags pihole-config` runs the same managed template tasks without the
+  installer, package, blocklist, and backup tasks when only DNS config changes.
 - CNAME records are now directly generated in the pihole.toml cnameRecords array
 - Maintains all other Pi-hole configuration settings
 

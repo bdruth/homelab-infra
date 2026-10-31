@@ -26,6 +26,7 @@ Services can be deployed individually or as part of the complete infrastructure 
 - Monitoring (UPS monitoring, disk monitoring)
 - Utilities (Watchtower)
 - GPU services (NVIDIA GPU configuration)
+- AgentsView pilot archive on Synology (`services/agentsview/README.md`), via the existing private nginx proxy
 
 ## Running services playbooks manually
 

@@ -1,0 +1,6 @@
+---
+- name: Adopt existing AgentsView NAS pilot
+  hosts: synology1
+  become: true
+  roles:
+    - agentsview

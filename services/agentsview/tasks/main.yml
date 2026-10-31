@@ -1,0 +1,51 @@
+---
+# Adopt only the running pilot; never initialize or replace its data.
+- name: Inspect existing AgentsView pilot paths
+  ansible.builtin.stat:
+    path: "{{ agentsview_root }}/{{ item }}"
+  loop:
+    - compose.yaml
+    - data/config.toml
+    - sources
+    - secrets/token
+  register: agentsview_paths
+
+- name: Require intact pilot and runtime ownership
+  ansible.builtin.assert:
+    that:
+      - agentsview_paths.results | map(attribute='stat.exists') | min
+      - agentsview_paths.results[1].stat.uid == 1026
+      - agentsview_paths.results[3].stat.uid == 1026
+    fail_msg: Existing AgentsView data, sources, token, or ownership differs; inspect before convergence.
+
+- name: Install proxy-only Docker forwarding rule at boot
+  ansible.builtin.copy:
+    src: agentsview-proxy-firewall.sh
+    dest: /usr/local/etc/rc.d/agentsview-proxy-firewall.sh
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Enforce proxy-only Docker forwarding rule now
+  ansible.builtin.command: /usr/local/etc/rc.d/agentsview-proxy-firewall.sh start
+  changed_when: false
+
+- name: Set AgentsView browser URL and trusted origin
+  ansible.builtin.lineinfile:
+    path: "{{ agentsview_root }}/data/config.toml"
+    regexp: '^public_url\s*='
+    line: 'public_url = "https://agentsview.cusack-ruth.name"'
+    insertafter: '^disable_update_check\s*='
+    backup: true
+  diff: false
+  notify: Apply AgentsView compose
+
+- name: Adopt existing AgentsView compose definition
+  ansible.builtin.copy:
+    src: compose.yaml
+    dest: "{{ agentsview_root }}/compose.yaml"
+    owner: "1026"
+    group: "100"
+    mode: "0644"
+    backup: true
+  notify: Apply AgentsView compose

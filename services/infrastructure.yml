@@ -24,6 +24,7 @@
         _run_wakapi: "{{ 'wakapi' in host_roles | default([]) }}"
         _run_tailscale: "{{ 'tailscale' in host_roles | default([]) }}"
         _run_authelia_proxy: "{{ 'authelia-proxy' in host_roles | default([]) }}"
+        _run_agentsview: "{{ 'agentsview' in host_roles | default([]) }}"
 
   roles:
     - role: nut
@@ -56,6 +57,9 @@
     # services-deploy role regex, so CI never converges the reverse proxy.
     - role: authelia-proxy
       when: _run_authelia_proxy | bool
+    # Manual adoption of the existing NAS pilot; never bootstrap or import data.
+    - role: agentsview
+      when: _run_agentsview | bool
     # Runs last: an expired/invalid tailscale_authkey should not block any
     # other role's provisioning on this host.
     - role: tailscale

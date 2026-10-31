@@ -5,6 +5,9 @@ networks:
   net:
     driver: bridge
     enable_ipv6: true
+  grafana:
+    name: influxdb-grafana_app_net
+    external: true
 
 services:
   authelia:
@@ -68,6 +71,7 @@ services:
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
     networks:
       - net
+      - grafana
     ports:
       - 80:80
       - 443:443
