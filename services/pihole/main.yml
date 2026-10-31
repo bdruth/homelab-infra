@@ -10,8 +10,28 @@
     pihole_restore_version: v0.1.0
     aws_config_path: /root/.aws/config
     install_backup_crontab: false
+    pihole_min_free_mb: 1024
+    # Reclaim pihole-FTL.db free pages once they pass this size.
+    pihole_ftl_db_vacuum_threshold_mb: 512
 
   tasks:
+    ## Fail fast on a nearly full root disk. On 2026-10-31 pihole-blue's 8 GB
+    ## root hit 100% and the awscli unzip handler stalled the deploy for two
+    ## hours at an interactive "disk full? continue (y/n)" prompt.
+    - name: Check free space on the root filesystem
+      ansible.builtin.command: df --output=avail -B1M /
+      register: root_free_mb
+      changed_when: false
+
+    - name: Require enough free space to deploy
+      ansible.builtin.assert:
+        that: root_free_mb.stdout_lines[-1] | trim | int >= pihole_min_free_mb
+        fail_msg: >-
+          Only {{ root_free_mb.stdout_lines[-1] | trim }} MB free on /
+          (need {{ pihole_min_free_mb }} MB). Free space before deploying;
+          check /tmp and /etc/pihole/pihole-FTL.db.
+        quiet: true
+
     - name: Update apt cache
       ansible.builtin.apt:
         update_cache: true
@@ -195,6 +215,44 @@
         state: restarted
       when: pihole_toml.changed or (local_ttf_conf.changed | default(false))
       tags: pihole-config
+
+    ## FTL prunes queries older than maxDBdays but SQLite never returns the
+    ## freed pages to the filesystem. After retention dropped to 15 days the
+    ## file stayed at 2.2 GB, 87% of it free pages, on an 8 GB root disk.
+    ## VACUUM once the free pages pass the threshold. FTL holds the database
+    ## open and writes to it constantly, so stop it for the few seconds the
+    ## VACUUM takes; dnsdist sends queries to the other Pi-hole meanwhile.
+    - name: Check for pihole-FTL.db
+      ansible.builtin.stat:
+        path: /etc/pihole/pihole-FTL.db
+      register: ftl_db
+
+    - name: Measure free pages in pihole-FTL.db
+      when: ftl_db.stat.exists
+      ansible.builtin.command: >-
+        pihole-FTL sqlite3 -readonly /etc/pihole/pihole-FTL.db
+        "SELECT (SELECT freelist_count FROM pragma_freelist_count())
+                * (SELECT page_size FROM pragma_page_size()) / 1048576;"
+      register: ftl_db_free_mb
+      changed_when: false
+      failed_when: ftl_db_free_mb.rc != 0 or not (ftl_db_free_mb.stdout | trim | regex_search('^[0-9]+$'))
+
+    - name: Reclaim free pages in pihole-FTL.db
+      when: ftl_db.stat.exists and ftl_db_free_mb.stdout | trim | int >= pihole_ftl_db_vacuum_threshold_mb
+      block:
+        - name: Stop pihole-FTL for VACUUM
+          ansible.builtin.service:
+            name: pihole-FTL
+            state: stopped
+
+        - name: VACUUM pihole-FTL.db
+          ansible.builtin.command: pihole-FTL sqlite3 /etc/pihole/pihole-FTL.db "VACUUM;"
+          changed_when: true
+      always:
+        - name: Start pihole-FTL after VACUUM
+          ansible.builtin.service:
+            name: pihole-FTL
+            state: started
 
     ## dnsdist fronts both Pi-holes, so every query arrives with dnsdist's MAC.
     ## With parseARPcache enabled FTL collapses every ECS-derived client onto that
