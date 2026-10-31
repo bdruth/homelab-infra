@@ -1,0 +1,16 @@
+---
+# Workstations that push Claude/Codex transcripts to AgentsView.
+# Kept out of inventory.yml so `hosts: all` plays never target the Macs.
+# Use only with agentsview-only.yml:
+#   ansible-playbook -i inventory.yml -i agentsview/workstations.yml agentsview-only.yml
+all:
+  children:
+    agentsview_uploaders:
+      hosts:
+        brice-mbp-m1max:
+          ansible_connection: local
+          ansible_python_interpreter: /usr/bin/python3
+        flexion-mac:
+          ansible_host: flexion-mac-G21J0CWWM5.local
+          ansible_user: bruth
+          ansible_python_interpreter: /usr/bin/python3

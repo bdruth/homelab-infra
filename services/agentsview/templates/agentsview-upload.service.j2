@@ -1,0 +1,12 @@
+# Managed by homelab-infra services/agentsview
+[Unit]
+Description=Push Claude and Codex transcripts to the AgentsView archive
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User={{ ansible_user }}
+ExecStart=/bin/bash {{ agentsview_upload_home }}/.local/bin/agentsview-upload
+Nice=10
+IOSchedulingClass=idle

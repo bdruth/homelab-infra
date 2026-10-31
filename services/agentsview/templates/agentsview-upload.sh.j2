@@ -1,0 +1,47 @@
+#!/bin/bash
+# Managed by homelab-infra services/agentsview. Pushes native Claude and Codex
+# transcripts to the AgentsView archive on the NAS.
+#
+# Append-only: no --delete, so sessions that Claude or Codex later remove
+# locally stay archived. Whole trees are sent so fork and subagent parents
+# arrive with their children. The NAS key is forced through
+# agentsview-upload-guard, which only accepts uploads into this host's folder.
+set -uo pipefail
+
+RSYNC=""
+for candidate in /opt/homebrew/bin/rsync /usr/local/bin/rsync /usr/bin/rsync; do
+  # macOS /usr/bin/rsync is openrsync, which lacks --append-verify.
+  # Capture first: piping into head can SIGPIPE rsync and trip pipefail.
+  version=$("$candidate" --version 2>/dev/null) || continue
+  if [[ $version =~ ^rsync\ +version\ 3 ]]; then
+    RSYNC=$candidate
+    break
+  fi
+done
+if [ -z "$RSYNC" ]; then
+  echo "agentsview-upload: rsync 3.x not found" >&2
+  exit 1
+fi
+
+SSH="ssh -F /dev/null -i $HOME/.ssh/agentsview_upload -o IdentitiesOnly=yes -o BatchMode=yes -o UserKnownHostsFile=$HOME/.ssh/agentsview_known_hosts -o StrictHostKeyChecking=yes -o ConnectTimeout=15 -o ServerAliveInterval=30"
+DEST="{{ agentsview_nas_user }}@{{ agentsview_nas_address }}"
+status=0
+
+upload() {
+  local src=$1 target=$2 rc
+  [ -d "$src" ] || return 0
+  nice -n 10 "$RSYNC" -rt --append-verify --timeout=300 \
+    --chmod=Du=rwx,Dgo=,Fu=rw,Fgo= \
+    --include='*/' --include='*.jsonl' --exclude='*' --prune-empty-dirs \
+    -e "$SSH" "$src/" "$DEST:$target/"
+  rc=$?
+  # 24 = source files vanished during transfer; the next run catches up.
+  if [ "$rc" -ne 0 ] && [ "$rc" -ne 24 ]; then
+    echo "agentsview-upload: $(date '+%F %T') $target failed with rsync exit $rc" >&2
+    status=$rc
+  fi
+}
+
+upload "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects" claude/projects
+upload "${CODEX_HOME:-$HOME/.codex}/sessions" codex/sessions
+exit "$status"

@@ -46,9 +46,12 @@ under `/volume1/docker/compose/agentsview-pilot/` on the NAS.
   live stack before this route was added. `services/authelia-proxy-only.yml`
   runs the complete existing proxy role without unrelated host roles.
 
-The role is wired into `services/infrastructure.yml` for inventory ownership
-but is deliberately omitted from CI convergence, like the proxy role. DNS
-remains under the normal infrastructure deployment workflow.
+The role is wired into `services/infrastructure.yml`. CI converges it
+through `services/agentsview/test-playbook.yml`, which runs
+`agentsview-only.yml` against `inventory.yml` only. That covers the NAS and
+the Linux uploaders, while the Macs stay manual. A CI run that changes the
+rendered `config.toml` restarts AgentsView. The proxy role remains manual.
+DNS remains under the normal infrastructure deployment workflow.
 
 ## Validation and operations
 
@@ -71,9 +74,57 @@ SSE `events_ready` checks passed. Sync status reported
 connection to the NAS upstream timed out while beelink reached it; NAS SSH
 and Gitea remained available.
 
-The imported pilot is 567 native JSONL files, roughly 7.8 GiB. It includes
-fork ancestors, but it is not the full roughly 53 GiB transcript collection.
-No full-history sync, source deletion, PostgreSQL, embeddings, or external
-model endpoint is managed here. Keep `./data` owned by UID 1026/GID 100;
+The original pilot was 567 native JSONL files, roughly 7.8 GiB, from
+flexion-mac. The transcript uploaders below replace it with full history.
+No source deletion, PostgreSQL, embeddings, or external model endpoint is
+managed here. Keep `./data` owned by UID 1026/GID 100;
 the daemon needs that ownership. The old Mac SSH tunnel is no longer part of
 the managed access path.
+
+## Transcript uploaders
+
+Every host in the `agentsview_uploaders` group pushes its native Claude
+(`~/.claude/projects`) and Codex (`~/.codex/sessions`) JSONL files to the NAS
+every 15 minutes. The Linux hosts (beelink, beelink-gti, ubuntu-22) are in
+`inventory.yml`. The Macs (brice-mbp-m1max, flexion-mac) are in
+`agentsview/workstations.yml`, which is kept separate so that `hosts: all`
+plays never target them. asrock-nuc and weewx-pi4 had no session history on
+2026-10-31 and are not uploaders.
+
+Apply everything with:
+
+    ansible-playbook -i inventory.yml -i agentsview/workstations.yml agentsview-only.yml
+
+The playbook creates each uploader's key, then configures the NAS, then
+installs the uploader. How it works:
+
+- Each uploader has its own key, `~/.ssh/agentsview_upload`, and pins the
+  NAS host key in `~/.ssh/agentsview_known_hosts`. The pinned key is read
+  from the NAS itself, not trusted on first use.
+- On the NAS, each key's `authorized_keys` entry is `restrict` and forced
+  through `bin/agentsview-upload-guard <dir>`. The guard allows only a
+  receiving rsync with append options into `sources/<dir>/claude/projects`
+  or `sources/<dir>/codex/sessions`. It rejects reads, `--delete`, and
+  every other option.
+- `~/.local/bin/agentsview-upload` runs `rsync -rt --append-verify` with
+  `*.jsonl` only and no `--delete`. Sessions that Claude or Codex later
+  remove locally stay in the archive. Whole trees are sent, so fork and
+  subagent parents arrive with their children.
+- The schedule is LaunchAgent `name.cusack-ruth.agentsview-upload` on
+  macOS (log: `~/Library/Logs/agentsview-upload.log`) and
+  `agentsview-upload.timer` under systemd on Linux (log:
+  `journalctl -u agentsview-upload`).
+- `data/config.toml` holds a managed `session_sources` block with one
+  folder and machine key per host from `agentsview_upload_sources` in
+  `vars/main.yml`. flexion-mac keeps the pilot folder `sources/mac` and
+  machine key `316226fb…`. A session keeps the machine key from its first
+  import, so never change an existing key.
+- The uploaders reach the NAS at its LAN address. A Mac away from home
+  logs connection failures and catches up when it is back on the LAN.
+
+To add a host, add it to `agentsview_uploaders` and to
+`agentsview_upload_sources`, then rerun the playbook.
+
+On 2026-10-31, the pilot `mac` `session_sources` entries were moved into
+the managed block and `cursor_secret` was rotated. The earlier file is
+`data/config.toml.pre-uploaders-20261031` on the NAS.

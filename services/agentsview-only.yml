@@ -1,6 +1,27 @@
 ---
+# AgentsView on synology1 plus transcript uploaders.
+# Include the workstations inventory so the Macs are covered:
+#   ansible-playbook -i inventory.yml -i agentsview/workstations.yml agentsview-only.yml
+- name: Prepare uploader keys
+  hosts: agentsview_uploaders
+  become: false
+  tasks:
+    - name: Create upload key
+      ansible.builtin.include_role:
+        name: agentsview
+        tasks_from: uploader_key
+
 - name: Adopt existing AgentsView NAS pilot
   hosts: synology1
   become: true
   roles:
     - agentsview
+
+- name: Install transcript uploaders
+  hosts: agentsview_uploaders
+  become: false
+  tasks:
+    - name: Install upload script and schedule
+      ansible.builtin.include_role:
+        name: agentsview
+        tasks_from: uploader

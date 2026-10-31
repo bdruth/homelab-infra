@@ -4,3 +4,10 @@
   args:
     chdir: "{{ agentsview_root }}"
   changed_when: true
+
+# compose up -d does not restart for config.toml-only changes.
+- name: Restart AgentsView
+  ansible.builtin.command: /usr/local/bin/docker compose -p agentsview-pilot restart agentsview
+  args:
+    chdir: "{{ agentsview_root }}"
+  changed_when: true

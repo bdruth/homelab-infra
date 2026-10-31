@@ -57,7 +57,9 @@
     # services-deploy role regex, so CI never converges the reverse proxy.
     - role: authelia-proxy
       when: _run_authelia_proxy | bool
-    # Manual adoption of the existing NAS pilot; never bootstrap or import data.
+    # Adopts the existing NAS deployment; never bootstraps or imports data.
+    # CI converges it through agentsview/test-playbook.yml, which also
+    # installs the Linux transcript uploaders.
     - role: agentsview
       when: _run_agentsview | bool
     # Runs last: an expired/invalid tailscale_authkey should not block any

@@ -1,0 +1,46 @@
+#!/usr/bin/python3
+"""SSH forced command for AgentsView transcript uploads. Managed by Ansible.
+
+Allows only a receiving rsync server with append/in-place options, writing
+into sources/<dir>/claude/projects or sources/<dir>/codex/sessions. It rejects
+--sender (reads), --delete and every other option, so an uploader key can
+neither read the archive nor remove or write files elsewhere on the NAS.
+"""
+import os
+import re
+import shlex
+import sys
+
+ROOT = "{{ agentsview_sources_root }}"
+TARGETS = {"claude/projects", "codex/sessions"}
+SHORT = re.compile(r"^-[mtrlvzcIu]+(e\.[A-Za-z]*)?$")
+LONG = re.compile(r"^--(append|inplace|timeout=[0-9]+)$")
+
+
+def deny(reason):
+    sys.stderr.write("agentsview-upload-guard: %s\n" % reason)
+    sys.exit(1)
+
+
+label = sys.argv[1] if len(sys.argv) == 2 else ""
+if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", label):
+    deny("invalid source label")
+try:
+    argv = shlex.split(os.environ.get("SSH_ORIGINAL_COMMAND", ""))
+except ValueError:
+    deny("unparsable command")
+if argv[:2] != ["rsync", "--server"] or len(argv) < 5:
+    deny("only rsync uploads are allowed")
+opts, dot, dest = argv[2:-2], argv[-2], argv[-1]
+if dot != ".":
+    deny("unexpected argument layout")
+bad = [o for o in opts if not (SHORT.match(o) or LONG.match(o))]
+if bad:
+    deny("option not allowed: %s" % " ".join(bad))
+target = dest.strip("/")
+if target not in TARGETS:
+    deny("target must be one of %s" % ", ".join(sorted(TARGETS)))
+path = os.path.join(ROOT, label, target)
+if not os.path.isdir(path):
+    deny("missing destination for %s" % label)
+os.execv("/usr/bin/rsync", ["rsync", "--server"] + opts + [".", path + "/"])

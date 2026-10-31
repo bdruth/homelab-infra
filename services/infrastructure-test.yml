@@ -44,3 +44,6 @@
 
 - name: Test Tailscale configuration
   import_playbook: tailscale/test-playbook.yml
+
+- name: Test AgentsView and transcript uploaders
+  import_playbook: agentsview/test-playbook.yml

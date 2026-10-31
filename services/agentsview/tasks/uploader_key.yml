@@ -1,0 +1,30 @@
+---
+# Runs as the login user on each uploader before the NAS play authorizes its key.
+- name: Require an upload source definition for this host
+  ansible.builtin.assert:
+    that: inventory_hostname in agentsview_upload_sources
+    fail_msg: Add {{ inventory_hostname }} to agentsview_upload_sources in agentsview/vars/main.yml.
+
+- name: Record upload home directory
+  ansible.builtin.set_fact:
+    agentsview_upload_home: "{{ ansible_env.HOME }}"
+
+- name: Create upload key directory and script directory
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ agentsview_upload_home }}/.ssh", mode: "0700" }
+    - { path: "{{ agentsview_upload_home }}/.local/bin", mode: "0755" }
+
+- name: Create dedicated upload SSH key
+  community.crypto.openssh_keypair:
+    path: "{{ agentsview_upload_home }}/.ssh/agentsview_upload"
+    type: ed25519
+    comment: agentsview-upload@{{ inventory_hostname }}
+  register: agentsview_upload_key
+
+- name: Publish upload public key for the NAS play
+  ansible.builtin.set_fact:
+    agentsview_upload_pubkey: "{{ agentsview_upload_key.public_key }} {{ agentsview_upload_key.comment }}"

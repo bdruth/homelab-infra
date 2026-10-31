@@ -1,0 +1,41 @@
+---
+# CI entry point for AgentsView: the NAS service plus the Linux transcript
+# uploaders. CI passes only inventory.yml, so the Macs listed in
+# agentsview/workstations.yml are never targeted from CI.
+
+- name: Converge AgentsView and uploaders
+  import_playbook: ../agentsview-only.yml
+
+- name: Verify AgentsView container
+  hosts: synology1
+  gather_facts: false
+  tasks:
+    - name: Check that the AgentsView container is running
+      ansible.builtin.command: >-
+        /usr/local/bin/docker inspect -f '{{ "{{" }}.State.Running{{ "}}" }}'
+        agentsview-pilot-agentsview-1
+      register: agentsview_running
+      changed_when: false
+      failed_when: agentsview_running.stdout != 'true'
+      retries: 6
+      delay: 10
+      until: agentsview_running.stdout == 'true'
+
+- name: Verify upload schedules
+  hosts: agentsview_uploaders
+  gather_facts: true
+  tasks:
+    - name: Check that the Linux upload timer is enabled
+      when: ansible_facts['system'] == 'Linux'
+      block:
+        - name: Read upload timer state
+          ansible.builtin.systemd_service:
+            name: agentsview-upload.timer
+          register: agentsview_upload_timer
+
+        - name: Require an enabled, active upload timer
+          ansible.builtin.assert:
+            that:
+              - agentsview_upload_timer.status.ActiveState == 'active'
+              - agentsview_upload_timer.status.UnitFileState == 'enabled'
+            fail_msg: agentsview-upload.timer is not enabled and active on {{ inventory_hostname }}.

@@ -49,3 +49,58 @@
     mode: "0644"
     backup: true
   notify: Apply AgentsView compose
+
+# Transcript uploads: each agentsview_uploaders host pushes with its own key,
+# forced through the guard into sources/<dir>/ only.
+- name: Create upload guard directory
+  ansible.builtin.file:
+    path: "{{ agentsview_root }}/bin"
+    state: directory
+    owner: "1026"
+    group: "100"
+    mode: "0700"
+
+- name: Install upload guard
+  ansible.builtin.template:
+    src: agentsview-upload-guard.py.j2
+    dest: "{{ agentsview_upload_guard }}"
+    owner: "1026"
+    group: "100"
+    mode: "0700"
+
+# No mode: the pilot's existing mac/ folders carry Synology ACLs.
+- name: Create per-host source folders  # noqa: risky-file-permissions
+  ansible.builtin.file:
+    path: "{{ agentsview_sources_root }}/{{ item.0.value.dir }}/{{ item.1 }}"
+    state: directory
+    owner: "1026"
+    group: "100"
+  loop: "{{ agentsview_upload_sources | dict2items | product(['claude/projects', 'codex/sessions']) | list }}"
+  loop_control:
+    label: "{{ item.0.value.dir }}/{{ item.1 }}"
+
+- name: Authorize uploader keys through the guard
+  ansible.posix.authorized_key:
+    user: "{{ agentsview_nas_user }}"
+    key: "{{ hostvars[item].agentsview_upload_pubkey }}"
+    key_options: 'command="{{ agentsview_upload_guard }} {{ agentsview_upload_sources[item].dir }}",restrict'
+  loop: "{{ groups['agentsview_uploaders'] | default([]) }}"
+  when: hostvars[item].agentsview_upload_pubkey is defined
+
+- name: Register upload sources in AgentsView config
+  ansible.builtin.blockinfile:
+    path: "{{ agentsview_root }}/data/config.toml"
+    marker: "# {mark} ANSIBLE MANAGED: agentsview upload sources"
+    block: |
+      {% for name, src in agentsview_upload_sources.items() %}
+      {% for agent, sub in [['claude', 'claude/projects'], ['codex', 'codex/sessions']] %}
+      [[session_sources]]
+        agent = "{{ agent }}"
+        dir = "/sources/{{ src.dir }}/{{ sub }}"
+        machine = "{{ src.machine }}"
+
+      {% endfor %}
+      {% endfor %}
+    backup: true
+  diff: false
+  notify: Restart AgentsView

@@ -1,0 +1,70 @@
+---
+# Runs as the login user on each uploader after the NAS authorized its key.
+# Pin the NAS host key from the NAS itself instead of trusting first use.
+- name: Read NAS SSH host key
+  ansible.builtin.slurp:
+    src: /etc/ssh/ssh_host_ed25519_key.pub
+  delegate_to: synology1
+  run_once: true
+  register: agentsview_nas_hostkey
+
+- name: Pin NAS host key for uploads
+  ansible.builtin.copy:
+    dest: "{{ agentsview_upload_home }}/.ssh/agentsview_known_hosts"
+    content: "{{ agentsview_nas_address }} {{ (agentsview_nas_hostkey.content | b64decode).split()[:2] | join(' ') }}\n"
+    mode: "0644"
+
+- name: Install upload script
+  ansible.builtin.template:
+    src: agentsview-upload.sh.j2
+    dest: "{{ agentsview_upload_home }}/.local/bin/agentsview-upload"
+    mode: "0755"
+
+- name: Install macOS LaunchAgent
+  when: ansible_system == 'Darwin'
+  block:
+    - name: Install upload LaunchAgent
+      ansible.builtin.template:
+        src: agentsview-upload.plist.j2
+        dest: "{{ agentsview_upload_home }}/Library/LaunchAgents/name.cusack-ruth.agentsview-upload.plist"
+        mode: "0644"
+      register: agentsview_upload_plist
+
+    - name: Check whether the LaunchAgent is loaded
+      ansible.builtin.command: launchctl print gui/{{ ansible_user_uid }}/name.cusack-ruth.agentsview-upload
+      register: agentsview_upload_loaded
+      changed_when: false
+      failed_when: false
+
+    - name: Unload changed LaunchAgent
+      ansible.builtin.command: launchctl bootout gui/{{ ansible_user_uid }}/name.cusack-ruth.agentsview-upload
+      when: agentsview_upload_plist is changed and agentsview_upload_loaded.rc == 0
+      changed_when: true
+
+    - name: Load LaunchAgent
+      ansible.builtin.command: >-
+        launchctl bootstrap gui/{{ ansible_user_uid }}
+        {{ agentsview_upload_home }}/Library/LaunchAgents/name.cusack-ruth.agentsview-upload.plist
+      when: agentsview_upload_plist is changed or agentsview_upload_loaded.rc != 0
+      changed_when: true
+
+- name: Install Linux systemd timer
+  when: ansible_system == 'Linux'
+  become: true
+  block:
+    - name: Install upload service and timer
+      ansible.builtin.template:
+        src: "agentsview-upload.{{ item }}.j2"
+        dest: /etc/systemd/system/agentsview-upload.{{ item }}
+        owner: root
+        group: root
+        mode: "0644"
+      loop: [service, timer]
+      register: agentsview_upload_units
+
+    - name: Enable upload timer
+      ansible.builtin.systemd_service:
+        name: agentsview-upload.timer
+        enabled: true
+        state: started
+        daemon_reload: "{{ agentsview_upload_units is changed }}"

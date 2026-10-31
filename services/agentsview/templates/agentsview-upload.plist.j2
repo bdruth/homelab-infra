@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Managed by homelab-infra services/agentsview -->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>name.cusack-ruth.agentsview-upload</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>{{ ansible_env.HOME }}/.local/bin/agentsview-upload</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StartInterval</key>
+  <integer>{{ agentsview_upload_interval_minutes * 60 }}</integer>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>LowPriorityIO</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>{{ ansible_env.HOME }}/Library/Logs/agentsview-upload.log</string>
+  <key>StandardErrorPath</key>
+  <string>{{ ansible_env.HOME }}/Library/Logs/agentsview-upload.log</string>
+</dict>
+</plist>
