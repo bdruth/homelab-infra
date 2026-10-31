@@ -2,6 +2,14 @@
 
 This project uses **bd** (beads) for issue tracking. Run `bd prime` for full workflow context.
 
+## Serena and project context
+
+- When Serena MCP tools are available, activate `homelab-infra` and read Serena's initial instructions before code work.
+- Use Serena's symbol overview, symbol search, and reference tools to inspect only the code needed for the task. Use symbolic editing when changing a whole symbol; use file-based editing for smaller changes.
+- Read relevant existing `.serena/memories/` files for project history and patterns. Check them against the current repository and live infrastructure before relying on them. Use Beads for task status and new persistent knowledge.
+- For current priorities, run `bd ready` and inspect the relevant issues. Serena's `active_context.md` may provide additional historical context.
+- When asked to **update memory bank**, review the Serena memory files, refresh relevant project history and patterns there, and record task state or durable new knowledge in Beads.
+
 > **Architecture in one line:** Issues live in a local Dolt database
 > (`.beads/dolt/`); cross-machine sync uses `bd dolt push/pull` (a
 > git-compatible protocol), stored under `refs/dolt/data` on your git

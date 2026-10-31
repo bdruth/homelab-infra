@@ -1,2 +1,7 @@
 [features]
 hooks = true
+
+[mcp_servers.serena]
+command = "serena"
+args = ["start-mcp-server", "--context=codex", "--project=homelab-infra"]
+startup_timeout_sec = 30
