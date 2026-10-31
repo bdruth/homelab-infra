@@ -107,6 +107,9 @@ compare_ftl_db_config() {
 }
 
 TMP_DIR=$(mktemp -d)
+# Runs every 15 minutes; without this each run leaked ~400 KB into /tmp and
+# filled pihole-blue's 8 GB root disk within three months.
+trap 'rm -rf "$TMP_DIR"' EXIT
 cd "$TMP_DIR"
 # shellcheck disable=SC2154
 # aws s3 cp with path style bucket reference
