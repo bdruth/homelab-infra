@@ -116,6 +116,8 @@ installs the uploader. How it works:
     `subagents/**/*.meta.json`.
   - Claude project `memory/*.md`, without `--append`, because those files
     are rewritten in place.
+  - Claude `file-history/` (the checkpoints behind `/rewind`), with
+    `--append-verify`.
   - Codex, with `--append-verify`: `*.jsonl` only.
 
   AgentsView indexes only the transcripts. The other files are kept on the
@@ -138,3 +140,36 @@ To add a host, add it to `agentsview_uploaders` and to
 On 2026-10-31, the pilot `mac` `session_sources` entries were moved into
 the managed block and `cursor_secret` was rotated. The earlier file is
 `data/config.toml.pre-uploaders-20261031` on the NAS.
+
+## Resuming an archived session
+
+`~/.local/bin/agentsview-rehydrate` on every uploader restores a session
+from the raw archive so Claude or Codex can resume it:
+
+```bash
+agentsview-rehydrate <session id, codex:<id>, or an AgentsView URL>
+agentsview-rehydrate <id> --print       # restore, print the resume command
+agentsview-rehydrate <id> --cwd ~/src/x # original directory missing here
+```
+
+- It restores from the raw files, not from AgentsView's database, so the
+  transcript is byte for byte what the original wrote. For Claude it also
+  restores the session's `tool-results`, subagent transcripts and
+  `file-history`.
+- It never overwrites local files. An identical or longer local transcript
+  is kept; one that differs from the archive stops the restore.
+- A session from another machine is forked by default
+  (`claude --resume <id> --fork-session`, `codex fork <id>`), after a
+  warning and, at a terminal, a prompt. Resuming it in place would write
+  the same session id from two machines. The restored original is listed
+  in `~/.local/state/agentsview/upload-exclude/` so the uploader does not
+  send it again under this host.
+- It reads the archive with its own key, `~/.ssh/agentsview_read`, forced
+  through `bin/agentsview-read-guard` on the NAS. That guard allows only a
+  session lookup and rsync reads under `sources/`, so the read key cannot
+  write and the upload key cannot read.
+- What a resume cannot bring back: the machine state the session ran
+  against (working tree, git state, MCP servers, permissions), Codex
+  `generated_images/`, and tool-result paths that point into another
+  machine's home directory.
+

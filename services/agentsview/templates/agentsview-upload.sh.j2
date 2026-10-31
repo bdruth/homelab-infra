@@ -11,7 +11,12 @@
 # and the path), and subagents/**/*.meta.json describes subagent runs. Both
 # are written once, so they ride the append pass. Project memory/*.md files
 # are rewritten in place, which --append would never resend, so they get a
-# second, ordinary rsync pass. The NAS key is forced through
+# second, ordinary rsync pass. file-history/ holds the write-once checkpoints
+# behind Claude's /rewind.
+#
+# agentsview-rehydrate lists the files it restores from another machine in
+# ~/.local/state/agentsview/upload-exclude/<target>, so a restored copy is not
+# uploaded again under this host. The NAS key is forced through
 # agentsview-upload-guard, which only accepts uploads into this host's folder.
 set -uo pipefail
 
@@ -32,6 +37,7 @@ fi
 
 SSH="ssh -F /dev/null -i $HOME/.ssh/agentsview_upload -o IdentitiesOnly=yes -o BatchMode=yes -o UserKnownHostsFile=$HOME/.ssh/agentsview_known_hosts -o StrictHostKeyChecking=yes -o ConnectTimeout=15 -o ServerAliveInterval=30"
 DEST="{{ agentsview_nas_user }}@{{ agentsview_nas_address }}"
+EXCLUDE_DIR="$HOME/.local/state/agentsview/upload-exclude"
 status=0
 
 # upload SRC TARGET MODE INCLUDE...
@@ -41,7 +47,10 @@ upload() {
   local src=$1 target=$2 mode=$3 rc pattern
   shift 3
   [ -d "$src" ] || return 0
-  local args=(-rt --timeout=300 '--chmod=Du=rwx,Dgo=,Fu=rw,Fgo=' --include='*/')
+  local exclude="$EXCLUDE_DIR/${target//\//-}"
+  local args=(-rt --timeout=300 '--chmod=Du=rwx,Dgo=,Fu=rw,Fgo=')
+  [ -s "$exclude" ] && args+=(--exclude-from="$exclude")
+  args+=(--include='*/')
   [ "$mode" = append ] && args+=(--append-verify)
   for pattern in "$@"; do args+=(--include="$pattern"); done
   args+=(--exclude='*' --prune-empty-dirs)
@@ -58,5 +67,6 @@ CLAUDE_PROJECTS="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects"
 upload "$CLAUDE_PROJECTS" claude/projects append \
   '*.jsonl' 'tool-results/**' '*.meta.json'
 upload "$CLAUDE_PROJECTS" claude/projects update 'memory/*.md'
+upload "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/file-history" claude/file-history append '*'
 upload "${CODEX_HOME:-$HOME/.codex}/sessions" codex/sessions append '*.jsonl'
 exit "$status"

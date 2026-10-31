@@ -2,7 +2,8 @@
 """SSH forced command for AgentsView transcript uploads. Managed by Ansible.
 
 Allows only a receiving rsync server with append/in-place options, writing
-into sources/<dir>/claude/projects or sources/<dir>/codex/sessions. It rejects
+into sources/<dir>/claude/projects, sources/<dir>/claude/file-history or
+sources/<dir>/codex/sessions. It rejects
 --sender (reads), --delete and every other option, so an uploader key can
 neither read the archive nor remove or write files elsewhere on the NAS.
 """
@@ -12,7 +13,7 @@ import shlex
 import sys
 
 ROOT = "{{ agentsview_sources_root }}"
-TARGETS = {"claude/projects", "codex/sessions"}
+TARGETS = {"claude/projects", "claude/file-history", "codex/sessions"}
 SHORT = re.compile(r"^-[mtrlvzcIu]+(e\.[A-Za-z]*)?$")
 LONG = re.compile(r"^--(append|inplace|timeout=[0-9]+)$")
 

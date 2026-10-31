@@ -1,0 +1,299 @@
+#!/usr/bin/env python3
+"""Restore a Claude or Codex session from the AgentsView archive and resume it.
+
+Managed by homelab-infra services/agentsview.
+
+  agentsview-rehydrate <session id or AgentsView URL> [--cwd DIR]
+                       [--fork | --in-place] [--from DIR] [--print]
+
+The raw transcript (and, for Claude, its tool-results, subagent and
+file-history sidecars) comes byte for byte from the NAS archive, so the
+resumed session sees exactly what the original wrote. Files already present
+locally are never overwritten: an identical or longer local transcript is
+kept, and a transcript that differs from the archive stops the restore.
+
+A session that came from another machine is forked by default. Resuming it
+in place would keep writing the same session id from a second machine, and
+the uploader would then push two diverging copies of it to AgentsView. The
+restored original is also left out of uploads, since it already lives in
+the archive under its own machine.
+"""
+import argparse
+import json
+import os
+import re
+import shlex
+import shutil
+import subprocess
+import sys
+import tempfile
+
+NAS = "{{ agentsview_nas_user }}@{{ agentsview_nas_address }}"
+LOCAL_DIR = "{{ agentsview_upload_sources[inventory_hostname].dir }}"
+HOME = os.path.expanduser("~")
+SSH = [
+    "ssh", "-F", "/dev/null",
+    "-i", os.path.join(HOME, ".ssh/agentsview_read"),
+    "-o", "IdentitiesOnly=yes", "-o", "BatchMode=yes",
+    "-o", "UserKnownHostsFile=" + os.path.join(HOME, ".ssh/agentsview_known_hosts"),
+    "-o", "StrictHostKeyChecking=yes", "-o", "ConnectTimeout=15",
+    "-o", "LogLevel=ERROR",
+]
+UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+CLAUDE_HOME = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.join(HOME, ".claude")
+CODEX_HOME = os.environ.get("CODEX_HOME") or os.path.join(HOME, ".codex")
+EXCLUDE_DIR = os.path.join(HOME, ".local/state/agentsview/upload-exclude")
+
+
+class Diverged(Exception):
+    pass
+
+
+def say(msg):
+    sys.stderr.write("agentsview-rehydrate: %s\n" % msg)
+
+
+def die(msg):
+    say(msg)
+    sys.exit(1)
+
+
+def find_rsync():
+    # macOS /usr/bin/rsync is openrsync; prefer a real rsync 3.
+    for candidate in ("/opt/homebrew/bin/rsync", "/usr/local/bin/rsync", "/usr/bin/rsync"):
+        try:
+            out = subprocess.run([candidate, "--version"], capture_output=True, text=True).stdout
+        except OSError:
+            continue
+        if re.match(r"rsync +version 3", out):
+            return candidate
+    die("rsync 3.x not found")
+
+
+def lookup(session):
+    proc = subprocess.run(SSH + [NAS, "lookup", session], capture_output=True, text=True)
+    if proc.returncode != 0:
+        die("lookup failed: %s" % proc.stderr.strip())
+    return json.loads(proc.stdout)["matches"]
+
+
+def fetch(rsync, rel, staging):
+    """Copy one archive path (file, or directory when rel ends in /) into staging."""
+    dest = os.path.join(staging, rel)
+    os.makedirs(os.path.dirname(dest.rstrip("/")), exist_ok=True)
+    cmd = [rsync, "-rt", "--timeout=300", "-e", " ".join(SSH), "%s:%s" % (NAS, rel), dest]
+    if subprocess.run(cmd).returncode != 0:
+        die("fetching %s failed" % rel)
+    return dest.rstrip("/")
+
+
+def same_prefix(shorter, longer):
+    """True when file `longer` starts with the full content of file `shorter`."""
+    with open(shorter, "rb") as a, open(longer, "rb") as b:
+        while True:
+            chunk = a.read(1 << 20)
+            if not chunk:
+                return True
+            if b.read(len(chunk)) != chunk:
+                return False
+
+
+def place(src, dst):
+    """Install a transcript without ever losing local content."""
+    if not os.path.exists(dst):
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copy2(src, dst)
+        return "restored"
+    src_size, dst_size = os.path.getsize(src), os.path.getsize(dst)
+    if src_size <= dst_size and same_prefix(src, dst):
+        return "already present" if src_size == dst_size else "local copy is newer, kept"
+    if src_size > dst_size and same_prefix(dst, src):
+        shutil.copy2(src, dst)
+        return "updated from archive"
+    raise Diverged(dst)
+
+
+def merge_tree(src, dst):
+    """Copy files that are missing locally; never replace existing ones."""
+    added = kept = 0
+    for root, _, files in os.walk(src):
+        target = os.path.join(dst, os.path.relpath(root, src))
+        os.makedirs(target, exist_ok=True)
+        for name in files:
+            if os.path.exists(os.path.join(target, name)):
+                kept += 1
+            else:
+                shutil.copy2(os.path.join(root, name), os.path.join(target, name))
+                added += 1
+    return added, kept
+
+
+def exclude_from_upload(target, patterns):
+    """Keep restored copies of another machine's files out of this host's uploads."""
+    os.makedirs(EXCLUDE_DIR, exist_ok=True)
+    path = os.path.join(EXCLUDE_DIR, target.replace("/", "-"))
+    existing = set()
+    if os.path.exists(path):
+        with open(path) as f:
+            existing = set(line.rstrip("\n") for line in f)
+    with open(path, "a") as f:
+        for pattern in patterns:
+            if pattern not in existing:
+                f.write(pattern + "\n")
+
+
+def original_cwd(transcript, agent):
+    with open(transcript, encoding="utf-8", errors="replace") as f:
+        for line in f:
+            try:
+                entry = json.loads(line)
+            except ValueError:
+                continue
+            if agent == "claude" and entry.get("cwd"):
+                return entry["cwd"]
+            if agent == "codex" and entry.get("type") == "session_meta":
+                return (entry.get("payload") or {}).get("cwd")
+    return None
+
+
+def local_cwd(orig, override):
+    if override:
+        path = os.path.abspath(os.path.expanduser(override))
+        if not os.path.isdir(path):
+            die("--cwd %s is not a directory" % path)
+        return path
+    if orig and os.path.isdir(orig):
+        return orig
+    # Same tree under a different home, e.g. /home/bruth vs /Users/bruth.
+    m = re.match(r"^/(?:Users|home)/[^/]+(/.*)?$", orig or "")
+    if m:
+        mapped = HOME + (m.group(1) or "")
+        if os.path.isdir(mapped):
+            return mapped
+    die("original directory %s does not exist here; pass --cwd DIR" % (orig or "(unknown)"))
+
+
+def choose_mode(args, match):
+    if args.fork:
+        return "fork"
+    if args.in_place:
+        return "in-place"
+    if match["dir"] == LOCAL_DIR:
+        return "in-place"
+    say("this session came from another machine (%s), not this one (%s)." % (match["dir"], LOCAL_DIR))
+    if not sys.stdin.isatty():
+        say("forking it into a new session id (use --in-place to resume the original id).")
+        return "fork"
+    say("Forking keeps the full history under a new session id. Resuming in place")
+    say("continues the original id here, and AgentsView then sees that id from two machines.")
+    while True:
+        answer = input("[F]ork, resume [i]n place, or [a]bort? ").strip().lower()
+        if answer in ("", "f", "fork"):
+            return "fork"
+        if answer in ("i", "in-place", "in place"):
+            return "in-place"
+        if answer in ("a", "abort", "q"):
+            sys.exit(1)
+
+
+def rehydrate_claude(rsync, match, staging, args, mode):
+    transcript = fetch(rsync, match["path"], staging)
+    uuid = os.path.basename(transcript)[: -len(".jsonl")]
+    cwd = local_cwd(original_cwd(transcript, "claude"), args.cwd)
+    project = re.sub(r"[^A-Za-z0-9]", "-", cwd)
+    if len(project) > 200:
+        die("working directory path is too long for Claude's project folder naming: %s" % cwd)
+    projects = os.path.join(CLAUDE_HOME, "projects")
+    dest = os.path.join(projects, project, uuid + ".jsonl")
+    status = place(transcript, dest)
+    say("transcript %s: %s" % (status, dest))
+    excludes = {"claude/projects": [], "claude/file-history": []}
+    if status == "restored":
+        excludes["claude/projects"].append("/%s/%s.jsonl" % (project, uuid))
+    for rel in match["sidecars"]:
+        src = fetch(rsync, rel + "/", staging)
+        if "/claude/file-history/" in rel:
+            target = os.path.join(CLAUDE_HOME, "file-history", uuid)
+            excludes["claude/file-history"].append("/%s/" % uuid)
+            label = "file-history"
+        else:
+            target = os.path.join(projects, project, uuid)
+            excludes["claude/projects"].append("/%s/%s/" % (project, uuid))
+            label = "tool results and subagents"
+        added, kept = merge_tree(src, target)
+        say("%s: %d restored, %d already present" % (label, added, kept))
+    if mode == "fork" and match["dir"] != LOCAL_DIR:
+        for target, patterns in excludes.items():
+            if patterns:
+                exclude_from_upload(target, patterns)
+    cmd = ["claude", "--resume", uuid] + (["--fork-session"] if mode == "fork" else [])
+    return cwd, cmd
+
+
+def rehydrate_codex(rsync, match, staging, args, mode):
+    transcript = fetch(rsync, match["path"], staging)
+    rel = match["path"].split("/codex/sessions/", 1)[1]
+    uuid = UUID.findall(os.path.basename(transcript))[-1]
+    cwd = local_cwd(original_cwd(transcript, "codex"), args.cwd)
+    dest = os.path.join(CODEX_HOME, "sessions", rel)
+    status = place(transcript, dest)
+    say("transcript %s: %s" % (status, dest))
+    if mode == "fork" and match["dir"] != LOCAL_DIR and status == "restored":
+        exclude_from_upload("codex/sessions", ["/" + rel])
+    return cwd, ["codex", "fork" if mode == "fork" else "resume", uuid]
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser.add_argument("session", help="session id, codex:<id>, or an AgentsView URL containing one")
+    parser.add_argument("--cwd", help="directory to resume in when the original does not exist here")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--fork", action="store_true", help="always resume as a new session id")
+    group.add_argument("--in-place", action="store_true", help="resume the original session id")
+    parser.add_argument("--from", dest="source", help="archive folder to use when several machines have the id")
+    parser.add_argument("--print", action="store_true", help="restore, then print the resume command instead of running it")
+    args = parser.parse_args()
+
+    ids = UUID.findall(args.session.lower())
+    if not ids:
+        die("no session id found in %r" % args.session)
+    matches = lookup(ids[-1])
+    if args.source:
+        matches = [m for m in matches if m["dir"] == args.source]
+    if not matches:
+        die("session %s is not in the archive%s" % (ids[-1], " under " + args.source if args.source else ""))
+    if len(matches) > 1:
+        local = [m for m in matches if m["dir"] == LOCAL_DIR]
+        if len(local) == 1:
+            matches = local
+        else:
+            die("several archived copies; pick one with --from: %s" % ", ".join(m["dir"] for m in matches))
+    match = matches[0]
+    if "/subagents/" in match["path"]:
+        parent = match["path"].split("/subagents/")[0].rsplit("/", 1)[-1]
+        die("that is a subagent transcript; resume its parent session %s instead" % parent)
+
+    mode = choose_mode(args, match)
+    rsync = find_rsync()
+    cache = os.path.join(HOME, ".cache/agentsview-rehydrate")
+    os.makedirs(cache, exist_ok=True)
+    staging = tempfile.mkdtemp(dir=cache)
+    try:
+        handler = rehydrate_claude if match["agent"] == "claude" else rehydrate_codex
+        cwd, cmd = handler(rsync, match, staging, args, mode)
+    except Diverged as err:
+        die("local %s differs from the archived copy; leaving both untouched" % err)
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)
+
+    printable = "cd %s && %s" % (shlex.quote(cwd), " ".join(shlex.quote(c) for c in cmd))
+    if args.print:
+        print(printable)
+        return
+    say(printable)
+    os.chdir(cwd)
+    os.execvp(cmd[0], cmd)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,113 @@
+#!/usr/bin/python3
+"""SSH forced command for AgentsView session rehydration. Managed by Ansible.
+
+Serves the read side of the raw transcript archive to agentsview-rehydrate:
+
+  lookup <session-id>    JSON describing where the session's raw files live
+  rsync --server --sender ...
+                         a read-only rsync of files under the sources root
+
+Everything else is rejected, including rsync receives, so a rehydrate key
+can read the archive but never change it.
+"""
+import glob
+import json
+import os
+import re
+import shlex
+import sqlite3
+import sys
+
+ROOT = "{{ agentsview_sources_root }}"
+DB = "{{ agentsview_root }}/data/sessions.db"
+UUID = r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+SHORT = re.compile(r"^-[mtrlvzcIu]+(e\.[A-Za-z]*)?$")
+LONG = re.compile(r"^--timeout=[0-9]+$")
+SAFE_PATH = re.compile(r"^[A-Za-z0-9._@/-]+$")
+
+
+def deny(reason):
+    sys.stderr.write("agentsview-read-guard: %s\n" % reason)
+    sys.exit(1)
+
+
+def describe(rel):
+    """Return a match for a session file path relative to ROOT."""
+    parts = rel.split("/")
+    src_dir, agent = parts[0], parts[1]
+    match = {"dir": src_dir, "agent": agent, "path": rel, "sidecars": []}
+    if agent == "claude":
+        session = parts[-1][: -len(".jsonl")]
+        sidecar = rel[: -len(".jsonl")]
+        if os.path.isdir(os.path.join(ROOT, sidecar)):
+            match["sidecars"].append(sidecar)
+        history = "%s/claude/file-history/%s" % (src_dir, session)
+        if os.path.isdir(os.path.join(ROOT, history)):
+            match["sidecars"].append(history)
+    return match
+
+
+def lookup(session):
+    uuid = session.split(":", 1)[-1]
+    paths = set()
+    # AgentsView's index knows the exact file; reading it is cheap.
+    try:
+        db = sqlite3.connect("file:%s?mode=ro" % DB, uri=True, timeout=10)
+        rows = db.execute(
+            "SELECT file_path FROM sessions WHERE id IN (?, ?)",
+            (uuid, "codex:" + uuid),
+        ).fetchall()
+        db.close()
+        for (path,) in rows:
+            if path and path.startswith("/sources/"):
+                paths.add(path[len("/sources/"):])
+    except sqlite3.Error:
+        pass
+    # Files uploaded since AgentsView last synced are not indexed yet.
+    patterns = [
+        "*/claude/projects/*/%s.jsonl" % uuid,
+        "*/codex/sessions/*/*/*/rollout-*-%s.jsonl" % uuid,
+    ]
+    for pattern in patterns:
+        for path in glob.glob(os.path.join(ROOT, pattern)):
+            paths.add(os.path.relpath(path, ROOT))
+    matches = [describe(p) for p in sorted(paths) if os.path.isfile(os.path.join(ROOT, p))]
+    json.dump({"session": uuid, "matches": matches}, sys.stdout)
+    sys.stdout.write("\n")
+
+
+def send(argv):
+    try:
+        dot = argv.index(".", 2)
+    except ValueError:
+        deny("unexpected argument layout")
+    opts, paths = argv[3:dot], argv[dot + 1:]
+    bad = [o for o in opts if not (SHORT.match(o) or LONG.match(o))]
+    if bad:
+        deny("option not allowed: %s" % " ".join(bad))
+    if not paths:
+        deny("no source path")
+    resolved = []
+    for path in paths:
+        if not SAFE_PATH.match(path) or ".." in path.split("/"):
+            deny("path not allowed: %s" % path)
+        full = os.path.realpath(os.path.join(ROOT, path.lstrip("/")))
+        if not full.startswith(ROOT + "/"):
+            deny("path outside the archive: %s" % path)
+        # Keep a trailing slash: it means "the directory's contents".
+        resolved.append(full + ("/" if path.endswith("/") else ""))
+    os.execv("/usr/bin/rsync", ["rsync", "--server", "--sender"] + opts + ["."] + resolved)
+
+
+try:
+    argv = shlex.split(os.environ.get("SSH_ORIGINAL_COMMAND", ""))
+except ValueError:
+    deny("unparsable command")
+if len(argv) == 2 and argv[0] == "lookup":
+    if not re.fullmatch("(codex:)?" + UUID, argv[1]):
+        deny("invalid session id")
+    lookup(argv[1])
+elif argv[:3] == ["rsync", "--server", "--sender"]:
+    send(argv)
+else:
+    deny("only lookup and rsync reads are allowed")

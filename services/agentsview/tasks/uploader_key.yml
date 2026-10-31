@@ -28,3 +28,17 @@
 - name: Publish upload public key for the NAS play
   ansible.builtin.set_fact:
     agentsview_upload_pubkey: "{{ agentsview_upload_key.public_key }} {{ agentsview_upload_key.comment }}"
+
+# A separate key reads the archive for agentsview-rehydrate. Its NAS guard
+# allows only a session lookup and rsync reads, so the upload key stays
+# write-only and this one stays read-only.
+- name: Create dedicated rehydrate SSH key
+  community.crypto.openssh_keypair:
+    path: "{{ agentsview_upload_home }}/.ssh/agentsview_read"
+    type: ed25519
+    comment: agentsview-read@{{ inventory_hostname }}
+  register: agentsview_read_key
+
+- name: Publish rehydrate public key for the NAS play
+  ansible.builtin.set_fact:
+    agentsview_read_pubkey: "{{ agentsview_read_key.public_key }} {{ agentsview_read_key.comment }}"

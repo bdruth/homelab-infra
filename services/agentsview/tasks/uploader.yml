@@ -20,6 +20,12 @@
     dest: "{{ agentsview_upload_home }}/.local/bin/agentsview-upload"
     mode: "0755"
 
+- name: Install rehydrate tool
+  ansible.builtin.template:
+    src: agentsview-rehydrate.py.j2
+    dest: "{{ agentsview_upload_home }}/.local/bin/agentsview-rehydrate"
+    mode: "0755"
+
 - name: Install macOS LaunchAgent
   when: ansible_system == 'Darwin'
   block:
