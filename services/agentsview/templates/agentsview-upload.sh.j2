@@ -4,7 +4,14 @@
 #
 # Append-only: no --delete, so sessions that Claude or Codex later remove
 # locally stay archived. Whole trees are sent so fork and subagent parents
-# arrive with their children. The NAS key is forced through
+# arrive with their children.
+#
+# Besides transcripts, Claude keeps sidecar files next to each session:
+# tool-results/ holds large tool outputs (the transcript keeps only a preview
+# and the path), and subagents/**/*.meta.json describes subagent runs. Both
+# are written once, so they ride the append pass. Project memory/*.md files
+# are rewritten in place, which --append would never resend, so they get a
+# second, ordinary rsync pass. The NAS key is forced through
 # agentsview-upload-guard, which only accepts uploads into this host's folder.
 set -uo pipefail
 
@@ -27,13 +34,18 @@ SSH="ssh -F /dev/null -i $HOME/.ssh/agentsview_upload -o IdentitiesOnly=yes -o B
 DEST="{{ agentsview_nas_user }}@{{ agentsview_nas_address }}"
 status=0
 
+# upload SRC TARGET MODE INCLUDE...
+#   MODE append: write-once files, sent with --append-verify
+#   MODE update: files rewritten in place, sent whole when they change
 upload() {
-  local src=$1 target=$2 rc
+  local src=$1 target=$2 mode=$3 rc pattern
+  shift 3
   [ -d "$src" ] || return 0
-  nice -n 10 "$RSYNC" -rt --append-verify --timeout=300 \
-    --chmod=Du=rwx,Dgo=,Fu=rw,Fgo= \
-    --include='*/' --include='*.jsonl' --exclude='*' --prune-empty-dirs \
-    -e "$SSH" "$src/" "$DEST:$target/"
+  local args=(-rt --timeout=300 '--chmod=Du=rwx,Dgo=,Fu=rw,Fgo=' --include='*/')
+  [ "$mode" = append ] && args+=(--append-verify)
+  for pattern in "$@"; do args+=(--include="$pattern"); done
+  args+=(--exclude='*' --prune-empty-dirs)
+  nice -n 10 "$RSYNC" "${args[@]}" -e "$SSH" "$src/" "$DEST:$target/"
   rc=$?
   # 24 = source files vanished during transfer; the next run catches up.
   if [ "$rc" -ne 0 ] && [ "$rc" -ne 24 ]; then
@@ -42,6 +54,9 @@ upload() {
   fi
 }
 
-upload "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects" claude/projects
-upload "${CODEX_HOME:-$HOME/.codex}/sessions" codex/sessions
+CLAUDE_PROJECTS="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects"
+upload "$CLAUDE_PROJECTS" claude/projects append \
+  '*.jsonl' 'tool-results/**' '*.meta.json'
+upload "$CLAUDE_PROJECTS" claude/projects update 'memory/*.md'
+upload "${CODEX_HOME:-$HOME/.codex}/sessions" codex/sessions append '*.jsonl'
 exit "$status"

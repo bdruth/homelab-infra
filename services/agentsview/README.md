@@ -103,13 +103,23 @@ installs the uploader. How it works:
   from the NAS itself, not trusted on first use.
 - On the NAS, each key's `authorized_keys` entry is `restrict` and forced
   through `bin/agentsview-upload-guard <dir>`. The guard allows only a
-  receiving rsync with append options into `sources/<dir>/claude/projects`
+  receiving rsync with a fixed set of options into `sources/<dir>/claude/projects`
   or `sources/<dir>/codex/sessions`. It rejects reads, `--delete`, and
   every other option.
-- `~/.local/bin/agentsview-upload` runs `rsync -rt --append-verify` with
-  `*.jsonl` only and no `--delete`. Sessions that Claude or Codex later
-  remove locally stay in the archive. Whole trees are sent, so fork and
-  subagent parents arrive with their children.
+- `~/.local/bin/agentsview-upload` runs rsync with no `--delete`, so
+  sessions that Claude or Codex later remove locally stay in the archive.
+  Whole trees are sent, so fork and subagent parents arrive with their
+  children. It makes three passes:
+  - Claude, with `--append-verify`: `*.jsonl` transcripts and the
+    write-once files beside them: `tool-results/**` (large tool outputs
+    that the transcript holds only as a preview and a path) and
+    `subagents/**/*.meta.json`.
+  - Claude project `memory/*.md`, without `--append`, because those files
+    are rewritten in place.
+  - Codex, with `--append-verify`: `*.jsonl` only.
+
+  AgentsView indexes only the transcripts. The other files are kept on the
+  NAS so the raw archive is complete.
 - The schedule is LaunchAgent `name.cusack-ruth.agentsview-upload` on
   macOS (log: `~/Library/Logs/agentsview-upload.log`) and
   `agentsview-upload.timer` under systemd on Linux (log:
