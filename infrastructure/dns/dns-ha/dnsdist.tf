@@ -58,6 +58,7 @@ locals {
     vrrp_unicast_src   = var.dns_ip_addr_1
     vrrp_unicast_peer  = var.dns_ip_addr_2
     vrrp_vip           = var.dns_vip_addr
+    vrrp_vip6          = var.dns_vip6_addr
   })
 
   vrrp_node_2 = jsonencode({
@@ -66,6 +67,7 @@ locals {
     vrrp_unicast_src   = var.dns_ip_addr_2
     vrrp_unicast_peer  = var.dns_ip_addr_1
     vrrp_vip           = var.dns_vip_addr
+    vrrp_vip6          = var.dns_vip6_addr
   })
 
   dns_ip_addrs = [
@@ -126,6 +128,10 @@ resource "null_resource" "install_dnsdist_2" {
 ## a VIP nobody holds would otherwise pass a per-node check unnoticed.
 output "dns_vip" {
   value = var.dns_vip_addr
+}
+
+output "dns_vip6" {
+  value = var.dns_vip6_addr
 }
 
 output "dns_ha_1_ip" {

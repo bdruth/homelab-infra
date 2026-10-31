@@ -60,6 +60,16 @@ vrrp_instance DNS {
     virtual_ipaddress {
         {{ vrrp_vip }}/{{ vrrp_vip_prefix | default(24) }} dev {{ vrrp_interface | default('eth0') }}
     }
+{% if vrrp_vip6 | default('') %}
+
+    ! IPv6 VIP. A VRRPv2 advert carries a single address family, so the IPv6
+    ! address is excluded from adverts but still moves with this instance:
+    ! the IPv4 and IPv6 VIPs always live on the same node, under one election.
+    ! The eero advertises this address as the LAN's IPv6 resolver.
+    virtual_ipaddress_excluded {
+        {{ vrrp_vip6 }}/{{ vrrp_vip6_prefix | default(64) }} dev {{ vrrp_interface | default('eth0') }}
+    }
+{% endif %}
 
     track_script {
         chk_dnsdist

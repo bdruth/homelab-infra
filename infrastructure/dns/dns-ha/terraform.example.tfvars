@@ -12,6 +12,8 @@ pihole_green_remote_state_key = "path/to/pihole-green.tfstate"
 dns_ip_addr_1 = "192.168.0.51"
 dns_ip_addr_2 = "192.168.0.52"
 dns_vip_addr  = "192.168.0.50"
+# IPv6 VIP (ULA) floated with dns_vip_addr; point the router's IPv6 DNS at it.
+dns_vip6_addr = "fd00:1234:5678:1::53"
 
 # Installed into both nodes. Must include the key CI authenticates with, or the
 # Ansible provisioner cannot reach a freshly built node.

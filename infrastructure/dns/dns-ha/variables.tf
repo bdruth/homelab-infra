@@ -13,6 +13,11 @@ variable "ssh_public_keys" {
   type        = string
 }
 
+variable "dns_vip6_addr" {
+  description = "IPv6 VIP floated with dns_vip_addr. A ULA, so an ISP prefix change cannot move it. It reuses the SLAAC address of the retired single dns-ha node (MAC BC:24:11:27:F6:81), which the eero already advertises as the LAN's IPv6 resolver."
+  type        = string
+}
+
 variable "dns_ip_addr_1" {
   description = "IP addr for the first node of the DNS HA pair"
   type        = string

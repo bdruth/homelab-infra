@@ -266,10 +266,14 @@
       when: keepalived_enabled | default(false) | bool
       register: keepalived_conf
 
-    - name: Enable and restart keepalived # noqa: no-handler
+    ## Reload, not restart: a restart drops the VIP and costs ~5s of DNS on
+    ## the node holding it (measured at the HA cutover), and a rolling apply
+    ## would pay it on both nodes. keepalived re-reads its config and scripts
+    ## on reload and keeps its VRRP state. systemd starts it if it is stopped.
+    - name: Enable and reload keepalived # noqa: no-handler
       ansible.builtin.service:
         name: keepalived
-        state: restarted
+        state: reloaded
         enabled: true
       when:
         - keepalived_enabled | default(false) | bool
