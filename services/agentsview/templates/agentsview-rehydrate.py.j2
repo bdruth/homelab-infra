@@ -24,8 +24,9 @@ ordinal instead of its end. The branch is the raw transcript cut at that
 point and saved under a new session id, so it holds exactly what Claude had
 then, including context from before any later compaction. At a user message
 the cut falls just before it and the prompt is sent again; at an assistant
-message the cut falls at the end of that turn. Pasting AgentsView's
-message-point command (which names "<id>-ordinal-<n>") works too.
+message the cut falls at the end of that turn. Instead of --at, paste the
+command from a message's Resume action (it names "<id>-ordinal-<n>") or a
+link to a message (it ends in "?msg=<n>").
 """
 import argparse
 import json
@@ -345,10 +346,11 @@ def main():
     if not ids:
         die("no session id found in %r" % args.session)
     if args.at is None:
-        # AgentsView's message-point command names "<id>-ordinal-<n>".
-        m = re.search(r"-ordinal-([0-9]+)", args.session)
+        # AgentsView's per-message resume command names "<id>-ordinal-<n>",
+        # and links to a message carry "?msg=<n>".
+        m = re.search(r"-ordinal-([0-9]+)|[?&#]msg=([0-9]+)", args.session)
         if m:
-            args.at = int(m.group(1))
+            args.at = int(m.group(1) or m.group(2))
     matches, args.point = lookup(ids[0], args.at)
     if args.at is not None and not (args.point and args.point.get("uuid")):
         die("AgentsView has no transcript entry for message %d of this session" % args.at)

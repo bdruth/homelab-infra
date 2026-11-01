@@ -151,7 +151,8 @@ agentsview-rehydrate <session id, codex:<id>, or an AgentsView URL>
 agentsview-rehydrate <id> --print       # restore, print the resume command
 agentsview-rehydrate <id> --cwd ~/src/x # original directory missing here
 agentsview-rehydrate <id> --at 234      # branch at AgentsView message 234
-agentsview-rehydrate "<AgentsView message-point command>"   # same, pasted
+agentsview-rehydrate "<a message's Resume command>"  # same, pasted
+agentsview-rehydrate "https://agentsview.cusack-ruth.name/...?msg=234"
 ```
 
 - It restores from the raw files, not from AgentsView's database, so the
@@ -171,7 +172,9 @@ agentsview-rehydrate "<AgentsView message-point command>"   # same, pasted
   session lookup and rsync reads under `sources/`, so the read key cannot
   write and the upload key cannot read.
 - `--at ORDINAL` (Claude only) branches at an AgentsView message instead
-  of the session's end. AgentsView's own message-point command pastes a
+  of the session's end. The ordinal comes from AgentsView: a message's
+  **Resume session** action copies a command naming `<id>-ordinal-<n>`, and a
+  link to a message ends in `?msg=<n>`. Pasting either works without `--at`. AgentsView's own message-point command pastes a
   text rendering into a new session. This cuts the raw transcript at that
   message instead and saves the prefix under a new session id, with copies
   of the subagents, tool results and `/rewind` checkpoints. The branch
