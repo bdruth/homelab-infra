@@ -4,7 +4,8 @@
 Managed by homelab-infra services/agentsview.
 
   agentsview-rehydrate <session id or AgentsView URL> [--cwd DIR]
-                       [--fork | --in-place] [--from DIR] [--print]
+                       [--fork | --in-place] [--at ORDINAL]
+                       [--from DIR] [--print]
 
 The raw transcript (and, for Claude, its tool-results, subagent and
 file-history sidecars) comes byte for byte from the NAS archive, so the
@@ -17,6 +18,14 @@ in place would keep writing the same session id from a second machine, and
 the uploader would then push two diverging copies of it to AgentsView. The
 restored original is also left out of uploads, since it already lives in
 the archive under its own machine.
+
+--at ORDINAL (Claude only) branches the session at an AgentsView message
+ordinal instead of its end. The branch is the raw transcript cut at that
+point and saved under a new session id, so it holds exactly what Claude had
+then, including context from before any later compaction. At a user message
+the cut falls just before it and the prompt is sent again; at an assistant
+message the cut falls at the end of that turn. Pasting AgentsView's
+message-point command (which names "<id>-ordinal-<n>") works too.
 """
 import argparse
 import json
@@ -27,6 +36,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import uuid as uuidlib
 
 NAS = "{{ agentsview_nas_user }}@{{ agentsview_nas_address }}"
 LOCAL_DIR = "{{ agentsview_upload_sources[inventory_hostname].dir }}"
@@ -70,11 +80,13 @@ def find_rsync():
     die("rsync 3.x not found")
 
 
-def lookup(session):
-    proc = subprocess.run(SSH + [NAS, "lookup", session], capture_output=True, text=True)
+def lookup(session, ordinal=None):
+    cmd = [NAS, "lookup", session] + ([str(ordinal)] if ordinal is not None else [])
+    proc = subprocess.run(SSH + cmd, capture_output=True, text=True)
     if proc.returncode != 0:
         die("lookup failed: %s" % proc.stderr.strip())
-    return json.loads(proc.stdout)["matches"]
+    result = json.loads(proc.stdout)
+    return result["matches"], result.get("point")
 
 
 def fetch(rsync, rel, staging):
@@ -140,6 +152,73 @@ def exclude_from_upload(target, patterns):
         for pattern in patterns:
             if pattern not in existing:
                 f.write(pattern + "\n")
+
+
+def is_prompt(entry):
+    """A turn-starting user prompt, as opposed to tool results or meta entries."""
+    if entry.get("type") != "user" or entry.get("isMeta") or entry.get("isSidechain"):
+        return False
+    content = (entry.get("message") or {}).get("content")
+    if isinstance(content, str):
+        return True
+    if isinstance(content, list):
+        kinds = set(b.get("type") for b in content if isinstance(b, dict))
+        return "tool_result" not in kinds and bool(kinds & {"text", "image"})
+    return False
+
+
+def prompt_text(entry):
+    """The prompt as plain text, or None when it carried images."""
+    content = (entry.get("message") or {}).get("content")
+    if isinstance(content, str):
+        return content
+    if any(b.get("type") != "text" for b in content if isinstance(b, dict)):
+        return None
+    return "\n".join(b.get("text", "") for b in content if isinstance(b, dict))
+
+
+def branch_claude(transcript, point, project_dir, old_id):
+    """Write the transcript prefix ending at `point` as a new session.
+
+    Returns (new session id, prompt to send again or None, note).
+    """
+    with open(transcript, "rb") as f:
+        lines = f.read().split(b"\n")
+    entries = []
+    for line in lines:
+        try:
+            entries.append(json.loads(line) if line.strip() else {})
+        except ValueError:
+            entries.append({})
+    target = next((i for i, e in enumerate(entries) if e.get("uuid") == point["uuid"]), None)
+    if target is None:
+        die("message %s is not in the archived transcript" % point["ordinal"])
+    prompt, note = None, None
+    if is_prompt(entries[target]):
+        cut = target
+        prompt = prompt_text(entries[target])
+        if prompt is None:
+            note = "that prompt carried images; attach them again before sending it"
+        elif len(prompt.encode()) > 100000:
+            note = "that prompt is too long to pass on the command line; paste it yourself"
+            prompt = None
+    else:
+        cut = next((j for j in range(target + 1, len(entries)) if is_prompt(entries[j])), len(lines))
+    new_id = str(uuidlib.uuid4())
+    old_field = ('"sessionId":"%s"' % old_id).encode()
+    new_field = ('"sessionId":"%s"' % new_id).encode()
+    body = b"\n".join(line.replace(old_field, new_field) for line in lines[:cut] if line.strip())
+    with open(os.path.join(project_dir, new_id + ".jsonl"), "wb") as f:
+        f.write(body + b"\n")
+    # Give the branch its own copies of subagents, tool results and the
+    # /rewind checkpoints, which Claude looks up by session id.
+    for src, dst in (
+        (os.path.join(project_dir, old_id), os.path.join(project_dir, new_id)),
+        (os.path.join(CLAUDE_HOME, "file-history", old_id), os.path.join(CLAUDE_HOME, "file-history", new_id)),
+    ):
+        if os.path.isdir(src):
+            shutil.copytree(src, dst)
+    return new_id, prompt, note
 
 
 def original_cwd(transcript, agent):
@@ -226,6 +305,13 @@ def rehydrate_claude(rsync, match, staging, args, mode):
         for target, patterns in excludes.items():
             if patterns:
                 exclude_from_upload(target, patterns)
+    if args.point:
+        new_id, prompt, note = branch_claude(transcript, args.point, os.path.join(projects, project), uuid)
+        say("branched at message %d into new session %s" % (args.point["ordinal"], new_id))
+        if note:
+            say(note)
+        name = "%s at message %d" % (uuid[:8], args.point["ordinal"])
+        return cwd, ["claude", "--resume", new_id, "--name", name] + ([prompt] if prompt else [])
     cmd = ["claude", "--resume", uuid] + (["--fork-session"] if mode == "fork" else [])
     return cwd, cmd
 
@@ -250,6 +336,7 @@ def main():
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--fork", action="store_true", help="always resume as a new session id")
     group.add_argument("--in-place", action="store_true", help="resume the original session id")
+    parser.add_argument("--at", type=int, metavar="ORDINAL", help="branch at this AgentsView message ordinal (Claude only)")
     parser.add_argument("--from", dest="source", help="archive folder to use when several machines have the id")
     parser.add_argument("--print", action="store_true", help="restore, then print the resume command instead of running it")
     args = parser.parse_args()
@@ -257,7 +344,14 @@ def main():
     ids = UUID.findall(args.session.lower())
     if not ids:
         die("no session id found in %r" % args.session)
-    matches = lookup(ids[-1])
+    if args.at is None:
+        # AgentsView's message-point command names "<id>-ordinal-<n>".
+        m = re.search(r"-ordinal-([0-9]+)", args.session)
+        if m:
+            args.at = int(m.group(1))
+    matches, args.point = lookup(ids[0], args.at)
+    if args.at is not None and not (args.point and args.point.get("uuid")):
+        die("AgentsView has no transcript entry for message %d of this session" % args.at)
     if args.source:
         matches = [m for m in matches if m["dir"] == args.source]
     if not matches:
@@ -273,7 +367,16 @@ def main():
         parent = match["path"].split("/subagents/")[0].rsplit("/", 1)[-1]
         die("that is a subagent transcript; resume its parent session %s instead" % parent)
 
-    mode = choose_mode(args, match)
+    if args.point:
+        if match["agent"] != "claude":
+            die("--at works for Claude sessions only")
+        if args.in_place:
+            die("--at always starts a new session; drop --in-place")
+        if match["dir"] != LOCAL_DIR:
+            say("this session came from another machine (%s), not this one (%s)." % (match["dir"], LOCAL_DIR))
+        mode = "fork"
+    else:
+        mode = choose_mode(args, match)
     rsync = find_rsync()
     cache = os.path.join(HOME, ".cache/agentsview-rehydrate")
     os.makedirs(cache, exist_ok=True)

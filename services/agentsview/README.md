@@ -150,6 +150,8 @@ from the raw archive so Claude or Codex can resume it:
 agentsview-rehydrate <session id, codex:<id>, or an AgentsView URL>
 agentsview-rehydrate <id> --print       # restore, print the resume command
 agentsview-rehydrate <id> --cwd ~/src/x # original directory missing here
+agentsview-rehydrate <id> --at 234      # branch at AgentsView message 234
+agentsview-rehydrate "<AgentsView message-point command>"   # same, pasted
 ```
 
 - It restores from the raw files, not from AgentsView's database, so the
@@ -168,6 +170,18 @@ agentsview-rehydrate <id> --cwd ~/src/x # original directory missing here
   through `bin/agentsview-read-guard` on the NAS. That guard allows only a
   session lookup and rsync reads under `sources/`, so the read key cannot
   write and the upload key cannot read.
+- `--at ORDINAL` (Claude only) branches at an AgentsView message instead
+  of the session's end. AgentsView's own message-point command pastes a
+  text rendering into a new session. This cuts the raw transcript at that
+  message instead and saves the prefix under a new session id, with copies
+  of the subagents, tool results and `/rewind` checkpoints. The branch
+  holds exactly what Claude had at that moment. That matters most across
+  compactions: Claude's own resume and fork always start from the latest
+  compacted state, while a branch from before a compaction has the full,
+  uncompacted context. At a user message the cut falls just before it and
+  the prompt is sent again; at an assistant message the cut falls at the
+  end of that turn. The branch is a new session on this machine, so it
+  uploads like any other.
 - What a resume cannot bring back: the machine state the session ran
   against (working tree, git state, MCP servers, permissions), Codex
   `generated_images/`, and tool-result paths that point into another

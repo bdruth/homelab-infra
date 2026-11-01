@@ -3,7 +3,10 @@
 
 Serves the read side of the raw transcript archive to agentsview-rehydrate:
 
-  lookup <session-id>    JSON describing where the session's raw files live
+  lookup <session-id> [<ordinal>]
+                         JSON describing where the session's raw files live,
+                         plus the transcript entry behind an AgentsView
+                         message ordinal when one is given
   rsync --server --sender ...
                          a read-only rsync of files under the sources root
 
@@ -47,9 +50,10 @@ def describe(rel):
     return match
 
 
-def lookup(session):
+def lookup(session, ordinal=None):
     uuid = session.split(":", 1)[-1]
     paths = set()
+    point = None
     # AgentsView's index knows the exact file; reading it is cheap.
     try:
         db = sqlite3.connect("file:%s?mode=ro" % DB, uri=True, timeout=10)
@@ -57,10 +61,18 @@ def lookup(session):
             "SELECT file_path FROM sessions WHERE id IN (?, ?)",
             (uuid, "codex:" + uuid),
         ).fetchall()
-        db.close()
         for (path,) in rows:
             if path and path.startswith("/sources/"):
                 paths.add(path[len("/sources/"):])
+        if ordinal is not None:
+            row = db.execute(
+                "SELECT role, source_uuid, timestamp FROM messages"
+                " WHERE session_id IN (?, ?) AND ordinal = ?",
+                (uuid, "codex:" + uuid, ordinal),
+            ).fetchone()
+            if row:
+                point = {"ordinal": ordinal, "role": row[0], "uuid": row[1], "timestamp": row[2]}
+        db.close()
     except sqlite3.Error:
         pass
     # Files uploaded since AgentsView last synced are not indexed yet.
@@ -72,7 +84,10 @@ def lookup(session):
         for path in glob.glob(os.path.join(ROOT, pattern)):
             paths.add(os.path.relpath(path, ROOT))
     matches = [describe(p) for p in sorted(paths) if os.path.isfile(os.path.join(ROOT, p))]
-    json.dump({"session": uuid, "matches": matches}, sys.stdout)
+    result = {"session": uuid, "matches": matches}
+    if ordinal is not None:
+        result["point"] = point
+    json.dump(result, sys.stdout)
     sys.stdout.write("\n")
 
 
@@ -103,10 +118,12 @@ try:
     argv = shlex.split(os.environ.get("SSH_ORIGINAL_COMMAND", ""))
 except ValueError:
     deny("unparsable command")
-if len(argv) == 2 and argv[0] == "lookup":
+if len(argv) in (2, 3) and argv[0] == "lookup":
     if not re.fullmatch("(codex:)?" + UUID, argv[1]):
         deny("invalid session id")
-    lookup(argv[1])
+    if len(argv) == 3 and not re.fullmatch("[0-9]{1,9}", argv[2]):
+        deny("invalid ordinal")
+    lookup(argv[1], int(argv[2]) if len(argv) == 3 else None)
 elif argv[:3] == ["rsync", "--server", "--sender"]:
     send(argv)
 else:
