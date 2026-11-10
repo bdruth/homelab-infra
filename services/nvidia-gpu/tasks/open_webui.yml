@@ -32,6 +32,19 @@
     group: root
     mode: "0755"
 
+# Secrets live here, not in the unit file: the unit is world-readable and its
+# ExecStart line shows up in `systemctl status`. no_log keeps the values out of
+# CI logs and --diff output.
+- name: Template Open WebUI secrets env file
+  ansible.builtin.template:
+    src: open-webui.env.j2
+    dest: /etc/open-webui/open-webui.env
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+  notify: Restart Open WebUI service
+
 - name: Create systemd service for Open WebUI
   ansible.builtin.template:
     src: open-webui.service.j2
@@ -59,3 +72,73 @@
 # start, so the connection config (including OPENAI_API_CONFIGS, which has no
 # env-var equivalent in Open WebUI) survives Ansible runs, manual restarts,
 # and host reboots.
+
+# Health watchdog. Open WebUI wedged twice in a restart loop for ~9 hours with
+# nothing noticing; this restarts it after open_webui_watchdog_down_grace_sec of
+# failed /ready probes and alerts through Pushover when credentials are set.
+- name: Configure Open WebUI watchdog
+  when: open_webui_watchdog_enabled | default(true) | bool
+  block:
+    - name: Template Open WebUI watchdog script
+      ansible.builtin.template:
+        src: open-webui-watchdog.sh.j2
+        dest: /usr/local/bin/open-webui-watchdog.sh
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Template Open WebUI watchdog Pushover credentials
+      ansible.builtin.template:
+        src: open-webui-watchdog.env.j2
+        dest: /etc/open-webui/watchdog.env
+        owner: root
+        group: root
+        mode: "0600"
+      no_log: true
+
+    - name: Template Open WebUI watchdog service
+      ansible.builtin.template:
+        src: open-webui-watchdog.service.j2
+        dest: /etc/systemd/system/open-webui-watchdog.service
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Reload systemd
+
+    - name: Template Open WebUI watchdog timer
+      ansible.builtin.template:
+        src: open-webui-watchdog.timer.j2
+        dest: /etc/systemd/system/open-webui-watchdog.timer
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Reload systemd
+
+    - name: Enable and start Open WebUI watchdog timer
+      ansible.builtin.systemd:
+        name: open-webui-watchdog.timer
+        enabled: true
+        state: started
+        daemon_reload: true
+      ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Remove Open WebUI watchdog when disabled
+  when: not (open_webui_watchdog_enabled | default(true) | bool)
+  block:
+    - name: Stop and disable Open WebUI watchdog timer
+      ansible.builtin.systemd:
+        name: open-webui-watchdog.timer
+        enabled: false
+        state: stopped
+      failed_when: false
+
+    - name: Remove Open WebUI watchdog files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/systemd/system/open-webui-watchdog.timer
+        - /etc/systemd/system/open-webui-watchdog.service
+        - /usr/local/bin/open-webui-watchdog.sh
+        - /etc/open-webui/watchdog.env
+      notify: Reload systemd

@@ -8,6 +8,10 @@
   ansible.builtin.import_tasks: gpu_setup.yml
   when: nvidia_install_gpu_drivers | bool or nvidia_install_cuda_toolkit | bool or nvidia_configure_egpu | bool
 
+- name: Import nightly shutdown schedule tasks
+  ansible.builtin.import_tasks: nightly_shutdown.yml
+  when: nightly_shutdown_enabled | default(false) | bool
+
 - name: Import btop installation tasks
   ansible.builtin.import_tasks: btop.yml
   when: install_btop | bool

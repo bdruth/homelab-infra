@@ -1,0 +1,10 @@
+[Unit]
+Description=Open WebUI health watchdog
+# Not ordered against open-webui.service: the watchdog must keep running while
+# that unit is stuck starting, which is exactly when it is needed.
+After=network-online.target
+
+[Service]
+Type=oneshot
+StateDirectory=open-webui-watchdog
+ExecStart=/usr/local/bin/open-webui-watchdog.sh

@@ -24,9 +24,22 @@ TOKEN="$(cat "$TOKEN_FILE")"
 
 # Wait for /ready up to 5 minutes (covers Playwright/Chromium install on cold
 # starts plus FastAPI startup hooks).
+# Give up early if the container is not running (podman run already failed):
+# this script runs in ExecStartPost, so waiting on a dead container only holds
+# the unit's start job open and delays everything ordered behind it.
+not_running=0
 for _ in $(seq 1 60); do
     if curl -fsS -m 5 "http://127.0.0.1:${PORT}/ready" >/dev/null 2>&1; then
         break
+    fi
+    if [ "$(docker inspect -f '{% raw %}{{.State.Running}}{% endraw %}' open-webui 2>/dev/null)" = "true" ]; then
+        not_running=0
+    else
+        not_running=$((not_running + 1))
+        if [ "$not_running" -ge 6 ]; then
+            echo "$TAG: container is not running, giving up" >&2
+            exit 0
+        fi
     fi
     sleep 5
 done

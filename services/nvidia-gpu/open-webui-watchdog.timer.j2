@@ -1,0 +1,11 @@
+[Unit]
+Description=Probe Open WebUI health
+
+[Timer]
+# The host powers off nightly, so measure from boot rather than from the last run.
+OnBootSec=5min
+OnUnitActiveSec={{ open_webui_watchdog_interval | default('2min') }}
+AccuracySec=15s
+
+[Install]
+WantedBy=timers.target

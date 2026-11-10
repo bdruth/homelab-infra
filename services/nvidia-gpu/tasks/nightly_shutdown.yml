@@ -1,0 +1,25 @@
+---
+# Nightly power-off. The beelink-gti host is shut down every night and powered
+# back on by its firmware wake timer; that schedule used to exist only as a line
+# in root's crontab (not in this repo). It makes every service on the host do a
+# cold start daily, so it is worth keeping visible and under version control.
+# Imported only when nightly_shutdown_enabled is true.
+
+- name: Install nightly shutdown cron entry
+  ansible.builtin.cron:
+    name: Nightly power off
+    user: root
+    cron_file: nightly-shutdown
+    minute: "{{ nightly_shutdown_minute | default('30') }}"
+    hour: "{{ nightly_shutdown_hour | default('23') }}"
+    job: /usr/sbin/shutdown -h now
+    state: present
+
+# Adopt the pre-existing entry: the cron module only recognises lines it wrote
+# itself, so the original unlabeled line in root's crontab would otherwise run
+# alongside the new file and fire the shutdown twice.
+- name: Remove legacy shutdown entry from root's crontab
+  ansible.builtin.lineinfile:
+    path: /var/spool/cron/crontabs/root
+    regexp: '^{{ nightly_shutdown_minute | default("30") }} {{ nightly_shutdown_hour | default("23") }} \* \* \* /usr/sbin/shutdown -h now$'
+    state: absent

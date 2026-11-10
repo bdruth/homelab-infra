@@ -87,6 +87,22 @@ open_webui_enable_openai_api: true # Enable OpenAI API support
 open_webui_openai_api_base_url: "https://api.openai.com/v1" # OpenAI API base URL
 open_webui_openai_api_key: "sk-example-key-replace-with-actual-key" # OpenAI API key (replace with actual key)
 open_webui_secret_key: "" # Secret key for Open WebUI, e.g. `head -c 12 /dev/random | base64`
+# Secrets above are written to /etc/open-webui/open-webui.env (0600), not into the unit file.
+
+# Open WebUI start/stop timeouts and health watchdog (all optional)
+open_webui_start_timeout_sec: 600 # systemd TimeoutStartSec; must exceed the seed script's 5 minute /ready wait
+open_webui_stop_timeout_sec: 120 # systemd TimeoutStopSec
+open_webui_watchdog_enabled: true # Timer that restarts Open WebUI when /ready keeps failing
+open_webui_watchdog_interval: "2min" # How often the watchdog probes /ready
+open_webui_watchdog_down_grace_sec: 600 # Failed probes for this long before a restart (covers cold starts)
+open_webui_watchdog_remind_sec: 3600 # Minimum gap between "down" Pushover alerts
+open_webui_watchdog_pushover_token: "" # Pushover app token (falls back to pushover_token; empty = log only)
+open_webui_watchdog_pushover_user: "" # Pushover user key (falls back to pushover_user_id)
+
+# Nightly power-off (adopts the schedule that used to live only in root's crontab)
+nightly_shutdown_enabled: false # Manage /etc/cron.d/nightly-shutdown
+nightly_shutdown_hour: "23"
+nightly_shutdown_minute: "30"
 
 # Open WebUI Authelia OIDC configuration
 open_webui_enable_authelia: false # Set to true to enable Authelia OIDC authentication

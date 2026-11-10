@@ -59,6 +59,20 @@
   ignore_errors: "{{ ansible_check_mode }}"
   when: nvidia_install_cuda_toolkit | bool
 
+# A hand-generated spec in /etc/cdi goes stale when GPUs change. This one was
+# made while the Thunderbolt eGPU was attached, so it names /dev/nvidia1, which
+# does not exist at boot (the eGPU is attached hours later). It is the only spec
+# on disk during the first start after boot, before the runtime one in /run/cdi
+# exists. The Open WebUI unit builds /run/cdi/nvidia.yaml itself before starting, and
+# nvidia-cdi-refresh keeps it current after driver upgrades, so nothing in this
+# role should depend on this file. (whisper-asr uses the same device flag but
+# does not build the spec; it is disabled on beelink-gti.)
+- name: Remove stale static NVIDIA CDI spec
+  ansible.builtin.file:
+    path: /etc/cdi/nvidia.yaml
+    state: absent
+  when: nvidia_install_gpu_drivers | bool
+
 # Driver configuration
 - name: Blacklist nouveau driver
   ansible.builtin.template:

@@ -38,6 +38,7 @@ The module is organized into separate task files for better maintainability:
 - `tasks/n8n.yml` - Installs and configures n8n AI workflow platform
 - `tasks/whisper_asr.yml` - Installs and configures Whisper ASR Webservice
 - `tasks/open_webui.yml` - Installs and configures Open WebUI
+- `tasks/nightly_shutdown.yml` - Manages the nightly power-off cron entry (only when `nightly_shutdown_enabled`)
 - `tasks/copilot_api.yml` - Installs and configures the Copilot API sidecar
 - `tasks/open_terminal.yml` - Installs the Open Terminal sandbox that Open WebUI agents drive
 - `tasks/searxng.yml` - Installs the SearXNG search backend for Open WebUI
@@ -143,6 +144,16 @@ Open WebUI runs with native function calling, so models can chain tool calls on 
 - `open_webui_enable_subagents` - `ENABLE_SUBAGENTS`: lets a model hand focused work to a parallel agent with `delegate_task`. Each delegation costs a full extra model call.
 - `open_webui_enable_tool_search` - `ENABLE_TOOL_SEARCH` (experimental): keeps large tool definitions out of the context until the model asks for them.
 - `open_webui_enable_tool_permissions` - `ENABLE_TOOL_PERMISSIONS` (experimental): adds an "Ask for approval" mode, chosen per user. The default stays "Full access".
+
+#### Start-up reliability and monitoring
+
+The host powers off nightly (`nightly_shutdown_enabled`), so Open WebUI cold-starts every morning. The unit is built to survive that without help:
+
+- **GPU device spec.** `ExecStartPre` runs `nvidia-ctk cdi generate` into `/run/cdi`. Do not order the unit after `nvidia-cdi-refresh.service`: that unit runs after `multi-user.target`, which waits for this one, so it would be an ordering cycle. The role also removes the stale static `/etc/cdi/nvidia.yaml`.
+- **Start window.** `TimeoutStartSec` is 600 seconds so a slow first boot (image pull, Playwright/Chromium install) is not killed half-way. A kill during start leaves the container stuck in "stopping".
+- **Self-healing cleanup.** The unit uses `docker rm -f`, `--replace` and an `ExecStopPost` cleanup, so a leftover container cannot cause a "name already in use" restart loop.
+- **Secrets.** The OpenAI keys, the OAuth client secret, `WEBUI_SECRET_KEY` and the Open Terminal key go in `/etc/open-webui/open-webui.env` (mode 0600), not in the unit file or `systemctl status`.
+- **Watchdog.** `open-webui-watchdog.timer` probes `http://127.0.0.1:<port>/ready` every two minutes. After `open_webui_watchdog_down_grace_sec` of failures it removes the container, restarts the unit and sends a Pushover alert (credentials from `open_webui_watchdog_pushover_*`, or `pushover_token` and `pushover_user_id`). It sends a second alert on recovery. It runs on the same host, so it cannot report a host that is off; use an external check for that. Read its decisions with `journalctl -t open-webui-watchdog`.
 
 ### Open Terminal
 
