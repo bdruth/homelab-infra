@@ -117,6 +117,11 @@ Search by meaning (`mode=semantic`) and keyword plus meaning
   `agentsview embeddings build --full-rebuild --yes`.
 - Check progress from beelink with `/api/v1/embeddings/status`, and search
   with `/api/v1/search/content?pattern=...&mode=semantic` or `mode=hybrid`.
+  These modes also need the header `X-AgentsView-Search-Intent: semantic`,
+  and they answer with an error until the first build finishes.
+- The first build on 2026-11-12 covered 981,880 messages at about 36 per
+  second (about 7.5 hours). The RTX 3070 was the limit, at 45 to 75% use;
+  the NAS stayed near idle.
 
 ## Transcript uploaders
 
