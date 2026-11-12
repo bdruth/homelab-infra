@@ -105,15 +105,16 @@ Search by meaning (`mode=semantic`) and keyword plus meaning
 - Do not use Settings > Embeddings > Turn on in the web UI. It rewrites
   `config.toml` through a TOML encoder, which removes the Ansible markers and
   would make the next run add duplicate tables.
-- The first index build is a one-off after deployment. The CLI hands it to
-  the running daemon:
+- The first index build starts by itself after the restart's startup sync
+  (`run_after_sync`). To start or attach to a build by hand (0.46.1
+  spelling; 0.47 moves it under `index`):
 
-      docker exec agentsview-pilot-agentsview-1 agentsview index embeddings build --yes
+      docker exec agentsview-pilot-agentsview-1 agentsview embeddings build --yes
 
-  After that, new messages are embedded after each sync
-  (`run_after_sync`), with a 24-hour backstop pass.
+  After that, new messages are embedded after each sync, with a 24-hour
+  backstop pass.
 - Changing the model or dimension requires
-  `agentsview index embeddings build --full-rebuild --yes`.
+  `agentsview embeddings build --full-rebuild --yes`.
 - Check progress from beelink with `/api/v1/embeddings/status`, and search
   with `/api/v1/search/content?pattern=...&mode=semantic` or `mode=hybrid`.
 
