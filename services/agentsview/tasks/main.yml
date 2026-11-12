@@ -177,8 +177,8 @@
         document_prefix = "search_document: "
 
       [vector.embeddings.servers.beelink-gti]
-        endpoint = "{{ agentsview_ollama_url }}/v1"
-        concurrency = 1
+        endpoint = "{{ agentsview_embeddings_endpoint }}"
+        concurrency = {{ agentsview_embeddings_concurrency }}
         timeout = "120s"
     backup: true
   diff: false

@@ -119,9 +119,30 @@ Search by meaning (`mode=semantic`) and keyword plus meaning
   with `/api/v1/search/content?pattern=...&mode=semantic` or `mode=hybrid`.
   These modes also need the header `X-AgentsView-Search-Intent: semantic`,
   and they answer with an error until the first build finishes.
-- The first build on 2026-11-12 covered 981,880 messages at about 36 per
-  second (about 7.5 hours). The RTX 3070 was the limit, at 45 to 75% use;
-  the NAS stayed near idle.
+- The first build on 2026-11-12 covered 981,880 messages. Against the main
+  Ollama at `concurrency = 1` it ran at about 33 to 36 per second, because
+  the GPU sat idle between requests. The NAS stayed near idle.
+- For a large build, use both RTX 3070s (the second is the Thunderbolt
+  eGPU, attached after boot). On beelink-gti, start one transient Ollama per
+  GPU and a balancer; none of it survives the nightly shutdown:
+
+      for g in 0 1; do sudo systemd-run --unit=ollama-embed$g --uid=ollama --gid=ollama \
+        --property=SupplementaryGroups="video render" --setenv=HOME=/usr/share/ollama \
+        --setenv=CUDA_DEVICE_ORDER=PCI_BUS_ID --setenv=CUDA_VISIBLE_DEVICES=$g \
+        --setenv=OLLAMA_VULKAN=0 --setenv=GGML_VK_VISIBLE_DEVICES=-1 \
+        --setenv=OLLAMA_HOST=0.0.0.0:$((11435+g)) --setenv=OLLAMA_NUM_PARALLEL=4 \
+        --setenv=OLLAMA_CONTEXT_LENGTH=2048 --setenv=OLLAMA_KEEP_ALIVE=24h \
+        /usr/local/bin/ollama serve; done
+      # nginx:1.27-alpine on the host network, port 11440, least_conn
+      # upstream to 127.0.0.1:11435 and 127.0.0.1:11436, 300s timeouts.
+
+  Vulkan must be off: `CUDA_VISIBLE_DEVICES` does not hide GPUs from
+  Ollama's Vulkan backend, and an instance otherwise lands on the wrong
+  card. Then run this role with
+  `-e agentsview_embeddings_endpoint=http://192.168.7.151:11440/v1
+  -e agentsview_embeddings_concurrency=12`. A synthetic benchmark from the
+  NAS gave 170 to 184 documents per second through the balancer. Run the
+  role again without the overrides when the build is done.
 
 ## Transcript uploaders
 
