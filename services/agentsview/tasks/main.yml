@@ -40,6 +40,18 @@
   diff: false
   notify: Apply AgentsView compose
 
+# 0.47 pauses ingestion after 10 idle minutes without a browser request.
+# Uploads arrive while nobody is browsing, so keep ingesting.
+- name: Keep ingesting uploads while no client is connected
+  ansible.builtin.lineinfile:
+    path: "{{ agentsview_root }}/data/config.toml"
+    regexp: '^sync_idle_after\s*='
+    line: 'sync_idle_after = "0"'
+    insertafter: '^public_url\s*='
+    backup: true
+  diff: false
+  notify: Restart AgentsView
+
 - name: Adopt existing AgentsView compose definition
   ansible.builtin.copy:
     src: compose.yaml
@@ -117,6 +129,57 @@
 
       {% endfor %}
       {% endfor %}
+    backup: true
+  diff: false
+  notify: Restart AgentsView
+
+# Semantic search: make sure the embedding model exists on the Ollama host,
+# pulled through its API from the NAS so the nvidia-gpu role is untouched.
+- name: List models on the embeddings Ollama host
+  ansible.builtin.uri:
+    url: "{{ agentsview_ollama_url }}/api/tags"
+    return_content: true
+  register: agentsview_ollama_tags
+  check_mode: false
+
+- name: Pull the embedding model on the Ollama host
+  ansible.builtin.uri:
+    url: "{{ agentsview_ollama_url }}/api/pull"
+    method: POST
+    body_format: json
+    body: { model: "{{ agentsview_embeddings_model }}", stream: false }
+    timeout: 900
+  when: >-
+    agentsview_embeddings_model not in
+    (agentsview_ollama_tags.json.models | map(attribute='name') | map('regex_replace', ':latest$', '') | list)
+  changed_when: true
+
+# Explicit servers get no model defaults, so the nomic prefixes, context
+# and input limit are spelled out. Ollama runs with OLLAMA_NUM_PARALLEL=1,
+# so one request at a time with a generous timeout.
+# Do not use Settings > Embeddings > Turn on in the UI: it rewrites
+# config.toml and drops these markers.
+- name: Configure semantic search in AgentsView config
+  ansible.builtin.blockinfile:
+    path: "{{ agentsview_root }}/data/config.toml"
+    marker: "# {mark} ANSIBLE MANAGED: agentsview vector search"
+    insertafter: EOF
+    block: |
+      [vector]
+        enabled = true
+
+      [vector.embeddings]
+        model = "{{ agentsview_embeddings_model }}"
+        dimension = {{ agentsview_embeddings_dimension }}
+        max_input_chars = 4000
+        model_context_tokens = 2048
+        query_prefix = "search_query: "
+        document_prefix = "search_document: "
+
+      [vector.embeddings.servers.beelink-gti]
+        endpoint = "{{ agentsview_ollama_url }}/v1"
+        concurrency = 1
+        timeout = "120s"
     backup: true
   diff: false
   notify: Restart AgentsView

@@ -1,5 +1,8 @@
 services:
   agentsview:
+    # 0.47.0 dies with SIGILL (exit 132) even on --version: the NAS
+    # Celeron J4125 has no AVX. Stay on 0.46.1 until a release runs here;
+    # test with: docker run --rm --entrypoint agentsview <image> --version
     image: ghcr.io/kenn-io/agentsview:0.46.1
     user: "1026:100"
     restart: unless-stopped

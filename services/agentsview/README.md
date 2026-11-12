@@ -27,11 +27,14 @@ under `/volume1/docker/compose/agentsview-pilot/` on the NAS.
 ## Managed files and convergence
 
 - `services/agentsview/files/compose.yaml` preserves the pinned `0.46.1`
-  image, `1026:100` runtime user, 4 GiB memory limit, 6 GiB memory plus swap,
+  image (0.47.0 needs AVX, which the NAS Celeron J4125 lacks; it exits
+  with SIGILL), `1026:100` runtime user, 4 GiB memory limit, 6 GiB memory plus swap,
   `cpu_shares: 256`, restart policy, and existing relative mounts.
 - `services/agentsview/tasks/main.yml` checks that the pilot and ownership
-  exist before copying Compose and setting `public_url` in the existing
-  `data/config.toml`. It never writes the token or source configuration.
+  exist before copying Compose and setting `public_url` and
+  `sync_idle_after = "0"` in the existing `data/config.toml`. It never
+  writes the token. Upload sources and semantic search are separate
+  Ansible-managed blocks in the same file.
 - `services/agentsview/files/agentsview-proxy-firewall.sh` installs the NAS
   Docker forwarding restriction and is also installed as a Synology boot hook.
   Its effect after a full NAS reboot still needs a maintenance-window check;
@@ -76,10 +79,43 @@ and Gitea remained available.
 
 The original pilot was 567 native JSONL files, roughly 7.8 GiB, from
 flexion-mac. The transcript uploaders below replace it with full history.
-No source deletion, PostgreSQL, embeddings, or external model endpoint is
-managed here. Keep `./data` owned by UID 1026/GID 100;
-the daemon needs that ownership. The old Mac SSH tunnel is no longer part of
-the managed access path.
+No source deletion or PostgreSQL is managed here. Keep `./data` owned by
+UID 1026/GID 100; the daemon needs that ownership. The old Mac SSH tunnel is
+no longer part of the managed access path.
+
+Since 0.47, AgentsView pauses ingestion after `sync_idle_after` (default
+10 minutes) without a client request. Uploads arrive while nobody is
+browsing, so the role sets it to `"0"`. 0.46.1 ignores the key, so it is
+in place for a future upgrade.
+
+## Semantic and hybrid search
+
+Search by meaning (`mode=semantic`) and keyword plus meaning
+(`mode=hybrid`) use embeddings from Ollama on beelink-gti
+(`nomic-embed-text`, 768 dimensions). Transcripts never leave the LAN.
+
+- The role checks Ollama's `/api/tags` from the NAS and pulls the model
+  through `/api/pull` when it is missing. The nvidia-gpu role is not
+  involved.
+- A managed `[vector]` block in `data/config.toml` names the server. With an
+  explicit server AgentsView applies no model defaults, so the nomic
+  `search_query:` and `search_document:` prefixes, the 2048-token context,
+  and the 4000-character input limit are set in the block. Ollama runs with
+  `OLLAMA_NUM_PARALLEL=1`, so the server uses `concurrency = 1`.
+- Do not use Settings > Embeddings > Turn on in the web UI. It rewrites
+  `config.toml` through a TOML encoder, which removes the Ansible markers and
+  would make the next run add duplicate tables.
+- The first index build is a one-off after deployment. The CLI hands it to
+  the running daemon:
+
+      docker exec agentsview-pilot-agentsview-1 agentsview index embeddings build --yes
+
+  After that, new messages are embedded after each sync
+  (`run_after_sync`), with a 24-hour backstop pass.
+- Changing the model or dimension requires
+  `agentsview index embeddings build --full-rebuild --yes`.
+- Check progress from beelink with `/api/v1/embeddings/status`, and search
+  with `/api/v1/search/content?pattern=...&mode=semantic` or `mode=hybrid`.
 
 ## Transcript uploaders
 
