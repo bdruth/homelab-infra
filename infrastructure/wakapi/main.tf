@@ -3,7 +3,7 @@ module "wakapi_lxc" {
   lxc_hostname    = "wakapi"
   lxc_ip_addr     = var.wakapi_ip_addr
   lxc_gw_addr     = var.gw_addr
-  lxc_memory      = "512"
+  lxc_memory      = "2048"
   lxc_onboot      = true
   ssh_public_keys = var.ssh_public_keys
   lxc_mountpoints = [
