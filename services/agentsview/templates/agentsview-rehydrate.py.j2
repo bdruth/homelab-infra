@@ -360,10 +360,18 @@ def main():
         die("session %s is not in the archive%s" % (ids[-1], " under " + args.source if args.source else ""))
     if len(matches) > 1:
         local = [m for m in matches if m["dir"] == LOCAL_DIR]
-        if len(local) == 1:
+        if local:
             matches = local
-        else:
-            die("several archived copies; pick one with --from: %s" % ", ".join(m["dir"] for m in matches))
+    if len(matches) > 1 and args.cwd:
+        # A Claude session resumed from another directory is saved under
+        # both project folders on the same machine; --cwd picks the folder.
+        project = re.sub(r"[^A-Za-z0-9]", "-", os.path.abspath(os.path.expanduser(args.cwd)))
+        same = [m for m in matches if "/claude/projects/%s/" % project in m["path"]]
+        if same:
+            matches = same
+    if len(matches) > 1:
+        die("several archived copies; pick one with --from (machine) or --cwd (project folder):\n  %s"
+            % "\n  ".join(m["path"] for m in matches))
     match = matches[0]
     if "/subagents/" in match["path"]:
         parent = match["path"].split("/subagents/")[0].rsplit("/", 1)[-1]

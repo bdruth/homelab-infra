@@ -230,6 +230,10 @@ agentsview-rehydrate "https://agentsview.cusack-ruth.name/...?msg=234"
   the same session id from two machines. The restored original is listed
   in `~/.local/state/agentsview/upload-exclude/` so the uploader does not
   send it again under this host.
+- When the archive holds several copies of a session, it uses this
+  machine's. A Claude session resumed from a second directory is saved
+  under both project folders on the same machine; `--cwd` then picks the
+  copy whose project folder matches that directory.
 - It reads the archive with its own key, `~/.ssh/agentsview_read`, forced
   through `bin/agentsview-read-guard` on the NAS. That guard allows only a
   session lookup and rsync reads under `sources/`, so the read key cannot
